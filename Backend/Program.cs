@@ -94,14 +94,6 @@ app.UseSwaggerUI();
 app.UseCors();
 app.UseStaticFiles();
 
-var uploadsMap = Environment.GetEnvironmentVariable("UPLOADS_PATH")
-    ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
-Directory.CreateDirectory(uploadsMap);
-app.UseStaticFiles(new Microsoft.AspNetCore.StaticFiles.StaticFileOptions
-{
-    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsMap),
-    RequestPath = "/uploads"
-});
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
