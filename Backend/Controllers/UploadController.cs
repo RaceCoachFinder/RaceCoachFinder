@@ -6,9 +6,13 @@ namespace Backend.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
 public class UploadController : ControllerBase
 {
+    private static string GetUploadsMap() =>
+        Environment.GetEnvironmentVariable("UPLOADS_PATH")
+        ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+
+    [Authorize]
     [HttpPost("profielfoto")]
     public async Task<IActionResult> UploadProfielfoto(IFormFile bestand)
     {
@@ -23,14 +27,25 @@ public class UploadController : ControllerBase
 
         var gebruikerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         var bestandsnaam = $"foto-{gebruikerId}.jpg";
-        var uploadsMap = Environment.GetEnvironmentVariable("UPLOADS_PATH")
-            ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+        var uploadsMap = GetUploadsMap();
         Directory.CreateDirectory(uploadsMap);
         var pad = Path.Combine(uploadsMap, bestandsnaam);
 
         using var stroom = new FileStream(pad, FileMode.Create);
         await bestand.CopyToAsync(stroom);
 
-        return Ok(new { url = $"/uploads/{bestandsnaam}" });
+        return Ok(new { url = $"/api/upload/foto/{bestandsnaam}" });
+    }
+
+    [HttpGet("foto/{bestandsnaam}")]
+    public IActionResult GetFoto(string bestandsnaam)
+    {
+        if (bestandsnaam.Contains("..") || bestandsnaam.Contains('/'))
+            return BadRequest();
+
+        var pad = Path.Combine(GetUploadsMap(), bestandsnaam);
+        if (!System.IO.File.Exists(pad)) return NotFound();
+
+        return PhysicalFile(pad, "image/jpeg");
     }
 }
