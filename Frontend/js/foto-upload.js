@@ -187,7 +187,8 @@ async function uploadFoto(input) {
 
         const data = await antwoord.json();
         document.getElementById('fotoUrl').value = data.url;
-        toonFotoCirkel(data.url, document.getElementById('naam')?.value || '');
+        const absUrl = 'https://racecoachfinder-production.up.railway.app' + data.url;
+        toonFotoCirkel(absUrl, document.getElementById('naam')?.value || '');
 
         meldingEl.textContent = 'Foto opgeslagen';
         meldingEl.style.color = '#2e7d32';

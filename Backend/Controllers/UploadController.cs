@@ -31,7 +31,6 @@ public class UploadController : ControllerBase
         using var stroom = new FileStream(pad, FileMode.Create);
         await bestand.CopyToAsync(stroom);
 
-        var baseUrl = $"{Request.Scheme}://{Request.Host}";
-        return Ok(new { url = $"{baseUrl}/uploads/{bestandsnaam}" });
+        return Ok(new { url = $"/uploads/{bestandsnaam}" });
     }
 }
