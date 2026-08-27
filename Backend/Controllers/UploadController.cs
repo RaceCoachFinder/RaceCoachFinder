@@ -23,13 +23,15 @@ public class UploadController : ControllerBase
 
         var gebruikerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         var bestandsnaam = $"foto-{gebruikerId}.jpg";
-        var map = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
-        Directory.CreateDirectory(map);
-        var pad = Path.Combine(map, bestandsnaam);
+        var uploadsMap = Environment.GetEnvironmentVariable("UPLOADS_PATH")
+            ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+        Directory.CreateDirectory(uploadsMap);
+        var pad = Path.Combine(uploadsMap, bestandsnaam);
 
         using var stroom = new FileStream(pad, FileMode.Create);
         await bestand.CopyToAsync(stroom);
 
-        return Ok(new { url = $"/uploads/{bestandsnaam}" });
+        var baseUrl = $"{Request.Scheme}://{Request.Host}";
+        return Ok(new { url = $"{baseUrl}/uploads/{bestandsnaam}" });
     }
 }
