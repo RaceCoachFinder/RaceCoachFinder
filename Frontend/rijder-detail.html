@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rijderprofiel – RaceCoachFinder</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav>
+    <span class="nav-logo">Race<span>Coach</span>Finder</span>
+    <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="coaches.html">Coaches</a></li>
+    </ul>
+</nav>
+
+<div id="laad-indicator" class="detail-header">
+    <div class="detail-header-inhoud">
+        <div class="laden" style="color:white;width:100%">
+            <div class="spinner"></div>
+            <p>Profiel laden...</p>
+        </div>
+    </div>
+</div>
+
+<div id="detail-inhoud" style="display:none">
+    <div class="detail-header">
+        <div class="detail-header-inhoud">
+            <div class="detail-avatar" id="d-avatar"></div>
+            <div>
+                <div class="detail-naam" id="d-naam"></div>
+                <div class="detail-subtitel" id="d-subtitel"></div>
+                <div id="d-badges" style="margin-top:0.75rem;display:flex;gap:0.4rem;flex-wrap:wrap"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="detail-grid">
+        <div>
+            <div class="detail-sectie">
+                <h3>Over deze rijder</h3>
+                <p id="d-bio" style="color:var(--kleur-subtekst);line-height:1.7"></p>
+            </div>
+
+            <div class="detail-sectie" id="d-doelen-sectie" style="display:none">
+                <h3>Doelen</h3>
+                <p id="d-doelen" style="color:var(--kleur-subtekst);line-height:1.7"></p>
+            </div>
+
+            <div class="detail-sectie">
+                <h3>Gegevens</h3>
+                <div class="info-rij"><span>Woonplaats</span><span id="d-woonplaats"></span></div>
+                <div class="info-rij"><span>Nationaliteit</span><span id="d-nationaliteit"></span></div>
+                <div class="info-rij"><span>Leeftijd</span><span id="d-leeftijd"></span></div>
+                <div class="info-rij"><span>Talen</span><span id="d-talen"></span></div>
+                <div class="info-rij"><span>Niveau</span><span id="d-niveau"></span></div>
+            </div>
+
+            <div class="detail-sectie" id="d-banen-sectie" style="display:none">
+                <h3>Beschikbare banen</h3>
+                <p id="d-banen" style="color:var(--kleur-subtekst)"></p>
+            </div>
+
+            <div class="detail-sectie" id="d-resultaten-sectie" style="display:none">
+                <h3>Resultaten</h3>
+                <p id="d-resultaten" style="color:var(--kleur-subtekst);line-height:1.7;white-space:pre-line"></p>
+            </div>
+        </div>
+
+        <div>
+            <div class="detail-sectie" id="d-instagram-sectie" style="display:none">
+                <h3>Social</h3>
+                <a id="d-instagram-link" href="#" target="_blank" rel="noopener" style="color:var(--kleur-primair);font-weight:600;text-decoration:none">📸 Instagram</a>
+            </div>
+
+            <div class="detail-sectie">
+                <h3>Acties</h3>
+                <div style="display:flex;flex-direction:column;gap:0.75rem">
+                    <a id="d-bericht-link" href="#" class="btn btn-primair">Stuur bericht</a>
+                    <button id="d-fav-btn" class="btn btn-secundair" onclick="toggleFavRijder()" style="display:none">☆ Opslaan als favoriete rijder</button>
+                </div>
+            </div>
+
+            <div class="detail-sectie" id="d-specs-sectie" style="display:none">
+                <h3>Specialisaties</h3>
+                <div id="d-specs" style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.25rem"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="geen-profiel" style="display:none" class="container pagina-sectie">
+    <div class="melding melding-info">
+        Deze rijder heeft nog geen publiek profiel aangemaakt.
+        <a href="coach-gezocht.html">Terug naar aanvragen</a>
+    </div>
+</div>
+
+<div id="fout-melding" style="display:none" class="container pagina-sectie">
+    <div class="melding melding-fout">Rijder niet gevonden. <a href="coach-gezocht.html">Terug</a></div>
+</div>
+
+<footer>
+    <div class="footer-inhoud">
+        <div class="footer-links">
+            <a href="contact.html">Contact</a>
+            <a href="disclaimer.html">Disclaimer</a>
+        </div>
+        <p>&copy; 2026 RaceCoachFinder</p>
+    </div>
+</footer>
+
+<script src="js/auth.js"></script>
+<script>
+const urlParams  = new URLSearchParams(window.location.search);
+const rijderUserId = urlParams.get('id');
+let isFavRijder = false;
+
+async function laadRijder() {
+    if (!rijderUserId) { toonFout(); return; }
+    try {
+        const r = await fetch(`http://localhost:5000/api/rijder/profiel/${encodeURIComponent(rijderUserId)}`);
+        if (r.status === 404) { toonGeenProfiel(); return; }
+        if (!r.ok) { toonFout(); return; }
+        const rijder = await r.json();
+        vulProfiel(rijder);
+    } catch {
+        toonFout();
+    }
+}
+
+async function laadFavStatus() {
+    if (!heeftRol('Coach')) return;
+    try {
+        const ids = await authVerzoek('/rijderfavorieten');
+        if (Array.isArray(ids) && ids.includes(rijderUserId)) {
+            isFavRijder = true;
+            updateFavKnop();
+        }
+    } catch {}
+    document.getElementById('d-fav-btn').style.display = '';
+}
+
+async function toggleFavRijder() {
+    try {
+        if (isFavRijder) {
+            await authVerzoek('/rijderfavorieten/' + encodeURIComponent(rijderUserId), 'DELETE');
+            isFavRijder = false;
+        } else {
+            await authVerzoek('/rijderfavorieten/' + encodeURIComponent(rijderUserId), 'POST');
+            isFavRijder = true;
+        }
+        updateFavKnop();
+    } catch {}
+}
+
+function updateFavKnop() {
+    const btn = document.getElementById('d-fav-btn');
+    btn.textContent = isFavRijder ? '★ Favoriete rijder opgeslagen' : '☆ Opslaan als favoriete rijder';
+    btn.style.color = isFavRijder ? 'var(--kleur-primair)' : '';
+    btn.style.borderColor = isFavRijder ? 'var(--kleur-primair)' : '';
+}
+
+function vulProfiel(r) {
+    document.title = `${r.naam} – RaceCoachFinder`;
+    const initialen = r.naam.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+    const avatarEl = document.getElementById('d-avatar');
+    if (r.fotoUrl) {
+        avatarEl.innerHTML = `<img src="http://localhost:5000${r.fotoUrl}" alt="${esc(r.naam)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+    } else {
+        avatarEl.textContent = initialen;
+    }
+
+    document.getElementById('d-naam').textContent = r.naam;
+    document.getElementById('d-subtitel').textContent = (r.niveau || '') + (r.woonplaats ? '  •  📍 ' + r.woonplaats : '');
+    document.getElementById('d-bio').textContent = r.bio || 'Geen beschrijving.';
+    document.getElementById('d-woonplaats').textContent = r.woonplaats || '—';
+    document.getElementById('d-nationaliteit').textContent = r.nationaliteit || '—';
+    document.getElementById('d-leeftijd').textContent = r.leeftijd ? r.leeftijd + ' jaar' : '—';
+    document.getElementById('d-talen').textContent = r.talen || '—';
+    document.getElementById('d-niveau').textContent = r.niveau || '—';
+
+    if (r.doelen) {
+        document.getElementById('d-doelen').textContent = r.doelen;
+        document.getElementById('d-doelen-sectie').style.display = '';
+    }
+    if (r.beschikbareBanen) {
+        document.getElementById('d-banen').textContent = r.beschikbareBanen;
+        document.getElementById('d-banen-sectie').style.display = '';
+    }
+    if (r.resultaten) {
+        document.getElementById('d-resultaten').textContent = r.resultaten;
+        document.getElementById('d-resultaten-sectie').style.display = '';
+    }
+    if (r.instagram) {
+        document.getElementById('d-instagram-link').href = 'https://instagram.com/' + encodeURIComponent(r.instagram);
+        document.getElementById('d-instagram-link').textContent = '📸 @' + r.instagram;
+        document.getElementById('d-instagram-sectie').style.display = '';
+    }
+
+    const badges = document.getElementById('d-badges');
+    if (r.niveau) badges.innerHTML += `<span class="badge badge-grijs">${esc(r.niveau)}</span>`;
+
+    if (r.discipline) {
+        const specs = r.discipline.split(',').map(s => s.trim()).filter(Boolean);
+        if (specs.length > 0) {
+            document.getElementById('d-specs').innerHTML = specs.map(s => `<span class="badge badge-rood">${esc(s)}</span>`).join('');
+            document.getElementById('d-specs-sectie').style.display = '';
+            specs.forEach(s => badges.innerHTML += `<span class="badge badge-rood">${esc(s)}</span>`);
+        }
+    }
+
+    // Berichtknop
+    const gebruiker = getGebruiker ? getGebruiker() : null;
+    const berichtLink = document.getElementById('d-bericht-link');
+    if (gebruiker && gebruiker.id !== rijderUserId) {
+        berichtLink.href = `berichten.html?partner=${encodeURIComponent(rijderUserId)}&naam=${encodeURIComponent(r.naam)}&rol=Rijder`;
+    } else if (!gebruiker) {
+        berichtLink.href = 'inloggen.html';
+    }
+
+    document.getElementById('laad-indicator').style.display = 'none';
+    document.getElementById('detail-inhoud').style.display = 'block';
+}
+
+function toonGeenProfiel() {
+    document.getElementById('laad-indicator').style.display = 'none';
+    document.getElementById('geen-profiel').style.display = 'block';
+}
+
+function toonFout() {
+    document.getElementById('laad-indicator').style.display = 'none';
+    document.getElementById('fout-melding').style.display = 'block';
+}
+
+function esc(str) {
+    const d = document.createElement('div');
+    d.textContent = String(str || '');
+    return d.innerHTML;
+}
+
+updateNav();
+laadRijder();
+if (heeftRol('Coach')) laadFavStatus();
+</script>
+</body>
+</html>

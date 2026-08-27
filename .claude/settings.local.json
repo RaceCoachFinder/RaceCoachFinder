@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(New-Item -ItemType Directory -Force \"Y:\\\\Coach Finder\\\\Claude\\\\Kart coach finder\\\\Backend\\\\Models\")",
+      "PowerShell(New-Item -ItemType Directory -Force \"Y:\\\\Coach Finder\\\\Claude\\\\Kart coach finder\\\\Backend\\\\Data\")",
+      "PowerShell(New-Item -ItemType Directory -Force \"Y:\\\\Coach Finder\\\\Claude\\\\Kart coach finder\\\\Backend\\\\Controllers\")",
+      "PowerShell(New-Item -ItemType Directory -Force \"Y:\\\\Coach Finder\\\\Claude\\\\Kart coach finder\\\\Frontend\\\\css\")",
+      "PowerShell(New-Item -ItemType Directory -Force \"Y:\\\\Coach Finder\\\\Claude\\\\Kart coach finder\\\\Frontend\\\\js\")",
+      "mcp__visualize__show_widget"
+    ]
+  }
+}

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pagina niet gevonden – RaceCoachFinder</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .fout-sectie {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 6rem 1.5rem;
+            min-height: 60vh;
+        }
+        .fout-nummer {
+            font-size: 7rem;
+            font-weight: 900;
+            color: var(--kleur-primair);
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+        .fout-sectie h1 { font-size: 1.6rem; margin-bottom: 0.75rem; }
+        .fout-sectie p { color: var(--kleur-subtekst); font-size: 1rem; margin-bottom: 2rem; max-width: 400px; }
+        .fout-links { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+    </style>
+</head>
+<body>
+
+<nav>
+    <span class="nav-logo">Race<span>Coach</span>Finder</span>
+    <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="coaches.html">Coaches</a></li>
+    </ul>
+</nav>
+
+<div class="container">
+    <div class="fout-sectie">
+        <div class="fout-nummer">404</div>
+        <h1>Pagina niet gevonden</h1>
+        <p>De pagina die je zoekt bestaat niet of is verplaatst. Misschien is de link verlopen?</p>
+        <div class="fout-links">
+            <a href="index.html" class="btn btn-primair">Terug naar home</a>
+            <a href="coaches.html" class="btn btn-donker">Coaches zoeken</a>
+        </div>
+    </div>
+</div>
+
+<footer>
+    <div class="footer-inhoud">
+        <div class="footer-links">
+            <a href="contact.html">Contact</a>
+            <a href="disclaimer.html">Disclaimer</a>
+        </div>
+        <p>&copy; 2026 RaceCoachFinder</p>
+    </div>
+</footer>
+
+<script src="js/auth.js"></script>
+<script>updateNav();</script>
+</body>
+</html>

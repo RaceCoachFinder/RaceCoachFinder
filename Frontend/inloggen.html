@@ -1,0 +1,162 @@
+﻿<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inloggen – RaceCoachFinder</title>
+        <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .of-verdeler {
+            display: flex; align-items: center; gap: 0.75rem;
+            margin: 1.25rem 0; color: var(--kleur-subtekst); font-size: 0.82rem;
+        }
+        .of-verdeler::before, .of-verdeler::after {
+            content: ''; flex: 1; height: 1px; background: #e8e8e8;
+        }
+        .code-knop {
+            width: 100%; padding: 0.65rem;
+            border: 2px solid var(--kleur-primair); border-radius: var(--rand);
+            background: transparent; color: var(--kleur-primair);
+            font-weight: 700; font-size: 0.9rem; cursor: pointer;
+            font-family: inherit; transition: background 0.15s, color 0.15s;
+        }
+        .code-knop:hover { background: var(--kleur-primair); color: var(--kleur-donker); }
+    </style>
+</head>
+<body>
+
+<nav>
+    <span class="nav-logo">Race<span>Coach</span>Finder</span>
+    <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="coaches.html">Coaches zoeken</a></li>
+    </ul>
+</nav>
+
+<div class="container">
+    <div class="formulier-kaart" style="max-width:420px">
+        <h2 id="form-titel">Inloggen</h2>
+        <div id="melding"></div>
+
+        <form onsubmit="submitInloggen(event)">
+            <div class="formulier-groep">
+                <label id="login-label" for="login-invoer">E-mailadres</label>
+                <input type="text" id="login-invoer" required autofocus
+                       placeholder="jouw@email.com" autocomplete="username">
+            </div>
+            <div class="formulier-groep">
+                <label for="wachtwoord">Wachtwoord</label>
+                <input type="password" id="wachtwoord" required placeholder="••••••••">
+            </div>
+            <div id="vergeten-link" style="text-align:right;margin-top:0.25rem;margin-bottom:0.75rem">
+                <a href="wachtwoord-vergeten.html" style="font-size:0.85rem;color:var(--kleur-subtekst)">Wachtwoord vergeten?</a>
+            </div>
+            <button type="submit" class="btn btn-primair" style="width:100%;margin-top:0.25rem">Inloggen</button>
+        </form>
+
+        <div class="of-verdeler">of</div>
+        <button class="code-knop" id="toggle-knop" onclick="toggleModus()">
+            Inloggen met uitnodigingscode
+        </button>
+
+        <p style="text-align:center;margin-top:1.25rem;color:var(--kleur-subtekst);font-size:0.9rem">
+            Nog geen account? <a href="registreren.html">Registreren</a>
+        </p>
+    </div>
+</div>
+
+<footer>
+    <div class="footer-inhoud">
+        <div class="footer-links">
+            <a href="contact.html">Contact</a>
+            <a href="disclaimer.html">Disclaimer</a>
+        </div>
+        <p>&copy; 2026 RaceCoachFinder</p>
+    </div>
+</footer>
+
+<script src="js/auth.js"></script>
+<script>
+if (isIngelogd()) {
+    const g = getGebruiker();
+    if (g) {
+        const rollen = (g.rol || '').split(',').map(function(r) { return r.trim(); });
+        if (rollen.indexOf('Coach') !== -1 && rollen.indexOf('Rijder') !== -1) location.href = 'kies-rol.html';
+        else if (rollen.indexOf('Coach') !== -1) location.href = 'dashboard-coach.html';
+        else if (rollen.indexOf('Admin') !== -1) location.href = 'admin.html';
+        else location.href = 'dashboard-rijder.html';
+    }
+}
+
+let codeModus = false;
+
+function toggleModus() {
+    codeModus = !codeModus;
+    const invoer = document.getElementById('login-invoer');
+    const label = document.getElementById('login-label');
+    const titel = document.getElementById('form-titel');
+    const vergeten = document.getElementById('vergeten-link');
+    const knop = document.getElementById('toggle-knop');
+
+    if (codeModus) {
+        invoer.placeholder = '12345678';
+        invoer.inputMode = 'numeric';
+        label.textContent = 'Uitnodigingscode (8 cijfers)';
+        titel.textContent = 'Inloggen met code';
+        vergeten.style.display = 'none';
+        knop.textContent = 'Inloggen met e-mailadres';
+    } else {
+        invoer.placeholder = 'jouw@email.com';
+        invoer.inputMode = '';
+        label.textContent = 'E-mailadres';
+        titel.textContent = 'Inloggen';
+        vergeten.style.display = '';
+        knop.textContent = 'Inloggen met uitnodigingscode';
+    }
+
+    invoer.value = '';
+    document.getElementById('wachtwoord').value = '';
+    document.getElementById('melding').innerHTML = '';
+    invoer.focus();
+}
+
+async function submitInloggen(event) {
+    event.preventDefault();
+    document.getElementById('melding').innerHTML = '';
+
+    try {
+        const data = await (await fetch('http://localhost:5000/api/auth/inloggen', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: document.getElementById('login-invoer').value.trim(),
+                wachtwoord: document.getElementById('wachtwoord').value
+            })
+        })).json();
+
+        if (!data.token) throw new Error(data.title || 'Inloggen mislukt.');
+
+        localStorage.setItem('kcf_token', data.token);
+        localStorage.setItem('kcf_gebruiker', JSON.stringify({
+            id: data.id, naam: data.naam, email: data.email,
+            rol: data.rol, heeftAccountIngericht: data.heeftAccountIngericht
+        }));
+
+        if (data.heeftAccountIngericht === false) { location.href = 'account-inrichten.html'; return; }
+        const rollen = (data.rol || '').split(',').map(function(r) { return r.trim(); });
+        if (rollen.indexOf('Coach') !== -1 && rollen.indexOf('Rijder') !== -1) location.href = 'kies-rol.html';
+        else if (rollen.indexOf('Coach') !== -1) location.href = 'dashboard-coach.html';
+        else if (rollen.indexOf('Admin') !== -1) location.href = 'admin.html';
+        else location.href = 'dashboard-rijder.html';
+
+    } catch (e) {
+        const bericht = (e && e.message && e.message.indexOf('fetch') !== -1)
+            ? 'Server niet bereikbaar. Start de backend en probeer opnieuw.'
+            : 'Onjuist e-mailadres of wachtwoord.';
+        document.getElementById('melding').innerHTML = '<div class="melding melding-fout">' + bericht + '</div>';
+    }
+}
+</script>
+</body>
+</html>

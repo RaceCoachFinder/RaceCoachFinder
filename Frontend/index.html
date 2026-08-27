@@ -1,0 +1,188 @@
+﻿<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kart Coach Finder</title>
+        <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav>
+    <span class="nav-logo">Race<span>Coach</span>Finder</span>
+    <ul class="nav-links">
+        <li><a href="index.html" class="actief">Home</a></li>
+        <li><a href="coaches.html">Coaches</a></li>
+    </ul>
+</nav>
+
+<section class="hero">
+    <h1>Vind jouw <span>kartcoach</span></h1>
+    <p>Het platform om alles te regelen, van de perfecte coach vinden naar het boeken.</p>
+    <div class="hero-knoppen">
+        <a href="coaches.html" class="btn btn-primair">Zoek een coach</a>
+        <a href="registreren.html" class="btn btn-secundair">Word coach</a>
+    </div>
+</section>
+
+<div class="stats-balk">
+    <div style="text-align:center">
+        <div class="stat-label" style="margin-bottom:0.9rem">Totale leden</div>
+        <div style="display:flex;gap:3rem;justify-content:center">
+            <div class="stat">
+                <div class="stat-getal" id="stat-coaches">-</div>
+                <div class="stat-label">Coaches</div>
+            </div>
+            <div class="stat">
+                <div class="stat-getal" id="stat-rijders">-</div>
+                <div class="stat-label">Rijders</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container pagina-sectie" id="sectie-aanbevolen" style="display:none">
+    <h2 class="sectie-titel">Aanbevolen voor jou</h2>
+    <p style="color:var(--kleur-subtekst);margin-top:-0.75rem;margin-bottom:1.5rem;font-size:0.9rem">Coaches die passen bij jouw specialisaties en niveau</p>
+    <div class="coach-grid" id="aanbevolen-coaches"></div>
+    <div style="text-align:center;margin-top:2rem">
+        <a href="coaches.html" class="btn btn-donker">Alle coaches bekijken</a>
+    </div>
+</div>
+
+<div class="container pagina-sectie" id="sectie-recent">
+    <h2 class="sectie-titel">Recente coaches</h2>
+    <div class="coach-grid" id="recente-coaches">
+        <div class="laden">
+            <div class="spinner"></div>
+            <p>Coaches laden...</p>
+        </div>
+    </div>
+    <div style="text-align:center; margin-top:2rem;">
+        <a href="coaches.html" class="btn btn-donker">Alle coaches bekijken</a>
+    </div>
+</div>
+
+<footer>
+    <div class="footer-inhoud">
+        <div class="footer-links">
+            <a href="contact.html">Contact</a>
+            <a href="hoe-werkt-het.html">Hoe werkt het</a>
+            <a href="disclaimer.html">Disclaimer</a>
+        </div>
+        <p>&copy; 2026 RaceCoachFinder</p>
+    </div>
+</footer>
+
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script>
+async function laadHome() {
+    try {
+        const coaches = await CoachAPI.haalAlleOp();
+        document.getElementById('stat-coaches').textContent = coaches.length;
+
+        const grid = document.getElementById('recente-coaches');
+
+        if (coaches.length === 0) {
+            grid.innerHTML = `<div class="geen-resultaten">
+                <p>Nog geen coaches beschikbaar.</p>
+                <a href="registreren.html" class="btn btn-primair" style="margin-top:1rem">Word de eerste coach</a>
+            </div>`;
+        } else {
+            const recente = coaches.slice(-6).reverse();
+            grid.innerHTML = recente.map(coachKaartHTML).join('');
+        }
+
+        await laadAanbevolen(coaches);
+    } catch (e) {
+        document.getElementById('recente-coaches').innerHTML =
+            `<div class="melding melding-fout">Kan backend niet bereiken. Zorg dat de API draait op poort 5000.</div>`;
+    }
+
+    try {
+        const aantalRijders = await fetch('http://localhost:5000/api/rijder/aantal').then(r => r.json());
+        document.getElementById('stat-rijders').textContent = aantalRijders;
+    } catch {}
+}
+
+async function laadAanbevolen(alleCoaches) {
+    const gebruiker = getGebruiker();
+    if (!gebruiker || !heeftRol('Rijder')) return;
+
+    try {
+        const rijder = await authVerzoek('/rijder/mijn');
+        const specs = (rijder.discipline || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+        const niveau = (rijder.niveau || '').toLowerCase();
+        if (specs.length === 0 && !niveau) return;
+
+        const scores = alleCoaches.map(c => {
+            const coachSpecs = (c.specialisatie || '').toLowerCase() + ' ' + (c.discipline || '').toLowerCase();
+            const coachNiveau = (c.specialisatie || '').toLowerCase();
+            let score = 0;
+            specs.forEach(s => { if (coachSpecs.includes(s)) score += 2; });
+            if (niveau && coachNiveau.includes(niveau)) score += 1;
+            return { coach: c, score };
+        }).filter(x => x.score > 0).sort((a, b) => b.score - a.score).slice(0, 6);
+
+        if (scores.length === 0) return;
+
+        document.getElementById('sectie-aanbevolen').style.display = '';
+        document.getElementById('sectie-recent').style.display = 'none';
+        document.getElementById('aanbevolen-coaches').innerHTML = scores.map(x => coachKaartHTML(x.coach)).join('');
+    } catch {}
+}
+
+function coachKaartHTML(c) {
+    const initialen = c.naam.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+    const avatar = c.fotoUrl
+        ? `<img src="http://localhost:5000${c.fotoUrl}" alt="${escapeHtml(c.naam)}" style="width:52px;height:52px;border-radius:50%;object-fit:cover;flex-shrink:0">`
+        : `<div class="coach-avatar">${initialen}</div>`;
+    return `
+    <div class="coach-kaart" onclick="location.href='coach-detail.html?id=${c.id}'">
+        <div class="coach-kaart-header">
+            ${avatar}
+            <div>
+                <div class="coach-naam">${escapeHtml(c.naam)}</div>
+                <div class="coach-locatie">📍 ${escapeHtml(c.woonplaats || '—')}</div>
+            </div>
+        </div>
+        <div class="coach-kaart-body">
+            <div class="coach-badges">
+                ${c.onlineCoaching ? `<span class="badge badge-groen" title="Online coaching mogelijk">Online</span>` : ''}
+            </div>
+            <div class="coach-prijs">${prijsBereik(c)}</div>
+            <div class="coach-bio">${escapeHtml(c.bio || 'Geen beschrijving.')}</div>
+        </div>
+        <div class="coach-kaart-footer">
+            <small style="color:#888" title="Jaren actief als coach">${c.jarenErvaring} jaar ervaring</small>
+            <a href="coach-detail.html?id=${c.id}" class="btn btn-primair" style="padding:0.4rem 1rem;font-size:0.85rem">Bekijk profiel</a>
+        </div>
+    </div>`;
+}
+
+function prijsBereik(c) {
+    try {
+        const pakketten = c.prijsPakketten ? JSON.parse(c.prijsPakketten) : [];
+        const prijzen = pakketten.map(p => p.prijs).filter(p => p > 0);
+        if (prijzen.length > 0) {
+            const min = Math.min(...prijzen);
+            const max = Math.max(...prijzen);
+            return min === max ? `€${min}` : `€${min} – €${max}`;
+        }
+    } catch {}
+    return '';
+}
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+updateNav();
+laadHome();
+</script>
+</body>
+</html>

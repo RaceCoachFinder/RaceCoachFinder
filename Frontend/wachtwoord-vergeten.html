@@ -1,0 +1,99 @@
+﻿<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wachtwoord vergeten – RaceCoachFinder</title>
+        <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav>
+    <span class="nav-logo">Race<span>Coach</span>Finder</span>
+    <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="inloggen.html">Inloggen</a></li>
+    </ul>
+</nav>
+
+<div class="container">
+    <div class="formulier-kaart" style="max-width:420px">
+        <h2>Wachtwoord vergeten</h2>
+        <p style="color:var(--kleur-subtekst);font-size:0.92rem;margin-bottom:1.25rem">
+            Vul je e-mailadres in. Als er een account bij bestaat, sturen we een verificatiecode.
+        </p>
+
+        <div id="melding"></div>
+
+        <form id="form-vergeten" onsubmit="submitVergeten(event)">
+            <div class="formulier-groep">
+                <label for="email">E-mailadres</label>
+                <input type="email" id="email" required placeholder="jouw@email.com" autofocus>
+            </div>
+            <button type="submit" class="btn btn-primair" style="width:100%;margin-top:0.5rem" id="btn-verstuur">
+                Code versturen
+            </button>
+        </form>
+
+        <p style="text-align:center;margin-top:1.25rem;color:var(--kleur-subtekst);font-size:0.9rem">
+            <a href="inloggen.html">Terug naar inloggen</a>
+        </p>
+    </div>
+</div>
+
+<footer>
+    <div class="footer-inhoud">
+        <div class="footer-links">
+            <a href="contact.html">Contact</a>
+            <a href="disclaimer.html">Disclaimer</a>
+        </div>
+        <p>&copy; 2026 RaceCoachFinder</p>
+    </div>
+</footer>
+
+<script>
+async function submitVergeten(event) {
+    event.preventDefault();
+    const melding = document.getElementById('melding');
+    const btn = document.getElementById('btn-verstuur');
+    const email = document.getElementById('email').value.trim();
+
+    melding.innerHTML = '';
+    btn.disabled = true;
+    btn.textContent = 'Versturen...';
+
+    try {
+        const resp = await fetch('http://localhost:5000/api/auth/wachtwoord-vergeten', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+
+        if (!resp.ok) throw new Error();
+
+        // Altijd succes tonen (ook als e-mail niet bestaat, voor veiligheid)
+        document.getElementById('form-vergeten').style.display = 'none';
+        melding.innerHTML = `
+            <div class="melding melding-succes" style="margin-bottom:1rem">
+                Als dit e-mailadres bij ons bekend is, ontvang je zo een code.
+            </div>
+            <p style="text-align:center;color:var(--kleur-subtekst);font-size:0.9rem;margin-bottom:1rem">
+                Geen mail ontvangen? Check je spam of probeer opnieuw.
+            </p>
+        `;
+
+        // Na 1.5 seconden doorsturen naar reset-pagina met email als parameter
+        setTimeout(() => {
+            location.href = 'wachtwoord-reset.html?email=' + encodeURIComponent(email);
+        }, 1500);
+
+    } catch {
+        melding.innerHTML = `<div class="melding melding-fout">Er ging iets mis. Probeer het later opnieuw.</div>`;
+        btn.disabled = false;
+        btn.textContent = 'Code versturen';
+    }
+}
+</script>
+</body>
+</html>

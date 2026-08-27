@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coach gezocht – RaceCoachFinder</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .gezocht-layout { display: grid; grid-template-columns: 240px 1fr; gap: 1.75rem; align-items: start; }
+        .filter-sidebar { background: var(--kleur-wit); border-radius: var(--rand); box-shadow: var(--schaduw); padding: 1.25rem 1.5rem; position: sticky; top: 1.5rem; }
+        .filter-sidebar h2 { font-size: 0.95rem; font-weight: 700; margin-bottom: 1rem; padding-bottom: 0.6rem; border-bottom: 1px solid #f0f0f0; }
+        .filter-veld { margin-bottom: 0.9rem; }
+        .filter-veld label { display: block; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: var(--kleur-subtekst); margin-bottom: 0.3rem; }
+        .filter-veld input[type="text"], .filter-veld input[type="date"], .filter-veld select {
+            width: 100%; padding: 0.45rem 0.65rem; border: 1px solid #ddd; border-radius: 6px;
+            font-size: 0.88rem; font-family: inherit; box-sizing: border-box;
+        }
+        .filter-veld input:focus, .filter-veld select:focus { outline: none; border-color: var(--kleur-primair); }
+        .filter-checkbox { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.88rem; }
+        .filter-checkbox input { width: auto; accent-color: var(--kleur-primair); }
+        .aanvraag-kaart { background: var(--kleur-wit); border-radius: var(--rand); box-shadow: var(--schaduw); padding: 1.25rem 1.5rem; margin-bottom: 1rem; border-left: 4px solid transparent; position: relative; }
+        .aanvraag-kaart.passend { border-left-color: var(--kleur-primair); }
+        .aanvraag-kaart-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem; margin-bottom: 0.45rem; }
+        .aanvraag-rijder { font-weight: 700; font-size: 1rem; }
+        .aanvraag-passend-badge { font-size: 0.72rem; font-weight: 700; background: #fff8e0; color: #9a7800; padding: 0.2rem 0.65rem; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
+        .aanvraag-meta { font-size: 0.83rem; color: var(--kleur-subtekst); margin-bottom: 0.45rem; }
+        .aanvraag-beschrijving { font-size: 0.9rem; color: var(--kleur-tekst); line-height: 1.5; margin-bottom: 0.6rem; }
+        .chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+        .chip { font-size: 0.75rem; font-weight: 600; padding: 0.2rem 0.6rem; border-radius: 20px; background: #f0f0f0; color: #555; }
+        .chip-primair { background: #fff8e0; color: #9a7800; }
+        .aanvraag-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 0.85rem; flex-wrap: wrap; gap: 0.5rem; }
+        .fav-rijder-knop { background: none; border: none; font-size: 1.35rem; cursor: pointer; line-height: 1; padding: 0; color: #ccc; transition: color 0.15s; position: absolute; top: 12px; right: 14px; }
+        .fav-rijder-knop.actief { color: var(--kleur-primair); }
+        @media (max-width: 700px) { .gezocht-layout { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+<nav>
+    <span class="nav-logo">Race<span>Coach</span>Finder</span>
+    <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="coaches.html">Coaches</a></li>
+    </ul>
+</nav>
+
+<div class="container pagina-sectie">
+
+    <h1 style="margin-bottom:0.25rem">Rijders zoeken een coach</h1>
+    <p style="color:var(--kleur-subtekst);margin-bottom:1.75rem">Aanvragen passend bij jouw profiel zijn gemarkeerd. Klik op "Stuur bericht" om contact op te nemen.</p>
+
+    <div class="gezocht-layout">
+
+        <!-- Filters -->
+        <aside class="filter-sidebar">
+            <h2>Filters</h2>
+            <div class="filter-veld">
+                <label>Rijder zoeken</label>
+                <input type="text" id="f-naam" placeholder="Naam...">
+            </div>
+            <div class="filter-veld">
+                <label>Locatie</label>
+                <input type="text" id="f-locatie" placeholder="bijv. Genk...">
+            </div>
+            <div class="filter-veld">
+                <label>Specialisatie</label>
+                <select id="f-spec">
+                    <option value="">Alle</option>
+                    <option>Huurkart</option>
+                    <option>Rotax Max</option>
+                    <option>OK</option>
+                    <option>KZ / Shifter</option>
+                    <option>Superkart</option>
+                    <option>Simracing</option>
+                    <option>Algemeen</option>
+                </select>
+            </div>
+            <div class="filter-veld">
+                <label>Datum vanaf</label>
+                <input type="date" id="f-datum-van">
+            </div>
+            <div class="filter-veld">
+                <label>Datum tot</label>
+                <input type="date" id="f-datum-tot">
+            </div>
+            <div class="filter-veld">
+                <label class="filter-checkbox">
+                    <input type="checkbox" id="f-passend"> Alleen passend voor mij
+                </label>
+            </div>
+            <div class="filter-veld" id="f-fav-veld" style="display:none">
+                <label class="filter-checkbox">
+                    <input type="checkbox" id="f-favorieten"> ★ Favoriete rijders
+                </label>
+            </div>
+            <button class="btn btn-secundair" onclick="resetFilters()" style="width:100%;color:#555;border-color:#ccc;font-size:0.85rem;margin-top:0.25rem">Reset filters</button>
+        </aside>
+
+        <!-- Resultaten -->
+        <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem">
+                <span id="aantal-info" style="color:var(--kleur-subtekst);font-size:0.85rem"></span>
+            </div>
+            <div id="aanvragen-container">
+                <div class="laden"><div class="spinner"></div><p>Aanvragen laden...</p></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer>
+    <div class="footer-inhoud">
+        <div class="footer-links">
+            <a href="contact.html">Contact</a>
+            <a href="disclaimer.html">Disclaimer</a>
+        </div>
+        <p>&copy; 2026 RaceCoachFinder</p>
+    </div>
+</footer>
+
+<script src="js/auth.js"></script>
+<script>
+if (!vereisAuth('Coach')) throw new Error();
+
+let alleAanvragen = [];
+let coachSpecs = [];
+let coachKwals = [];
+let favorieteRijders = new Set();
+
+function passerendVoorCoach(a) {
+    const aSpecs = a.specialisaties ? a.specialisaties.split(',').map(s => s.trim()).filter(Boolean) : [];
+    const aKwals = a.kwaliteiten   ? a.kwaliteiten.split(',').map(s => s.trim()).filter(Boolean)   : [];
+    const specMatch = aSpecs.length === 0 || aSpecs.some(s => coachSpecs.includes(s));
+    const kwalMatch = aKwals.length === 0 || aKwals.some(k => coachKwals.includes(k));
+    return specMatch && kwalMatch;
+}
+
+function renderAanvragen() {
+    const container = document.getElementById('aanvragen-container');
+    const naamFilter    = document.getElementById('f-naam').value.trim().toLowerCase();
+    const locatieFilter = document.getElementById('f-locatie').value.trim().toLowerCase();
+    const specFilter    = document.getElementById('f-spec').value;
+    const datumVan      = document.getElementById('f-datum-van').value;
+    const datumTot      = document.getElementById('f-datum-tot').value;
+    const alleenPassend = document.getElementById('f-passend').checked;
+    const alleenFav     = document.getElementById('f-favorieten').checked;
+
+    let lijst = alleAanvragen.filter(a => {
+        if (naamFilter    && !(a.rijderNaam || '').toLowerCase().includes(naamFilter))     return false;
+        if (locatieFilter && !(a.locatie || '').toLowerCase().includes(locatieFilter))     return false;
+        if (specFilter    && !(a.specialisaties || '').includes(specFilter))               return false;
+        if (datumVan && a.datum && new Date(a.datum) < new Date(datumVan))                 return false;
+        if (datumTot && a.datum && new Date(a.datum) > new Date(datumTot + 'T23:59:59'))  return false;
+        if (alleenPassend && !passerendVoorCoach(a))                                       return false;
+        if (alleenFav     && !favorieteRijders.has(a.rijderId))                            return false;
+        return true;
+    });
+
+    // Passende bovenaan, daarna favorieten, dan de rest
+    lijst = [...lijst].sort((a, b) => {
+        const pa = passerendVoorCoach(a) ? 0 : 1;
+        const pb = passerendVoorCoach(b) ? 0 : 1;
+        return pa - pb;
+    });
+
+    document.getElementById('aantal-info').textContent = `${lijst.length} aanvraag${lijst.length !== 1 ? 'en' : ''}`;
+
+    if (lijst.length === 0) {
+        container.innerHTML = '<div class="geen-resultaten"><p>Geen aanvragen gevonden met deze filters.</p></div>';
+        return;
+    }
+
+    container.innerHTML = lijst.map(aanvraagKaartHTML).join('');
+}
+
+function aanvraagKaartHTML(a) {
+    const passend = passerendVoorCoach(a);
+    const isFav   = favorieteRijders.has(a.rijderId);
+    const datum   = a.datum ? new Date(a.datum).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' }) : '—';
+    const prijs   = a.maxPrijs ? `Max €${a.maxPrijs}` : '';
+    const specs   = a.specialisaties ? a.specialisaties.split(',').filter(Boolean) : [];
+    const kwals   = a.kwaliteiten   ? a.kwaliteiten.split(',').filter(Boolean)   : [];
+
+    return `
+    <div class="aanvraag-kaart${passend ? ' passend' : ''}">
+        <button class="fav-rijder-knop${isFav ? ' actief' : ''}" onclick="toggleFavRijder('${esc(a.rijderId)}', this)" title="${isFav ? 'Verwijder uit favorieten' : 'Opslaan als favoriete rijder'}">${isFav ? '★' : '☆'}</button>
+        <div class="aanvraag-kaart-header">
+            <a href="rijder-detail.html?id=${encodeURIComponent(a.rijderId)}" class="aanvraag-rijder" style="text-decoration:none;color:inherit">${esc(a.rijderNaam)}</a>
+            ${passend ? '<span class="aanvraag-passend-badge">★ Past bij jouw profiel</span>' : ''}
+        </div>
+        <div class="aanvraag-meta">📍 ${esc(a.locatie)}  •  📅 ${datum}${prijs ? '  •  💶 ' + prijs : ''}</div>
+        <div class="aanvraag-beschrijving">${esc(a.beschrijving)}</div>
+        <div class="chips">
+            ${specs.map(s => `<span class="chip chip-primair">${esc(s)}</span>`).join('')}
+            ${kwals.map(k => `<span class="chip">${esc(k)}</span>`).join('')}
+        </div>
+        <div class="aanvraag-footer">
+            <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+                <a href="rijder-detail.html?id=${encodeURIComponent(a.rijderId)}" class="btn btn-donker" style="font-size:0.82rem;padding:0.35rem 0.85rem">Bekijk profiel</a>
+                <a href="berichten.html?partner=${encodeURIComponent(a.rijderId)}&naam=${encodeURIComponent(a.rijderNaam)}&rol=Rijder&aanvraag=${encodeURIComponent(a.beschrijving)}&alocatie=${encodeURIComponent(a.locatie)}${a.datum ? '&adatum=' + encodeURIComponent(a.datum) : ''}"
+                   class="btn btn-primair" style="font-size:0.82rem;padding:0.35rem 0.85rem">Stuur bericht</a>
+            </div>
+            <small style="color:var(--kleur-subtekst);font-size:0.75rem">Geplaatst ${new Date(a.aangemaaktOp).toLocaleDateString('nl-NL')}</small>
+        </div>
+    </div>`;
+}
+
+async function toggleFavRijder(rijderId, knop) {
+    const isNu = favorieteRijders.has(rijderId);
+    try {
+        if (isNu) {
+            await authVerzoek('/rijderfavorieten/' + encodeURIComponent(rijderId), 'DELETE');
+            favorieteRijders.delete(rijderId);
+        } else {
+            await authVerzoek('/rijderfavorieten/' + encodeURIComponent(rijderId), 'POST');
+            favorieteRijders.add(rijderId);
+        }
+        knop.textContent = favorieteRijders.has(rijderId) ? '★' : '☆';
+        knop.classList.toggle('actief', favorieteRijders.has(rijderId));
+    } catch {}
+}
+
+function resetFilters() {
+    document.getElementById('f-naam').value = '';
+    document.getElementById('f-locatie').value = '';
+    document.getElementById('f-spec').value = '';
+    document.getElementById('f-datum-van').value = '';
+    document.getElementById('f-datum-tot').value = '';
+    document.getElementById('f-passend').checked = false;
+    document.getElementById('f-favorieten').checked = false;
+    renderAanvragen();
+}
+
+function esc(str) {
+    const d = document.createElement('div');
+    d.textContent = String(str || '');
+    return d.innerHTML;
+}
+
+['f-naam','f-locatie'].forEach(id => document.getElementById(id).addEventListener('input', renderAanvragen));
+['f-spec','f-datum-van','f-datum-tot','f-passend','f-favorieten'].forEach(id => document.getElementById(id).addEventListener('change', renderAanvragen));
+
+async function init() {
+    // Laad coach profiel voor matching
+    try {
+        const coach = await authVerzoek('/coach/mijn');
+        if (coach) {
+            coachSpecs = (coach.discipline || '').split(',').map(s => s.trim()).filter(Boolean);
+            coachKwals = (coach.kwaliteiten || '').split(',').map(s => s.trim()).filter(Boolean);
+        }
+    } catch {}
+
+    // Laad favoriete rijders
+    try {
+        const ids = await authVerzoek('/rijderfavorieten');
+        if (Array.isArray(ids)) ids.forEach(id => favorieteRijders.add(id));
+        if (favorieteRijders.size > 0 || true) {
+            document.getElementById('f-fav-veld').style.display = '';
+        }
+    } catch {}
+
+    // Laad alle aanvragen
+    try {
+        const resp = await fetch('http://localhost:5000/api/aanvragen');
+        alleAanvragen = await resp.json();
+        renderAanvragen();
+    } catch {
+        document.getElementById('aanvragen-container').innerHTML =
+            '<div class="melding melding-fout">Kan aanvragen niet laden. Is de backend actief?</div>';
+    }
+
+    document.getElementById('f-fav-veld').style.display = '';
+}
+
+updateNav();
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+# Build output
+Backend/bin/
+Backend/obj/
+
+# Database
+Backend/*.db
+Backend/*.db-shm
+Backend/*.db-wal
+
+# Uploads
+Backend/wwwroot/uploads/
+
+# Secrets (nooit committen)
+Backend/appsettings.Production.json
+
+# System
+.DS_Store
+Thumbs.db

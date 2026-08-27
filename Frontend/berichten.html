@@ -1,0 +1,901 @@
+﻿<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Berichten – RaceCoachFinder</title>
+        <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .chat-wrapper {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            height: calc(100vh - 60px);
+            overflow: hidden;
+        }
+
+        /* === Gesprekkenlijst (links) === */
+        .gesprekken-panel {
+            border-right: 1px solid #e8e8f0;
+            background: var(--kleur-wit);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .gesprekken-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid #e8e8f0;
+            font-weight: 700;
+            font-size: 1.05rem;
+        }
+
+        .gesprekken-lijst {
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .gesprek-rij {
+            display: flex;
+            gap: 0.85rem;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            border-bottom: 1px solid #f5f5fa;
+            transition: background 0.15s;
+        }
+
+        .gesprek-rij:hover { background: var(--kleur-grijs-licht); }
+        .gesprek-rij.actief { background: #f0f0fa; }
+
+        .gesprek-avatar {
+            width: 44px; height: 44px;
+            border-radius: 50%;
+            background: var(--kleur-primair);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 1rem; color: #fff;
+            flex-shrink: 0;
+            position: relative; overflow: hidden;
+        }
+        .gesprek-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
+        .avatar-sm img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
+
+        .gesprek-ongelezen-dot {
+            position: absolute; top: 0; right: 0;
+            width: 12px; height: 12px;
+            background: #c62828;
+            border-radius: 50%;
+            border: 2px solid #fff;
+        }
+
+        .gesprek-info { flex: 1; overflow: hidden; }
+        .gesprek-naam { font-weight: 600; font-size: 0.92rem; }
+        .gesprek-preview {
+            font-size: 0.8rem; color: var(--kleur-subtekst);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            margin-top: 0.1rem;
+        }
+        .gesprek-preview.ongelezen { color: var(--kleur-tekst); font-weight: 600; }
+
+        .gesprek-meta { text-align: right; flex-shrink: 0; }
+        .gesprek-tijd { font-size: 0.72rem; color: var(--kleur-subtekst); }
+        .gesprek-badge {
+            display: inline-block; background: #c62828; color: #fff;
+            border-radius: 50%; width: 18px; height: 18px;
+            font-size: 0.68rem; font-weight: 700;
+            display: flex; align-items: center; justify-content: center;
+            margin-top: 0.25rem; margin-left: auto;
+        }
+
+        .geen-gesprekken {
+            padding: 3rem 1.5rem; text-align: center;
+            color: var(--kleur-subtekst); font-size: 0.9rem;
+        }
+
+        /* === Gespreksvenster (rechts) === */
+        .gesprek-panel {
+            display: flex;
+            flex-direction: column;
+            background: var(--kleur-grijs-licht);
+            overflow: hidden;
+        }
+
+        .gesprek-panel-leeg {
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            height: 100%; color: var(--kleur-subtekst);
+            gap: 0.75rem;
+        }
+
+        .gesprek-panel-leeg .icoon { font-size: 3rem; }
+
+        .gesprek-panel-header {
+            background: var(--kleur-wit);
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #e8e8f0;
+            display: flex; align-items: center; gap: 0.85rem;
+            flex-shrink: 0;
+        }
+
+        .gesprek-panel-header .avatar-sm {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            background: var(--kleur-primair);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; color: #fff; font-size: 0.85rem;
+        }
+
+        .berichten-stroom {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+
+        .bericht-bel {
+            max-width: 68%;
+            padding: 0.65rem 1rem;
+            border-radius: 16px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+
+        .bericht-bel.van-mij {
+            background: var(--kleur-primair);
+            color: #fff;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+
+        .bericht-bel.van-ander {
+            background: var(--kleur-wit);
+            color: var(--kleur-tekst);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+
+        .bericht-tijd {
+            font-size: 0.68rem;
+            color: rgba(255,255,255,0.7);
+            margin-top: 0.2rem;
+            text-align: right;
+        }
+
+        .bericht-bel.van-ander .bericht-tijd { color: var(--kleur-subtekst); text-align: left; }
+
+        .datum-scheidslijn {
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--kleur-subtekst);
+            margin: 0.5rem 0;
+        }
+
+        .gesprek-invoer {
+            padding: 1rem 1.5rem;
+            background: var(--kleur-wit);
+            border-top: 1px solid #e8e8f0;
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-end;
+            flex-shrink: 0;
+        }
+
+        .gesprek-invoer textarea {
+            flex: 1;
+            resize: none;
+            min-height: 42px;
+            max-height: 120px;
+            border-radius: 20px;
+            padding: 0.55rem 1rem;
+            font-size: 0.92rem;
+            border: 1.5px solid #ddd;
+        }
+
+        .gesprek-invoer textarea:focus { outline: none; border-color: var(--kleur-primair); }
+
+        .btn-stuur {
+            background: var(--kleur-primair);
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 42px; height: 42px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            transition: opacity 0.15s;
+        }
+
+        .btn-stuur:hover { opacity: 0.85; }
+        .btn-stuur:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* Boeking kaart */
+        .boeking-kaart {
+            align-self: center;
+            background: #fff;
+            border: 1.5px solid #e0e0e0;
+            border-radius: 14px;
+            padding: 1rem 1.25rem;
+            max-width: 300px;
+            width: 85%;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+            margin: 0.5rem 0;
+        }
+        .boeking-kaart-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--kleur-subtekst); margin-bottom: 0.5rem; }
+        .boeking-kaart-omschrijving { font-weight: 600; font-size: 0.95rem; margin-bottom: 0.2rem; color: var(--kleur-tekst); }
+        .boeking-kaart-bedrag { font-size: 1.4rem; font-weight: 800; color: var(--kleur-primair); margin-bottom: 0.6rem; }
+        .boeking-status { display: inline-block; font-size: 0.78rem; font-weight: 600; padding: 0.2rem 0.65rem; border-radius: 20px; margin-bottom: 0.65rem; }
+        .boeking-status.openstaand { background: #fff3cd; color: #856404; }
+        .boeking-status.betaald { background: #d4edda; color: #155724; }
+        .boeking-status.geannuleerd { background: #f8d7da; color: #721c24; }
+        .boeking-acties { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+        /* Betaalverzoek formulier */
+        .verzoek-formulier {
+            background: #fafafe;
+            border-top: 1px solid #e8e8f0;
+            padding: 0.85rem 1.5rem;
+            display: none;
+            flex-direction: column;
+            gap: 0.6rem;
+            flex-shrink: 0;
+        }
+        .verzoek-formulier.zichtbaar { display: flex; }
+        .verzoek-formulier-titel { font-size: 0.78rem; font-weight: 700; color: var(--kleur-subtekst); text-transform: uppercase; letter-spacing: 0.4px; }
+        .verzoek-velden { display: flex; gap: 0.5rem; }
+        .verzoek-velden input {
+            padding: 0.45rem 0.75rem;
+            border: 1.5px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-family: inherit;
+        }
+        .verzoek-velden input:focus { outline: none; border-color: var(--kleur-primair); }
+        .verzoek-velden .verzoek-omschrijving { flex: 1; }
+        .verzoek-velden .verzoek-bedrag { width: 90px; }
+        .btn-betaalverzoek {
+            background: none;
+            border: 1.5px solid #ddd;
+            border-radius: 20px;
+            padding: 0 0.85rem;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--kleur-subtekst);
+            white-space: nowrap;
+            height: 42px;
+            transition: border-color 0.15s, color 0.15s;
+            flex-shrink: 0;
+        }
+        .btn-betaalverzoek:hover { border-color: var(--kleur-primair); color: var(--kleur-tekst); }
+
+        /* Activiteit / voldaan */
+        .btn-activiteit {
+            background: #1a1a2e;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            padding: 0.3rem 0.85rem;
+            font-weight: 600;
+            transition: opacity 0.15s;
+        }
+        .btn-activiteit:hover { opacity: 0.85; }
+        .boeking-status.voldaan { background: #e8f4fd; color: #1565c0; }
+        .boeking-wacht { font-size: 0.78rem; color: var(--kleur-subtekst); font-style: italic; align-self: center; }
+
+        /* Review popup */
+        .popup-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.55);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .popup-kaart {
+            background: #fff;
+            border-radius: 16px;
+            padding: 1.75rem;
+            max-width: 380px;
+            width: calc(100% - 3rem);
+            position: relative;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+        .popup-sluiten {
+            position: absolute;
+            top: 0.85rem; right: 0.85rem;
+            background: none; border: none;
+            font-size: 1.2rem; cursor: pointer;
+            color: var(--kleur-subtekst); padding: 0.2rem;
+            line-height: 1;
+        }
+        .popup-sluiten:hover { color: var(--kleur-tekst); }
+        .sterren-rij { display: flex; gap: 0.25rem; justify-content: center; margin: 1rem 0 0.5rem; }
+        .ster-knop {
+            font-size: 2rem; cursor: pointer;
+            background: none; border: none; padding: 0.1rem;
+            line-height: 1; color: #ddd; transition: color 0.1s;
+        }
+        .ster-knop.actief { color: #c9a800; }
+        .review-textarea {
+            width: 100%; min-height: 72px; resize: none;
+            border: 1.5px solid #ddd; border-radius: 8px;
+            padding: 0.5rem 0.75rem; font-size: 0.88rem;
+            font-family: inherit; box-sizing: border-box;
+        }
+        .review-textarea:focus { outline: none; border-color: var(--kleur-primair); }
+
+        @media (max-width: 700px) {
+            .chat-wrapper { grid-template-columns: 1fr; }
+            .gesprekken-panel { display: none; }
+            .gesprekken-panel.mobiel-zichtbaar { display: flex; }
+            .gesprek-panel { display: none; }
+            .gesprek-panel.mobiel-zichtbaar { display: flex; }
+        }
+    </style>
+</head>
+<body>
+
+<nav>
+    <span class="nav-logo">Race<span>Coach</span>Finder</span>
+    <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="coaches.html">Coaches</a></li>
+    </ul>
+</nav>
+
+<div class="chat-wrapper">
+
+    <!-- Linker panel: gesprekkenlijst -->
+    <div class="gesprekken-panel" id="gesprekken-panel">
+        <div class="gesprekken-header">Berichten</div>
+        <div class="gesprekken-lijst" id="gesprekken-lijst">
+            <div class="geen-gesprekken">Laden...</div>
+        </div>
+    </div>
+
+    <!-- Rechter panel: gespreksvenster -->
+    <div class="gesprek-panel" id="gesprek-panel">
+        <div class="gesprek-panel-leeg" id="panel-leeg">
+            <div class="icoon">💬</div>
+            <p>Selecteer een gesprek om te openen</p>
+        </div>
+
+        <div id="panel-gesprek" style="display:none;flex-direction:column;height:100%">
+            <div class="gesprek-panel-header">
+                <div class="avatar-sm" id="partner-avatar"></div>
+                <div>
+                    <strong id="partner-naam"></strong>
+                    <div style="font-size:0.78rem;color:var(--kleur-subtekst)" id="partner-rol"></div>
+                </div>
+            </div>
+
+            <div class="berichten-stroom" id="berichten-stroom"></div>
+
+            <div class="verzoek-formulier" id="verzoek-formulier">
+                <div class="verzoek-formulier-titel">Betaalverzoek sturen</div>
+                <div class="verzoek-velden">
+                    <input class="verzoek-omschrijving" id="verzoek-omschrijving" type="text" placeholder="Omschrijving (bijv. 1 coachsessie)" maxlength="200">
+                    <input class="verzoek-bedrag" id="verzoek-bedrag" type="number" placeholder="Bedrag €" min="1" step="0.01">
+                </div>
+                <div style="display:flex;gap:0.5rem">
+                    <button class="btn btn-primair" onclick="stuurBetaalverzoek()" style="font-size:0.85rem;padding:0.4rem 1rem">Versturen</button>
+                    <button class="btn btn-secundair" onclick="sluitVerzoekFormulier()" style="font-size:0.85rem;padding:0.4rem 1rem">Annuleren</button>
+                </div>
+            </div>
+
+            <div id="aanvraag-context" style="display:none;background:#fff8e0;border-top:2px solid var(--kleur-primair);padding:0.65rem 1.5rem;flex-shrink:0">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem">
+                    <div style="min-width:0">
+                        <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#9a7800;margin-bottom:0.2rem">Als reactie op aanvraag</div>
+                        <div id="aanvraag-context-tekst" style="font-size:0.88rem;color:var(--kleur-tekst);line-height:1.4;white-space:pre-wrap;word-break:break-word"></div>
+                        <div id="aanvraag-context-meta" style="font-size:0.76rem;color:var(--kleur-subtekst);margin-top:0.25rem"></div>
+                    </div>
+                    <button onclick="sluitAanvraagContext()" style="background:none;border:none;cursor:pointer;color:#9a7800;font-size:1.1rem;padding:0;line-height:1;flex-shrink:0;margin-top:0.1rem">✕</button>
+                </div>
+            </div>
+
+            <div class="gesprek-invoer">
+                <button class="btn-betaalverzoek" id="btn-betaalverzoek" onclick="toggleVerzoekFormulier()" style="display:none">€ Betaalverzoek</button>
+                <textarea id="bericht-invoer" placeholder="Typ een bericht..." rows="1"
+                    onkeydown="handleInvoerKeydown(event)"
+                    oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+                <button class="btn-stuur" onclick="stuurBericht()" id="btn-stuur">➤</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Review popup -->
+<div class="popup-overlay" id="review-popup" style="display:none">
+    <div class="popup-kaart">
+        <button class="popup-sluiten" onclick="sluitReviewPopup()">✕</button>
+        <h3 style="margin:0 0 0.4rem;font-size:1.1rem">Hoe was de coaching?</h3>
+        <p style="color:var(--kleur-subtekst);font-size:0.88rem;margin:0 0 0.5rem">Laat een beoordeling achter (optioneel).</p>
+        <div class="sterren-rij" id="sterren-rij"></div>
+        <p id="sterren-label" style="text-align:center;font-size:0.8rem;color:var(--kleur-subtekst);margin:0 0 0.75rem;min-height:1.1em"></p>
+        <textarea class="review-textarea" id="review-tekst" placeholder="Toelichting (optioneel)..."></textarea>
+        <div style="display:flex;gap:0.5rem;margin-top:1rem">
+            <button class="btn btn-primair" onclick="submitReview()" style="flex:1">Versturen</button>
+            <button class="btn btn-secundair" onclick="sluitReviewPopupEnBevestig()" style="flex:1">Overslaan</button>
+        </div>
+    </div>
+</div>
+
+<script src="js/auth.js"></script>
+<script>
+if (!vereisAuth()) { /* redirect */ }
+
+const gebruiker = getGebruiker();
+let huidigPartnerId = null;
+let huidigPartnerRol = null;
+let pollingInterval = null;
+let partnerFotos = {};
+let huidigeBoekingen = [];
+let pendingBevestigId = null;
+let pendingCoachGebruikerId = null;
+let gekozenSterren = 0;
+
+// Open gesprek via URL parameter (?partner=id)
+const urlParams = new URLSearchParams(window.location.search);
+const partnerParam  = urlParams.get('partner');
+const naamParam     = urlParams.get('naam') || '';
+const rolParam      = urlParams.get('rol') || '';
+const aanvraagParam = urlParams.get('aanvraag') || '';
+const alocatieParam = urlParams.get('alocatie') || '';
+const adatumParam   = urlParams.get('adatum') || '';
+
+function toonAanvraagContext() {
+    if (!aanvraagParam) return;
+    document.getElementById('aanvraag-context-tekst').textContent = aanvraagParam;
+    const meta = [];
+    if (alocatieParam) meta.push('📍 ' + alocatieParam);
+    if (adatumParam) {
+        try {
+            meta.push('📅 ' + new Date(adatumParam).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' }));
+        } catch {}
+    }
+    document.getElementById('aanvraag-context-meta').textContent = meta.join('  •  ');
+    document.getElementById('aanvraag-context').style.display = '';
+}
+
+function sluitAanvraagContext() {
+    document.getElementById('aanvraag-context').style.display = 'none';
+}
+
+async function laadGesprekken() {
+    try {
+        const gesprekken = await authVerzoek('/chat/gesprekken');
+        renderGesprekkenLijst(gesprekken);
+
+        if (partnerParam && !huidigPartnerId) {
+            const bestaand = gesprekken.find(g => g.partnerId === partnerParam);
+            if (bestaand) {
+                openGesprek(bestaand.partnerId, bestaand.partnerNaam, bestaand.partnerRol);
+            } else {
+                // Nieuw gesprek — naam komt uit URL param
+                openGesprek(partnerParam, naamParam || 'Onbekend', rolParam);
+            }
+        }
+    } catch (e) {
+        document.getElementById('gesprekken-lijst').innerHTML =
+            `<div class="geen-gesprekken">Fout bij laden.<br><small style="color:#aaa">Zorg dat de backend draait en de migratie is uitgevoerd.</small></div>`;
+    }
+}
+
+function renderGesprekkenLijst(gesprekken) {
+    const lijst = document.getElementById('gesprekken-lijst');
+
+    // Voeg het nieuwe gesprek tijdelijk toe aan de lijst als het nog niet bestaat
+    const extraRij = (partnerParam && naamParam && !gesprekken.find(g => g.partnerId === partnerParam))
+        ? [{ partnerId: partnerParam, partnerNaam: naamParam, partnerRol: rolParam, laatsteBericht: 'Nieuw gesprek', laatsteTijd: new Date().toISOString(), aantalOngelezen: 0 }]
+        : [];
+    const alles = [...extraRij, ...gesprekken];
+
+    if (alles.length === 0) {
+        lijst.innerHTML = `<div class="geen-gesprekken">Nog geen berichten.<br><br>
+            Ga naar een <a href="coaches.html">coachprofiel</a> om een gesprek te starten.</div>`;
+        return;
+    }
+
+    lijst.innerHTML = alles.map(g => {
+        partnerFotos[g.partnerId] = g.partnerFotoUrl || '';
+        const initialen = g.partnerFotoUrl
+            ? '<img src="http://localhost:5000' + g.partnerFotoUrl + '" alt="">'
+            : g.partnerNaam.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+        const isActief = g.partnerId === huidigPartnerId;
+        const heeftOngelezen = g.aantalOngelezen > 0;
+        return `
+        <div class="gesprek-rij ${isActief ? 'actief' : ''}" onclick="openGesprek('${esc(g.partnerId)}', '${esc(g.partnerNaam)}', '${esc(g.partnerRol)}')">
+            <div class="gesprek-avatar">
+                ${initialen}
+                ${heeftOngelezen ? '<div class="gesprek-ongelezen-dot"></div>' : ''}
+            </div>
+            <div class="gesprek-info">
+                <div class="gesprek-naam">${esc(g.partnerNaam)}</div>
+                <div class="gesprek-preview ${heeftOngelezen ? 'ongelezen' : ''}">${esc(g.laatsteBericht)}</div>
+            </div>
+            <div class="gesprek-meta">
+                <div class="gesprek-tijd">${formatTijd(g.laatsteTijd)}</div>
+                ${heeftOngelezen ? `<div class="gesprek-badge">${g.aantalOngelezen}</div>` : ''}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+async function openNieuwGesprek(partnerId) {
+    openGesprek(partnerId, naamParam || 'Onbekend', rolParam);
+}
+
+async function openGesprek(partnerId, partnerNaam, partnerRol) {
+    huidigPartnerId = partnerId;
+    huidigPartnerRol = partnerRol;
+
+    // Update actief-state in lijst
+    document.querySelectorAll('.gesprek-rij').forEach(r => r.classList.remove('actief'));
+    event?.currentTarget?.classList.add('actief');
+
+    // Toon gespreksvenster
+    document.getElementById('panel-leeg').style.display = 'none';
+    const panelGesprek = document.getElementById('panel-gesprek');
+    panelGesprek.style.display = 'flex';
+
+    const avatarEl = document.getElementById('partner-avatar');
+    const fotoUrl = partnerFotos[partnerId] || '';
+    if (fotoUrl) {
+        avatarEl.innerHTML = '<img src="http://localhost:5000' + fotoUrl + '" alt="' + partnerNaam + '">';
+    } else {
+        avatarEl.textContent = partnerNaam.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+    }
+    document.getElementById('partner-naam').textContent = partnerNaam;
+    document.getElementById('partner-rol').textContent = partnerRol === 'Coach' ? 'Coach' : 'Rijder';
+
+    document.getElementById('bericht-invoer').focus();
+
+    // Toon aanvraag-context alleen voor het gesprek waarvandaan we kwamen
+    if (partnerId === partnerParam) {
+        toonAanvraagContext();
+    } else {
+        document.getElementById('aanvraag-context').style.display = 'none';
+    }
+
+    // Toon betaalverzoek knop alleen voor coaches
+    document.getElementById('btn-betaalverzoek').style.display = gebruiker.rol === 'Coach' ? '' : 'none';
+    sluitVerzoekFormulier();
+
+    // Stop oude polling, start nieuwe
+    if (pollingInterval) clearInterval(pollingInterval);
+    await laadBerichten(partnerId);
+    pollingInterval = setInterval(() => laadBerichten(partnerId, false), 3000);
+
+    // Update nav badge
+    laadBerichtenBadge();
+}
+
+async function laadBerichten(partnerId, scrollNaar = true) {
+    try {
+        const [berichten, boekingen] = await Promise.all([
+            authVerzoek(`/chat/gesprek/${partnerId}`),
+            authVerzoek(`/boeking/gesprek/${partnerId}`).catch(() => [])
+        ]);
+
+        huidigeBoekingen = boekingen;
+
+        const items = [
+            ...berichten.map(b => ({ type: 'bericht', tijd: b.aangemaaktOp, data: b })),
+            ...boekingen.map(b => ({ type: 'boeking', tijd: b.aangemaaktOp, data: b }))
+        ].sort((a, b) => new Date(a.tijd) - new Date(b.tijd));
+
+        renderItems(items, scrollNaar);
+
+        const rij = document.querySelector('.gesprek-rij.actief');
+        if (rij) {
+            rij.querySelector('.gesprek-ongelezen-dot')?.remove();
+            rij.querySelector('.gesprek-badge')?.remove();
+            rij.querySelector('.gesprek-preview')?.classList.remove('ongelezen');
+        }
+    } catch {}
+}
+
+function renderItems(items, scrollNaar = true) {
+    const stroom = document.getElementById('berichten-stroom');
+    if (items.length === 0) {
+        stroom.innerHTML = '<div style="text-align:center;color:var(--kleur-subtekst);font-size:0.85rem;margin-top:2rem">Geen berichten nog. Stuur het eerste bericht!</div>';
+        return;
+    }
+
+    let html = '';
+    let laatsteDatum = '';
+
+    items.forEach(item => {
+        const datum = new Date(item.tijd).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' });
+        if (datum !== laatsteDatum) {
+            html += `<div class="datum-scheidslijn">${datum}</div>`;
+            laatsteDatum = datum;
+        }
+        html += item.type === 'bericht' ? renderBericht(item.data) : renderBoeking(item.data);
+    });
+
+    stroom.innerHTML = html;
+    if (scrollNaar) stroom.scrollTop = stroom.scrollHeight;
+}
+
+function renderBericht(b) {
+    const vanMij = b.vanGebruikerId === gebruiker.id;
+    const _ts = b.aangemaaktOp.endsWith('Z') ? b.aangemaaktOp : b.aangemaaktOp + 'Z';
+    const tijd = new Date(_ts).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+
+    const QUOTE_PREFIX = '📋 Als reactie op aanvraag:';
+    let tekstHtml;
+
+    if (b.tekst.startsWith(QUOTE_PREFIX)) {
+        const splitIdx = b.tekst.indexOf('\n\n');
+        const quotePart   = splitIdx !== -1 ? b.tekst.slice(0, splitIdx) : b.tekst;
+        const berichtPart = splitIdx !== -1 ? b.tekst.slice(splitIdx + 2) : '';
+
+        // Eerste regel is de prefix, de rest is de eigenlijke citaatinhoud
+        const citaatRegels = quotePart.split('\n').slice(1);
+        const citaatHtml = citaatRegels.map(r => esc(r)).join('<br>');
+
+        const quoteStyle = vanMij
+            ? 'border-left:3px solid rgba(255,255,255,0.55);background:rgba(0,0,0,0.18);color:rgba(255,255,255,0.92);'
+            : 'border-left:3px solid var(--kleur-primair);background:#fff8e0;color:var(--kleur-tekst);';
+
+        tekstHtml = `
+            <div style="${quoteStyle}padding:0.4rem 0.65rem;border-radius:5px;margin-bottom:0.55rem;font-size:0.82rem;line-height:1.4">
+                <div style="font-weight:700;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.5px;opacity:0.7;margin-bottom:0.2rem">Als reactie op aanvraag</div>
+                ${citaatHtml}
+            </div>
+            ${esc(berichtPart).replace(/\n/g, '<br>')}`;
+    } else {
+        tekstHtml = esc(b.tekst).replace(/\n/g, '<br>');
+    }
+
+    return `
+    <div class="bericht-bel ${vanMij ? 'van-mij' : 'van-ander'}">
+        ${tekstHtml}
+        <div class="bericht-tijd">${tijd}</div>
+    </div>`;
+}
+
+function renderBoeking(b) {
+    const statusKlasse = b.status.toLowerCase();
+    const _ts = b.aangemaaktOp.endsWith('Z') ? b.aangemaaktOp : b.aangemaaktOp + 'Z';
+    const tijd = new Date(_ts).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+    const bedragStr = '€ ' + parseFloat(b.bedrag).toFixed(2).replace('.', ',');
+
+    const ikBenCoach = gebruiker.rol === 'Coach';
+    const heeftBevestigd = ikBenCoach ? b.coachHeeftBevestigd : b.rijderHeeftBevestigd;
+
+    let acties = '';
+    if (b.status === 'Openstaand') {
+        if (!ikBenCoach)
+            acties += `<button class="btn btn-primair" onclick="betaal(${b.id})" style="font-size:0.8rem;padding:0.3rem 0.85rem">Betalen</button>`;
+        acties += `<button class="btn btn-secundair" onclick="annuleer(${b.id})" style="font-size:0.8rem;padding:0.3rem 0.85rem">Annuleren</button>`;
+    }
+    if (b.status === 'Betaald') {
+        acties += `<button class="btn btn-secundair" onclick="annuleer(${b.id})" style="font-size:0.8rem;padding:0.3rem 0.85rem">Annuleren</button>`;
+    }
+    if (b.status === 'Openstaand' || b.status === 'Betaald') {
+        if (heeftBevestigd) {
+            acties += `<span class="boeking-wacht">Wacht op andere partij...</span>`;
+        } else {
+            acties += `<button class="btn-activiteit" onclick="bevestigActiviteit(${b.id})">&#10003; Activiteit gedaan</button>`;
+        }
+    }
+
+    return `
+    <div class="boeking-kaart">
+        <div class="boeking-kaart-label">Betaalverzoek &bull; ${tijd}</div>
+        <div class="boeking-kaart-omschrijving">${esc(b.omschrijving)}</div>
+        <div class="boeking-kaart-bedrag">${bedragStr}</div>
+        <div><span class="boeking-status ${statusKlasse}">${esc(b.status)}</span></div>
+        ${acties ? `<div class="boeking-acties" style="margin-top:0.5rem;display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center">${acties}</div>` : ''}
+    </div>`;
+}
+
+async function stuurBericht() {
+    if (!huidigPartnerId) return;
+    const invoer = document.getElementById('bericht-invoer');
+    let tekst = invoer.value.trim();
+    if (!tekst) return;
+
+    // Aanvraag-context meesturen zodat de rijder het ook ziet
+    const contextEl = document.getElementById('aanvraag-context');
+    if (contextEl.style.display !== 'none') {
+        const ctxTekst = document.getElementById('aanvraag-context-tekst').textContent.trim();
+        const ctxMeta  = document.getElementById('aanvraag-context-meta').textContent.trim();
+        let prefix = `📋 Als reactie op aanvraag:\n"${ctxTekst}"`;
+        if (ctxMeta) prefix += `\n${ctxMeta}`;
+        tekst = prefix + '\n\n' + tekst;
+        sluitAanvraagContext();
+    }
+
+    const btn = document.getElementById('btn-stuur');
+    btn.disabled = true;
+
+    try {
+        await authVerzoek(`/chat/${huidigPartnerId}`, 'POST', { tekst });
+        invoer.value = '';
+        invoer.style.height = 'auto';
+        await laadBerichten(huidigPartnerId);
+        await laadGesprekken();
+    } catch (e) {
+        alert('Versturen mislukt: ' + e.message);
+    } finally {
+        btn.disabled = false;
+        invoer.focus();
+    }
+}
+
+function handleInvoerKeydown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        stuurBericht();
+    }
+}
+
+function formatTijd(datumStr) {
+    const utc = datumStr && !datumStr.endsWith('Z') ? datumStr + 'Z' : datumStr;
+    const d = new Date(utc);
+    const nu = new Date();
+    const vandaag = nu.toDateString() === d.toDateString();
+    if (vandaag) return d.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' });
+}
+
+// ── Activiteit bevestigen ──────────────────────────────────────
+async function bevestigActiviteit(id) {
+    const boeking = huidigeBoekingen.find(b => b.id === id);
+    if (gebruiker.rol === 'Rijder') {
+        pendingBevestigId = id;
+        pendingCoachGebruikerId = boeking?.coachGebruikerId || huidigPartnerId;
+        toonReviewPopup();
+    } else {
+        try {
+            await authVerzoek(`/boeking/${id}/bevestig`, 'PUT');
+            await laadBerichten(huidigPartnerId);
+        } catch (e) {
+            alert('Fout: ' + e.message);
+        }
+    }
+}
+
+// ── Review popup ───────────────────────────────────────────────
+const STERREN_LABELS = ['', 'Slecht', 'Matig', 'Goed', 'Heel goed', 'Uitstekend'];
+
+function toonReviewPopup() {
+    gekozenSterren = 0;
+    document.getElementById('review-tekst').value = '';
+    renderSterrenKiezer();
+    document.getElementById('review-popup').style.display = 'flex';
+}
+
+function renderSterrenKiezer() {
+    const rij = document.getElementById('sterren-rij');
+    rij.innerHTML = '';
+    for (let i = 1; i <= 5; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'ster-knop' + (i <= gekozenSterren ? ' actief' : '');
+        btn.textContent = '★';
+        btn.onclick = () => { gekozenSterren = i; renderSterrenKiezer(); };
+        rij.appendChild(btn);
+    }
+    document.getElementById('sterren-label').textContent = gekozenSterren ? STERREN_LABELS[gekozenSterren] : '';
+}
+
+function sluitReviewPopup() {
+    document.getElementById('review-popup').style.display = 'none';
+    pendingBevestigId = null;
+    pendingCoachGebruikerId = null;
+}
+
+async function sluitReviewPopupEnBevestig() {
+    const id = pendingBevestigId;
+    sluitReviewPopup();
+    if (!id) return;
+    try {
+        await authVerzoek(`/boeking/${id}/bevestig`, 'PUT');
+        await laadBerichten(huidigPartnerId);
+    } catch (e) {
+        alert('Fout: ' + e.message);
+    }
+}
+
+async function submitReview() {
+    if (gekozenSterren === 0) {
+        document.getElementById('sterren-label').textContent = 'Kies eerst een score';
+        document.getElementById('sterren-label').style.color = '#c62828';
+        return;
+    }
+    const tekst = document.getElementById('review-tekst').value.trim();
+    const id = pendingBevestigId;
+    const coachId = pendingCoachGebruikerId;
+    sluitReviewPopup();
+
+    try {
+        await authVerzoek('/review', 'POST', { coachGebruikerId: coachId, sterren: gekozenSterren, tekst });
+    } catch {}
+
+    if (id) {
+        try {
+            await authVerzoek(`/boeking/${id}/bevestig`, 'PUT');
+        } catch (e) {
+            alert('Fout: ' + e.message);
+        }
+        await laadBerichten(huidigPartnerId);
+    }
+}
+
+function toggleVerzoekFormulier() {
+    document.getElementById('verzoek-formulier').classList.toggle('zichtbaar');
+}
+
+function sluitVerzoekFormulier() {
+    document.getElementById('verzoek-formulier').classList.remove('zichtbaar');
+    document.getElementById('verzoek-omschrijving').value = '';
+    document.getElementById('verzoek-bedrag').value = '';
+}
+
+async function stuurBetaalverzoek() {
+    if (!huidigPartnerId) return;
+    const omschrijving = document.getElementById('verzoek-omschrijving').value.trim();
+    const bedragStr = document.getElementById('verzoek-bedrag').value.trim();
+    if (!omschrijving) { alert('Voer een omschrijving in.'); return; }
+    if (!bedragStr || parseFloat(bedragStr) <= 0) { alert('Voer een geldig bedrag in.'); return; }
+
+    try {
+        await authVerzoek('/boeking', 'POST', {
+            rijderGebruikerId: huidigPartnerId,
+            omschrijving,
+            bedrag: parseFloat(bedragStr)
+        });
+        sluitVerzoekFormulier();
+        await laadBerichten(huidigPartnerId);
+    } catch (e) {
+        alert('Fout bij versturen: ' + e.message);
+    }
+}
+
+async function betaal(id) {
+    if (!confirm('Betaling bevestigen?')) return;
+    try {
+        await authVerzoek(`/boeking/${id}/betaal`, 'PUT');
+        await laadBerichten(huidigPartnerId);
+    } catch (e) {
+        alert('Fout: ' + e.message);
+    }
+}
+
+async function annuleer(id) {
+    if (!confirm('Betaalverzoek annuleren?')) return;
+    try {
+        await authVerzoek(`/boeking/${id}/annuleer`, 'PUT');
+        await laadBerichten(huidigPartnerId);
+    } catch (e) {
+        alert('Fout: ' + e.message);
+    }
+}
+
+function esc(str) {
+    const d = document.createElement('div');
+    d.textContent = String(str ?? '');
+    return d.innerHTML;
+}
+
+updateNav();
+laadGesprekken();
+
+// Ververs gesprekkenlijst elke 10 seconden (voor nieuwe gesprekken in de lijst)
+setInterval(laadGesprekken, 10000);
+</script>
+</body>
+</html>

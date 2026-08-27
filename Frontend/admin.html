@@ -1,0 +1,384 @@
+﻿<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin – RaceCoachFinder</title>
+        <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .dashboard-header {
+            background: linear-gradient(135deg, var(--kleur-donker), var(--kleur-grijs));
+            color: var(--kleur-wit);
+            padding: 2.5rem 0;
+            margin-bottom: 2rem;
+        }
+        .dashboard-header .container { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+        .dashboard-welkom h1 { font-size: 1.6rem; font-weight: 800; }
+        .dashboard-welkom p { color: #bbb; font-size: 0.95rem; margin-top: 0.25rem; }
+
+        .admin-sectie { background: var(--kleur-wit); border-radius: var(--rand); box-shadow: var(--schaduw); padding: 1.75rem; margin-bottom: 2rem; }
+        .admin-sectie h3 { font-size: 1.1rem; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; }
+        .admin-sectie h3 span.badge-count { background: var(--kleur-primair); color: #fff; font-size: 0.75rem; border-radius: 20px; padding: 0.1rem 0.55rem; font-weight: 700; }
+
+        .admin-tabel { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        .admin-tabel th { text-align: left; padding: 0.5rem 0.75rem; color: var(--kleur-subtekst); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 2px solid #f0f0f0; }
+        .admin-tabel td { padding: 0.75rem; border-bottom: 1px solid #f5f5f5; vertical-align: middle; }
+        .admin-tabel tr:last-child td { border-bottom: none; }
+        .admin-tabel tr:hover td { background: #fafafa; }
+
+        .badge-rol { padding: 0.18rem 0.55rem; border-radius: 20px; font-size: 0.72rem; font-weight: 700; }
+        .badge-coach { background: #e3f0ff; color: #1565c0; }
+        .badge-rijder { background: #e8f5e9; color: #2e7d32; }
+        .badge-admin { background: #fde8ea; color: #c62828; }
+
+        .ongepubliceerd-label { font-size: 0.72rem; color: #c62828; font-weight: 600; }
+
+        .stats-strook {
+            background: var(--kleur-wit); border-radius: var(--rand); box-shadow: var(--schaduw);
+            padding: 1.75rem 2rem; margin-bottom: 2rem;
+            display: flex; align-items: center; justify-content: center; gap: 3rem; flex-wrap: wrap;
+        }
+        .stats-strook-label {
+            font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 1.5px; color: var(--kleur-subtekst);
+        }
+        .stats-strook-getallen { display: flex; align-items: center; gap: 2rem; flex-wrap: wrap; }
+        .stats-scheidslijn { width: 1px; height: 2.5rem; background: #ebebeb; flex-shrink: 0; }
+        .stat-item { text-align: center; min-width: 70px; }
+        .stat-getal { font-size: 2.1rem; font-weight: 800; color: var(--kleur-primair); line-height: 1; }
+        .stat-naam { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--kleur-subtekst); margin-top: 0.25rem; }
+
+        .btn-sm { padding: 0.28rem 0.7rem; font-size: 0.8rem; border-radius: 6px; }
+    </style>
+</head>
+<body>
+
+<nav>
+    <span class="nav-logo">Race<span>Coach</span>Finder</span>
+    <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="coaches.html">Coaches</a></li>
+    </ul>
+</nav>
+
+<div class="dashboard-header">
+    <div class="container">
+        <div class="dashboard-welkom">
+            <h1>⚙️ Admin Panel</h1>
+            <p>Beheer gebruikers en coaches</p>
+        </div>
+    </div>
+</div>
+
+<div class="container" style="padding-bottom:3rem">
+    <div id="melding"></div>
+
+    <!-- Coach uitnodiging -->
+    <div class="admin-sectie" style="max-width:480px">
+        <h3>Coach uitnodiging aanmaken</h3>
+        <p style="font-size:0.88rem;color:var(--kleur-subtekst);margin-bottom:1.25rem">
+            Vul de naam van de coach in. Er wordt automatisch een inlogcode en wachtwoord gegenereerd die je deelt met de coach.
+        </p>
+        <div style="display:flex;gap:0.75rem;align-items:flex-end">
+            <div class="formulier-groep" style="margin:0;flex:1">
+                <label style="font-size:0.85rem">Naam van de coach</label>
+                <input type="text" id="uitnodiging-naam" placeholder="bijv. Jan de Vries">
+            </div>
+            <button class="btn btn-primair" onclick="maakUitnodiging()" style="flex-shrink:0">Aanmaken</button>
+        </div>
+        <div id="uitnodiging-resultaat" style="display:none;margin-top:1.25rem;background:#f9f9f0;border:2px solid var(--kleur-primair);border-radius:var(--rand);padding:1.1rem 1.25rem">
+            <p style="font-size:0.82rem;color:var(--kleur-subtekst);margin-bottom:0.75rem">Stuur deze gegevens naar de coach:</p>
+            <div style="display:flex;flex-direction:column;gap:0.5rem">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                    <span style="font-size:0.85rem;color:var(--kleur-subtekst)">Inlogcode</span>
+                    <span id="res-code" style="font-size:1.1rem;font-weight:800;letter-spacing:2px;color:var(--kleur-primair)"></span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                    <span style="font-size:0.85rem;color:var(--kleur-subtekst)">Wachtwoord</span>
+                    <span id="res-wachtwoord" style="font-size:1rem;font-weight:700;font-family:monospace"></span>
+                </div>
+            </div>
+            <button class="btn btn-donker" onclick="kopieerUitnodiging()" style="width:100%;margin-top:1rem;font-size:0.85rem">
+                Kopieer naar klembord
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-strook">
+        <div class="stats-strook-label">Totale leden</div>
+        <div class="stats-strook-getallen">
+            <div class="stat-item">
+                <div class="stat-getal" id="stat-gebruikers">–</div>
+                <div class="stat-naam">Gebruikers</div>
+            </div>
+            <div class="stats-scheidslijn"></div>
+            <div class="stat-item">
+                <div class="stat-getal" id="stat-coaches-totaal">–</div>
+                <div class="stat-naam">Coaches</div>
+            </div>
+            <div class="stats-scheidslijn"></div>
+            <div class="stat-item">
+                <div class="stat-getal" id="stat-gepubliceerd">–</div>
+                <div class="stat-naam">Gepubliceerd</div>
+            </div>
+            <div class="stats-scheidslijn"></div>
+            <div class="stat-item">
+                <div class="stat-getal" id="stat-rijders-totaal">–</div>
+                <div class="stat-naam">Rijders</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gebruikers -->
+    <div class="admin-sectie">
+        <h3>Gebruikers <span class="badge-count" id="badge-gebruikers">0</span></h3>
+        <div id="gebruikers-tabel">
+            <div class="laden"><div class="spinner"></div><p>Laden...</p></div>
+        </div>
+    </div>
+
+    <!-- Coaches (alle, ook ongepubliceerd) -->
+    <div class="admin-sectie">
+        <h3>Coaches <span class="badge-count" id="badge-coaches">0</span></h3>
+        <div id="coaches-tabel">
+            <div class="laden"><div class="spinner"></div><p>Laden...</p></div>
+        </div>
+    </div>
+
+    <!-- Rijders -->
+    <div class="admin-sectie">
+        <h3>Rijders <span class="badge-count" id="badge-rijders">0</span></h3>
+        <div id="rijders-tabel">
+            <div class="laden"><div class="spinner"></div><p>Laden...</p></div>
+        </div>
+    </div>
+</div>
+
+<footer>
+    <div class="footer-inhoud">
+        <div class="footer-links">
+            <a href="contact.html">Contact</a>
+            <a href="disclaimer.html">Disclaimer</a>
+        </div>
+        <p>&copy; 2026 RaceCoachFinder</p>
+    </div>
+</footer>
+
+<script src="js/auth.js"></script>
+<script>
+if (!vereisAuth('Admin')) { /* redirect */ }
+
+async function laadDashboard() {
+    await Promise.all([laadGebruikers(), laadCoaches(), laadRijders()]);
+}
+
+async function laadGebruikers() {
+    try {
+        const gebruikers = await authVerzoek('/admin/gebruikers');
+        document.getElementById('stat-gebruikers').textContent = gebruikers.length;
+        document.getElementById('badge-gebruikers').textContent = gebruikers.length;
+
+        const rijders = gebruikers.filter(g => g.rol === 'Rijder').length;
+        document.getElementById('stat-rijders-totaal').textContent = rijders;
+
+        if (gebruikers.length === 0) {
+            document.getElementById('gebruikers-tabel').innerHTML = '<p style="color:var(--kleur-subtekst)">Geen gebruikers gevonden.</p>';
+            return;
+        }
+
+        document.getElementById('gebruikers-tabel').innerHTML = `
+            <table class="admin-tabel">
+                <thead>
+                    <tr>
+                        <th>Naam</th>
+                        <th>E-mail</th>
+                        <th>Rol</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${gebruikers.map(g => `
+                        <tr>
+                            <td>${esc(g.naam)}</td>
+                            <td>${esc(g.email)}</td>
+                            <td><span class="badge-rol badge-${g.rol.toLowerCase()}">${esc(g.rol)}</span></td>
+                            <td>
+                                ${g.email !== 'admin@mail' ? `<button class="btn btn-gevaar btn-sm" onclick="verwijderGebruiker('${esc(g.id)}', '${esc(g.naam)}')">Verwijderen</button>` : '<span style="color:#aaa;font-size:0.8rem">Beveiligd</span>'}
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>`;
+    } catch (e) {
+        document.getElementById('gebruikers-tabel').innerHTML = `<div class="melding melding-fout">Fout: ${esc(e.message)}</div>`;
+    }
+}
+
+async function laadCoaches() {
+    try {
+        const coaches = await authVerzoek('/admin/coaches');
+        const gepubliceerd = coaches.filter(c => c.isGepubliceerd).length;
+        document.getElementById('stat-coaches-totaal').textContent = coaches.length;
+        document.getElementById('stat-gepubliceerd').textContent = gepubliceerd;
+        document.getElementById('badge-coaches').textContent = coaches.length;
+
+        if (coaches.length === 0) {
+            document.getElementById('coaches-tabel').innerHTML = '<p style="color:var(--kleur-subtekst)">Geen coaches gevonden.</p>';
+            return;
+        }
+
+        document.getElementById('coaches-tabel').innerHTML = `
+            <table class="admin-tabel">
+                <thead>
+                    <tr>
+                        <th>Naam</th>
+                        <th>Woonplaats</th>
+                        <th>Discipline</th>
+                        <th>Status</th>
+                        <th>Weergaven</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${coaches.map(c => `
+                        <tr>
+                            <td>
+                                <a href="coach-detail.html?id=${c.id}" target="_blank">${esc(c.naam)}</a>
+                            </td>
+                            <td>${esc(c.woonplaats) || '–'}</td>
+                            <td>${esc(c.discipline) || '–'}</td>
+                            <td>
+                                ${c.isGepubliceerd
+                                    ? '<span class="badge badge-groen">Gepubliceerd</span>'
+                                    : '<span class="ongepubliceerd-label">● Niet gepubliceerd</span>'}
+                            </td>
+                            <td>${c.aantalWeergaven ?? 0}</td>
+                            <td>
+                                <button class="btn btn-gevaar btn-sm" onclick="verwijderCoach(${c.id}, '${esc(c.naam)}')">Verwijderen</button>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>`;
+    } catch (e) {
+        document.getElementById('coaches-tabel').innerHTML = `<div class="melding melding-fout">Fout: ${esc(e.message)}</div>`;
+    }
+}
+
+async function laadRijders() {
+    try {
+        const rijders = await authVerzoek('/admin/rijders');
+        document.getElementById('badge-rijders').textContent = rijders.length;
+        document.getElementById('stat-rijders-totaal').textContent = rijders.length;
+
+        if (rijders.length === 0) {
+            document.getElementById('rijders-tabel').innerHTML = '<p style="color:var(--kleur-subtekst)">Geen rijders gevonden.</p>';
+            return;
+        }
+
+        document.getElementById('rijders-tabel').innerHTML = `
+            <table class="admin-tabel">
+                <thead>
+                    <tr>
+                        <th>Naam</th>
+                        <th>Woonplaats</th>
+                        <th>Discipline</th>
+                        <th>Niveau</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rijders.map(r => `
+                        <tr>
+                            <td>${esc(r.naam)}</td>
+                            <td>${esc(r.woonplaats) || '–'}</td>
+                            <td>${esc(r.discipline) || '–'}</td>
+                            <td>${esc(r.niveau) || '–'}</td>
+                            <td>
+                                <button class="btn btn-gevaar btn-sm" onclick="verwijderRijder(${r.id}, '${esc(r.naam)}')">Verwijderen</button>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>`;
+    } catch (e) {
+        document.getElementById('rijders-tabel').innerHTML = `<div class="melding melding-fout">Fout: ${esc(e.message)}</div>`;
+    }
+}
+
+async function verwijderRijder(id, naam) {
+    if (!confirm(`Rijder "${naam}" verwijderen? Dit kan niet ongedaan worden.`)) return;
+    try {
+        await authVerzoek(`/admin/rijders/${id}`, 'DELETE');
+        toonMelding(`Rijder ${naam} verwijderd.`, 'succes');
+        await laadRijders();
+    } catch (e) {
+        toonMelding('Fout: ' + e.message, 'fout');
+    }
+}
+
+async function verwijderGebruiker(id, naam) {
+    if (!confirm(`Gebruiker "${naam}" verwijderen? Dit kan niet ongedaan worden.`)) return;
+    try {
+        await authVerzoek(`/admin/gebruikers/${id}`, 'DELETE');
+        toonMelding(`Gebruiker ${naam} verwijderd.`, 'succes');
+        await laadGebruikers();
+    } catch (e) {
+        toonMelding('Fout: ' + e.message, 'fout');
+    }
+}
+
+async function verwijderCoach(id, naam) {
+    if (!confirm(`Coach "${naam}" verwijderen? Dit kan niet ongedaan worden.`)) return;
+    try {
+        await authVerzoek(`/admin/coaches/${id}`, 'DELETE');
+        toonMelding(`Coach ${naam} verwijderd.`, 'succes');
+        await laadCoaches();
+    } catch (e) {
+        toonMelding('Fout: ' + e.message, 'fout');
+    }
+}
+
+function toonMelding(tekst, type) {
+    const el = document.getElementById('melding');
+    const klasse = type === 'succes' ? 'melding-succes' : type === 'info' ? 'melding-info' : 'melding-fout';
+    el.innerHTML = `<div class="melding ${klasse}">${tekst}</div>`;
+    if (type === 'succes') setTimeout(() => el.innerHTML = '', 4000);
+}
+
+function esc(str) {
+    const d = document.createElement('div');
+    d.textContent = String(str ?? '');
+    return d.innerHTML;
+}
+
+async function maakUitnodiging() {
+    const naam = document.getElementById('uitnodiging-naam').value.trim();
+    if (!naam) { alert('Vul een naam in.'); return; }
+    try {
+        const data = await authVerzoek('/admin/coach-uitnodiging', 'POST', { naam });
+        document.getElementById('res-code').textContent = data.code;
+        document.getElementById('res-wachtwoord').textContent = data.wachtwoord;
+        document.getElementById('uitnodiging-resultaat').style.display = '';
+        document.getElementById('uitnodiging-naam').value = '';
+    } catch (e) {
+        alert('Fout: ' + e.message);
+    }
+}
+
+function kopieerUitnodiging() {
+    const code = document.getElementById('res-code').textContent;
+    const ww = document.getElementById('res-wachtwoord').textContent;
+    navigator.clipboard.writeText('Inlogcode: ' + code + '\nWachtwoord: ' + ww + '\nInloggen via: http://localhost:5500/inloggen.html');
+    const btn = event.currentTarget;
+    btn.textContent = 'Gekopieerd!';
+    setTimeout(() => btn.textContent = 'Kopieer naar klembord', 2000);
+}
+
+updateNav();
+laadDashboard();
+</script>
+</body>
+</html>

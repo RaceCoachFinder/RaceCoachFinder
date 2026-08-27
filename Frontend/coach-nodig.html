@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coach nodig – RaceCoachFinder</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .aanvraag-kaart {
+            background: var(--kleur-wit);
+            border-radius: var(--rand);
+            box-shadow: var(--schaduw);
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+        .aanvraag-kaart-info { flex: 1; }
+        .aanvraag-datum-locatie {
+            font-size: 0.85rem;
+            color: var(--kleur-subtekst);
+            margin-bottom: 0.35rem;
+        }
+        .aanvraag-beschrijving {
+            font-size: 0.9rem;
+            color: var(--kleur-tekst);
+            margin: 0.5rem 0;
+            line-height: 1.5;
+        }
+        .chips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.5rem; }
+        .chip {
+            font-size: 0.75rem; font-weight: 600; padding: 0.2rem 0.6rem;
+            border-radius: 20px; background: #f0f0f0; color: #555;
+        }
+        .chip-primair { background: #fff8e0; color: #9a7800; }
+        .multi-check-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 0.35rem; margin-top: 0.4rem;
+        }
+        .multi-check-grid label {
+            display: flex; align-items: center; gap: 0.45rem;
+            font-size: 0.88rem; font-weight: 400; text-transform: none;
+            letter-spacing: 0; cursor: pointer; padding: 0.3rem 0.5rem;
+            border-radius: 6px; border: 1px solid #e8e8e8; transition: background 0.1s;
+        }
+        .multi-check-grid label:hover { background: #fafafa; }
+        .multi-check-grid input[type="checkbox"] { width: auto; accent-color: var(--kleur-primair); }
+    </style>
+</head>
+<body>
+
+<nav>
+    <span class="nav-logo">Race<span>Coach</span>Finder</span>
+    <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="coaches.html">Coaches zoeken</a></li>
+    </ul>
+</nav>
+
+<div class="container pagina-sectie">
+    <div style="max-width:680px;margin:0 auto">
+
+        <h1 style="margin-bottom:0.25rem">Ik zoek een coach</h1>
+        <p style="color:var(--kleur-subtekst);margin-bottom:2rem">Zet je aanvraag online en coaches nemen contact met je op.</p>
+
+        <div class="formulier-kaart">
+            <h2 style="font-size:1.1rem;margin-bottom:1.25rem">Nieuwe aanvraag</h2>
+            <div id="melding-form"></div>
+
+            <form onsubmit="submitAanvraag(event)">
+                <div class="formulier-groep">
+                    <label for="locatie">Locatie / kartbaan</label>
+                    <input type="text" id="locatie" placeholder="bijv. Mariembourg, Genk..." required>
+                </div>
+                <div class="formulier-groep">
+                    <label for="datum">Datum</label>
+                    <input type="date" id="datum" required>
+                </div>
+                <script>document.getElementById('datum').min = new Date().toISOString().split('T')[0];</script>
+                <div class="formulier-groep">
+                    <label for="maxprijs">Maximaal budget (€)</label>
+                    <input type="number" id="maxprijs" placeholder="dit is zonder reiskosten" min="0" step="5">
+                </div>
+                <div class="formulier-groep">
+                    <label for="beschrijving">Waarvoor heb je een coach nodig?</label>
+                    <textarea id="beschrijving" rows="3" placeholder="bijv. Ik wil mijn rempunten verbeteren op een natte baan..." required></textarea>
+                </div>
+
+                <div class="formulier-groep">
+                    <label>Specialisaties (optioneel)</label>
+                    <div class="multi-check-grid" id="spec-grid"></div>
+                </div>
+                <div class="formulier-groep">
+                    <label>Kwaliteiten die je wilt leren (optioneel)</label>
+                    <div class="multi-check-grid" id="kwal-grid"></div>
+                </div>
+
+                <button type="submit" class="btn btn-primair" style="width:100%;margin-top:0.5rem">Aanvraag plaatsen</button>
+            </form>
+        </div>
+
+        <h2 style="font-size:1.1rem;margin:2rem 0 0.75rem">Mijn aanvragen</h2>
+        <div id="mijn-aanvragen"><p style="color:var(--kleur-subtekst);font-size:0.9rem">Laden...</p></div>
+
+    </div>
+</div>
+
+<footer>
+    <div class="footer-inhoud">
+        <div class="footer-links">
+            <a href="contact.html">Contact</a>
+            <a href="disclaimer.html">Disclaimer</a>
+        </div>
+        <p>&copy; 2026 RaceCoachFinder</p>
+    </div>
+<!-- Modal: coach gevonden? -->
+<div id="sluit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:none;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:16px;padding:2rem;max-width:380px;width:calc(100% - 2rem);box-shadow:0 8px 32px rgba(0,0,0,0.2)">
+        <h3 style="margin:0 0 0.5rem">Aanvraag sluiten</h3>
+        <p style="color:var(--kleur-subtekst);margin:0 0 1.5rem;font-size:0.92rem">Heb je een coach gevonden via RaceCoachFinder?</p>
+        <div style="display:flex;flex-direction:column;gap:0.65rem">
+            <button class="btn btn-primair" onclick="sluitAanvraag(true)">✅ Ja, ik heb een coach gevonden!</button>
+            <button class="btn btn-donker" onclick="sluitAanvraag(false)">Nee, verwijder gewoon</button>
+            <button class="btn btn-secundair" onclick="document.getElementById('sluit-modal').style.display='none'" style="color:#888;border-color:#ddd">Annuleren</button>
+        </div>
+    </div>
+</div>
+
+</footer>
+
+<script src="js/auth.js"></script>
+<script>
+if (!vereisAuth('Rijder')) throw new Error();
+
+const SPECIALISATIES = ['Huurkart','Rotax Max','OK','KZ / Shifter','Superkart','Simracing','Algemeen'];
+const KWALITEITEN   = ['Sprint','Endurance','Regenrijden','Snelheid','Basis','Inhalen','Verdedigen','Kwalificatie','Race brain','Algemeen'];
+
+function bouwCheckGrid(containerId, opties) {
+    const el = document.getElementById(containerId);
+    el.innerHTML = opties.map(o =>
+        `<label><input type="checkbox" value="${escapeHtml(o)}"> ${escapeHtml(o)}</label>`
+    ).join('');
+}
+
+function getGekozen(containerId) {
+    return [...document.querySelectorAll(`#${containerId} input:checked`)].map(c => c.value);
+}
+
+bouwCheckGrid('spec-grid', SPECIALISATIES);
+bouwCheckGrid('kwal-grid', KWALITEITEN);
+
+async function submitAanvraag(event) {
+    event.preventDefault();
+    const melding = document.getElementById('melding-form');
+    melding.innerHTML = '';
+
+    const datum = document.getElementById('datum').value;
+    const maxPrijsVal = document.getElementById('maxprijs').value;
+
+    const body = {
+        locatie:      document.getElementById('locatie').value.trim(),
+        datum:        datum ? new Date(datum).toISOString() : null,
+        maxPrijs:     maxPrijsVal ? parseFloat(maxPrijsVal) : null,
+        beschrijving: document.getElementById('beschrijving').value.trim(),
+        specialisaties: getGekozen('spec-grid').join(','),
+        kwaliteiten:    getGekozen('kwal-grid').join(','),
+    };
+
+    try {
+        await authVerzoek('/aanvragen', 'POST', body);
+        melding.innerHTML = '<div class="melding melding-succes">Aanvraag geplaatst!</div>';
+        event.target.reset();
+        document.querySelectorAll('#spec-grid input, #kwal-grid input').forEach(c => c.checked = false);
+        laadMijnAanvragen();
+    } catch (e) {
+        melding.innerHTML = `<div class="melding melding-fout">${escapeHtml(e.message)}</div>`;
+    }
+}
+
+async function laadMijnAanvragen() {
+    const container = document.getElementById('mijn-aanvragen');
+    try {
+        const lijst = await authVerzoek('/aanvragen/mijn');
+        if (!lijst || lijst.length === 0) {
+            container.innerHTML = '<p style="color:var(--kleur-subtekst);font-size:0.9rem">Je hebt nog geen aanvragen geplaatst.</p>';
+            return;
+        }
+        container.innerHTML = lijst.map(a => aanvraagKaartHTML(a)).join('');
+    } catch {
+        container.innerHTML = '<p style="color:var(--kleur-subtekst);font-size:0.9rem">Aanvragen kunnen niet worden geladen.</p>';
+    }
+}
+
+let huidigSluitId = null;
+
+function openSluitModal(id) {
+    huidigSluitId = id;
+    document.getElementById('sluit-modal').style.display = 'flex';
+}
+
+async function sluitAanvraag(coachGevonden) {
+    document.getElementById('sluit-modal').style.display = 'none';
+    if (!huidigSluitId) return;
+    try {
+        await authVerzoek('/aanvragen/' + huidigSluitId + '/sluit?coachGevonden=' + coachGevonden, 'PUT');
+        laadMijnAanvragen();
+    } catch (e) {
+        alert('Sluiten mislukt: ' + e.message);
+    }
+    huidigSluitId = null;
+}
+
+function aanvraagKaartHTML(a) {
+    const datum = a.datum ? new Date(a.datum).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' }) : '—';
+    const prijs = a.maxPrijs ? `Max €${a.maxPrijs}` : '';
+    const specs = a.specialisaties ? a.specialisaties.split(',').filter(Boolean) : [];
+    const kwals = a.kwaliteiten   ? a.kwaliteiten.split(',').filter(Boolean)   : [];
+    const verlopen = a.datum && new Date(a.datum) < new Date(new Date().setHours(0,0,0,0));
+
+    let statusBadge = '';
+    if (a.isGesloten) {
+        statusBadge = a.coachGevonden
+            ? '<span style="background:#d4edda;color:#155724;font-size:0.72rem;font-weight:700;padding:0.2rem 0.6rem;border-radius:20px">✓ Verwijderd – coach gevonden!</span>'
+            : '<span style="background:#e9ecef;color:#555;font-size:0.72rem;font-weight:700;padding:0.2rem 0.6rem;border-radius:20px">Verwijderd – geen coach gevonden</span>';
+    } else if (verlopen) {
+        statusBadge = '<span style="background:#fff3cd;color:#856404;font-size:0.72rem;font-weight:700;padding:0.2rem 0.6rem;border-radius:20px">Verlopen</span>';
+    } else {
+        statusBadge = '<span style="background:#e8f5e9;color:#2e7d32;font-size:0.72rem;font-weight:700;padding:0.2rem 0.6rem;border-radius:20px">Actief</span>';
+    }
+
+    return `
+    <div class="aanvraag-kaart">
+        <div class="aanvraag-kaart-info">
+            <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.35rem">
+                ${statusBadge}
+            </div>
+            <div class="aanvraag-datum-locatie">
+                📍 ${escapeHtml(a.locatie)}  •  📅 ${datum}${prijs ? '  •  💶 ' + prijs : ''}
+            </div>
+            <div class="aanvraag-beschrijving">${escapeHtml(a.beschrijving)}</div>
+            <div class="chips">
+                ${specs.map(s => `<span class="chip chip-primair">${escapeHtml(s)}</span>`).join('')}
+                ${kwals.map(k => `<span class="chip">${escapeHtml(k)}</span>`).join('')}
+            </div>
+        </div>
+        ${!a.isGesloten ? `<button onclick="openSluitModal(${a.id})" class="btn btn-secundair" style="white-space:nowrap;font-size:0.82rem;padding:0.4rem 0.8rem;color:#555;border-color:#ccc">Verwijderen</button>` : ''}
+    </div>`;
+}
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = String(str || '');
+    return div.innerHTML;
+}
+
+updateNav();
+laadMijnAanvragen();
+</script>
+</body>
+</html>

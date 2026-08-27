@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instellingen – RaceCoachFinder</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .inst-header {
+            background: linear-gradient(135deg, var(--kleur-donker), #1a1a2e);
+            color: var(--kleur-wit);
+            padding: 2.5rem 0;
+            margin-bottom: 2rem;
+        }
+        .inst-header h1 { font-size: 1.6rem; font-weight: 800; }
+        .inst-header p  { color: #bbb; font-size: 0.9rem; margin-top: 0.3rem; }
+
+        .inst-inhoud { max-width: 680px; margin: 0 auto; padding-bottom: 5rem; }
+
+        .inst-sectie {
+            background: var(--kleur-wit);
+            border-radius: var(--rand);
+            box-shadow: var(--schaduw);
+            padding: 1.75rem;
+            margin-bottom: 1.25rem;
+        }
+        .inst-sectie-titel {
+            font-size: 0.7rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--kleur-subtekst);
+            margin-bottom: 1rem;
+        }
+
+        .inst-rij {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 2rem;
+            padding: 0.85rem 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .inst-rij:last-of-type { border-bottom: none; padding-bottom: 0; }
+        .inst-rij:first-of-type { padding-top: 0; }
+
+        .inst-rij-label strong {
+            display: block;
+            font-size: 0.92rem;
+            font-weight: 600;
+            margin-bottom: 0.1rem;
+        }
+        .inst-rij-label span {
+            font-size: 0.8rem;
+            color: var(--kleur-subtekst);
+            line-height: 1.5;
+        }
+
+        .schakelaar {
+            position: relative;
+            display: inline-block;
+            width: 46px;
+            height: 26px;
+            flex-shrink: 0;
+        }
+        .schakelaar input { opacity: 0; width: 0; height: 0; }
+        .schakelaar-slider {
+            position: absolute;
+            inset: 0;
+            background: #d0d0d0;
+            border-radius: 26px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .schakelaar-slider:before {
+            content: '';
+            position: absolute;
+            height: 20px; width: 20px;
+            left: 3px; bottom: 3px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+        }
+        .schakelaar input:checked + .schakelaar-slider { background: var(--kleur-primair); }
+        .schakelaar input:checked + .schakelaar-slider:before { transform: translateX(20px); }
+
+        .drempel-rij {
+            padding: 0.85rem 0 0;
+            border-top: 1px solid #f0f0f0;
+        }
+        .drempel-rij-label { font-size: 0.92rem; font-weight: 600; margin-bottom: 0.2rem; }
+        .drempel-rij-sub   { font-size: 0.8rem; color: var(--kleur-subtekst); margin-bottom: 0.75rem; }
+        .drempel-knoppen { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .drempel-knop {
+            padding: 0.35rem 1rem;
+            border-radius: 20px;
+            border: 2px solid #e0e0e0;
+            background: transparent;
+            font-size: 0.83rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            color: var(--kleur-subtekst);
+            transition: all 0.15s;
+        }
+        .drempel-knop.actief {
+            border-color: var(--kleur-primair);
+            background: #fffbea;
+            color: #8a6a00;
+        }
+
+        .email-uitgeschakeld { opacity: 0.4; pointer-events: none; }
+
+        .acc-rij {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.6rem 0;
+            border-bottom: 1px solid #f5f5f5;
+            font-size: 0.9rem;
+        }
+        .acc-rij:last-of-type { border-bottom: none; }
+        .acc-rij span:first-child { color: var(--kleur-subtekst); font-size: 0.82rem; }
+        .acc-rij span:last-child  { font-weight: 600; }
+
+        .opslaan-balk {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background: white;
+            border-top: 1px solid #eee;
+            box-shadow: 0 -4px 16px rgba(0,0,0,0.08);
+            padding: 0.9rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            z-index: 100;
+        }
+        .opslaan-status { font-size: 0.88rem; color: var(--kleur-subtekst); }
+    </style>
+</head>
+<body>
+<nav class="navbar">
+    <div class="nav-container">
+        <a href="index.html" class="nav-logo">Race<span>Coach</span>Finder</a>
+        <ul class="nav-links" id="nav-links"></ul>
+    </div>
+</nav>
+
+<div class="inst-header">
+    <div class="container">
+        <h1>Instellingen</h1>
+        <p>Beheer je notificaties, berichten en accountinformatie.</p>
+    </div>
+</div>
+
+<div class="container">
+    <div id="melding" style="max-width:680px;margin:0 auto 1rem"></div>
+    <div class="inst-inhoud">
+
+        <!-- Notificaties -->
+        <div class="inst-sectie">
+            <div class="inst-sectie-titel">E-mail notificaties</div>
+
+            <div class="inst-rij">
+                <div class="inst-rij-label">
+                    <strong>E-mail notificaties</strong>
+                    <span>Zet dit uit om helemaal geen mails te ontvangen.</span>
+                </div>
+                <label class="schakelaar">
+                    <input type="checkbox" id="emailAan" onchange="updateEmailAan()">
+                    <span class="schakelaar-slider"></span>
+                </label>
+            </div>
+
+            <div id="email-opties">
+                <div class="inst-rij">
+                    <div class="inst-rij-label">
+                        <strong>Alleen van favorieten</strong>
+                        <span>Ontvang meldingen alleen van rijders of coaches die je als favoriet hebt.</span>
+                    </div>
+                    <label class="schakelaar">
+                        <input type="checkbox" id="alleenFavorieten">
+                        <span class="schakelaar-slider"></span>
+                    </label>
+                </div>
+
+                <div class="inst-rij">
+                    <div class="inst-rij-label">
+                        <strong>Betaalverzoek updates</strong>
+                        <span>Mail bij statuswijziging van een boeking of betaalverzoek.</span>
+                    </div>
+                    <label class="schakelaar">
+                        <input type="checkbox" id="emailBijBetaalUpdate">
+                        <span class="schakelaar-slider"></span>
+                    </label>
+                </div>
+
+                <div class="inst-rij" id="rij-aanvraag">
+                    <div class="inst-rij-label">
+                        <strong>Nieuwe passende aanvragen</strong>
+                        <span>Ontvang een mail als er een aanvraag is die bij jouw specialisaties past.</span>
+                    </div>
+                    <label class="schakelaar">
+                        <input type="checkbox" id="emailBijNieuweAanvraag">
+                        <span class="schakelaar-slider"></span>
+                    </label>
+                </div>
+
+                <div class="inst-rij" id="rij-review">
+                    <div class="inst-rij-label">
+                        <strong>Nieuwe beoordeling</strong>
+                        <span>Ontvang een mail als een rijder een review op je profiel plaatst.</span>
+                    </div>
+                    <label class="schakelaar">
+                        <input type="checkbox" id="emailBijNieuweReview">
+                        <span class="schakelaar-slider"></span>
+                    </label>
+                </div>
+
+                <div class="drempel-rij">
+                    <div class="drempel-rij-label">Mails na hoeveel gemiste berichten?</div>
+                    <div class="drempel-rij-sub">Je ontvangt een mail zodra je dit aantal berichten hebt gemist.</div>
+                    <div class="drempel-knoppen">
+                        <button class="drempel-knop" data-val="1"  onclick="kiesDrempel(1)">1</button>
+                        <button class="drempel-knop" data-val="3"  onclick="kiesDrempel(3)">3</button>
+                        <button class="drempel-knop" data-val="5"  onclick="kiesDrempel(5)">5</button>
+                        <button class="drempel-knop" data-val="10" onclick="kiesDrempel(10)">10</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Berichten & Privacy -->
+        <div class="inst-sectie">
+            <div class="inst-sectie-titel">Berichten &amp; privacy</div>
+
+            <div class="inst-rij">
+                <div class="inst-rij-label">
+                    <strong>Berichten van iedereen</strong>
+                    <span>Zet dit uit om alleen berichten van favorieten toe te staan.</span>
+                </div>
+                <label class="schakelaar">
+                    <input type="checkbox" id="berichtenVanOnbekenden">
+                    <span class="schakelaar-slider"></span>
+                </label>
+            </div>
+
+            <div class="inst-rij">
+                <div class="inst-rij-label">
+                    <strong>Profiel vindbaar</strong>
+                    <span>Als dit uit staat ben je niet te vinden via de zoekpagina.</span>
+                </div>
+                <label class="schakelaar">
+                    <input type="checkbox" id="profielOpenbaar">
+                    <span class="schakelaar-slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Account -->
+        <div class="inst-sectie">
+            <div class="inst-sectie-titel">Account</div>
+
+            <div class="acc-rij"><span>Naam</span><span id="acc-naam">—</span></div>
+            <div class="acc-rij"><span>E-mailadres</span><span id="acc-email">—</span></div>
+            <div class="acc-rij"><span>Accounttype</span><span id="acc-rol">—</span></div>
+
+            <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid #f0f0f0">
+                <p style="font-size:0.85rem;color:var(--kleur-subtekst);margin-bottom:0.9rem">Wil je je wachtwoord wijzigen?</p>
+                <a href="wachtwoord-vergeten.html" class="btn btn-donker" style="font-size:0.85rem;display:inline-block">Wachtwoord wijzigen</a>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Vaste opslaan-balk -->
+<div class="opslaan-balk">
+    <span class="opslaan-status" id="opslaan-status"></span>
+    <button onclick="slaOp()" class="btn btn-primair">Opslaan</button>
+</div>
+
+<script src="js/auth.js"></script>
+<script>
+if (!vereisAuth()) throw new Error();
+
+const gebruiker = getGebruiker();
+let huidigeDrempel = 1;
+
+document.getElementById('acc-naam').textContent  = gebruiker.naam  || '—';
+document.getElementById('acc-email').textContent = gebruiker.email || '—';
+document.getElementById('acc-rol').textContent   = (gebruiker.rol || '—').replace(',', ' & ');
+
+if (!heeftRol('Coach')) {
+    document.getElementById('rij-aanvraag').style.display = 'none';
+    document.getElementById('rij-review').style.display   = 'none';
+}
+
+function updateEmailAan() {
+    const aan = document.getElementById('emailAan').checked;
+    document.getElementById('email-opties').classList.toggle('email-uitgeschakeld', !aan);
+}
+
+function kiesDrempel(val) {
+    huidigeDrempel = val;
+    document.querySelectorAll('.drempel-knop').forEach(k => {
+        k.classList.toggle('actief', parseInt(k.dataset.val) === val);
+    });
+}
+
+async function laadInstellingen() {
+    try {
+        const inst = await authVerzoek('/instellingen');
+        document.getElementById('emailAan').checked               = inst.emailAan;
+        document.getElementById('alleenFavorieten').checked        = inst.alleenFavorieten;
+        document.getElementById('emailBijBetaalUpdate').checked    = inst.emailBijBetaalUpdate;
+        document.getElementById('emailBijNieuweAanvraag').checked  = inst.emailBijNieuweAanvraag;
+        document.getElementById('emailBijNieuweReview').checked    = inst.emailBijNieuweReview;
+        document.getElementById('berichtenVanOnbekenden').checked  = inst.berichtenVanOnbekenden;
+        document.getElementById('profielOpenbaar').checked         = inst.profielOpenbaar;
+        kiesDrempel(inst.berichtenDrempel || 1);
+        updateEmailAan();
+    } catch (e) {
+        document.getElementById('melding').innerHTML = `<div class="melding melding-fout">Instellingen konden niet worden geladen: ${e.message}</div>`;
+    }
+}
+
+async function slaOp() {
+    const body = {
+        emailAan:               document.getElementById('emailAan').checked,
+        berichtenDrempel:       huidigeDrempel,
+        alleenFavorieten:       document.getElementById('alleenFavorieten').checked,
+        emailBijBetaalUpdate:   document.getElementById('emailBijBetaalUpdate').checked,
+        emailBijNieuweAanvraag: document.getElementById('emailBijNieuweAanvraag').checked,
+        emailBijNieuweReview:   document.getElementById('emailBijNieuweReview').checked,
+        berichtenVanOnbekenden: document.getElementById('berichtenVanOnbekenden').checked,
+        profielOpenbaar:        document.getElementById('profielOpenbaar').checked,
+    };
+    try {
+        await authVerzoek('/instellingen', 'PUT', body);
+        const s = document.getElementById('opslaan-status');
+        s.textContent = '✓ Opgeslagen';
+        s.style.color = '#2e7d32';
+        setTimeout(() => { s.textContent = ''; }, 3000);
+    } catch (e) {
+        document.getElementById('melding').innerHTML = `<div class="melding melding-fout">Opslaan mislukt: ${e.message}</div>`;
+    }
+}
+
+updateNav();
+laadInstellingen();
+</script>
+</body>
+</html>

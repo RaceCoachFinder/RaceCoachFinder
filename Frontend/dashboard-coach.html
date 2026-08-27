@@ -1,0 +1,778 @@
+﻿<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coach Dashboard – RaceCoachFinder</title>
+        <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .dashboard-header {
+            background: linear-gradient(135deg, var(--kleur-donker), var(--kleur-grijs));
+            color: var(--kleur-wit);
+            padding: 2.5rem 0;
+        }
+        .dashboard-header .container { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+        .dashboard-welkom h1 { font-size: 1.6rem; font-weight: 800; }
+        .dashboard-welkom p { color: #bbb; font-size: 0.95rem; margin-top: 0.25rem; }
+
+        .status-balk {
+            display: flex; align-items: center; gap: 0.75rem;
+            padding: 0.75rem 1.25rem;
+            border-radius: var(--rand);
+            font-weight: 600; font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+        }
+        .status-gepubliceerd { background: #e8f5e9; color: #2e7d32; }
+        .status-ongepubliceerd { background: #fde8ea; color: #c62828; border: 2px solid #c62828; }
+
+        .stat-rij { display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 2rem; }
+        .stat-kaartje {
+            background: var(--kleur-wit);
+            border-radius: var(--rand);
+            box-shadow: var(--schaduw);
+            padding: 1.25rem 1.75rem;
+            text-align: center;
+            min-width: 130px;
+        }
+        .stat-kaartje .getal { font-size: 2rem; font-weight: 800; color: var(--kleur-primair); }
+        .stat-kaartje .label { font-size: 0.8rem; color: var(--kleur-subtekst); text-transform: uppercase; letter-spacing: 0.4px; }
+
+        .dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; max-width: 750px; margin: 0 auto; }
+        .dashboard-kaart { background: var(--kleur-wit); border-radius: var(--rand); box-shadow: var(--schaduw); padding: 1.75rem; }
+        .dashboard-kaart h3 { font-size: 1.1rem; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid #f0f0f0; }
+
+        .acties-rij { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
+
+        .foto-kiezer {
+            display: flex; flex-direction: column; align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .foto-cirkel {
+            width: 96px; height: 96px; border-radius: 50%;
+            background: var(--kleur-primair);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2rem; font-weight: 700; color: #fff;
+            cursor: pointer; position: relative; overflow: hidden;
+            border: 3px solid #eee; transition: opacity 0.2s;
+        }
+        .foto-cirkel:hover { opacity: 0.85; }
+        .foto-cirkel img { width: 100%; height: 100%; object-fit: cover; }
+        .foto-cirkel .foto-overlay {
+            position: absolute; inset: 0; background: rgba(0,0,0,0.45);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.2s; font-size: 1.4rem;
+        }
+        .foto-cirkel:hover .foto-overlay { opacity: 1; }
+        .foto-label { font-size: 0.78rem; color: var(--kleur-subtekst); margin-top: 0.5rem; }
+
+        .multi-dropdown { position: relative; }
+        .multi-dropdown-knop {
+            width: 100%;
+            padding: 0.55rem 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: var(--kleur-achtergrond);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            text-align: left;
+            font-size: 0.9rem;
+            color: var(--kleur-tekst);
+            font-family: inherit;
+            box-sizing: border-box;
+            transition: border-color 0.15s;
+        }
+        .multi-dropdown-knop:hover,
+        .multi-dropdown-open .multi-dropdown-knop { border-color: var(--kleur-primair); }
+        .multi-dropdown-paneel {
+            position: absolute;
+            top: calc(100% + 3px);
+            left: 0; right: 0;
+            z-index: 100;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+            padding: 0.4rem;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+        }
+        .multi-dropdown-open .multi-dropdown-paneel { display: block; }
+        .multi-dropdown-paneel label {
+            display: flex !important;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.35rem 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.88rem !important;
+            font-weight: 500 !important;
+            color: var(--kleur-tekst) !important;
+            text-transform: none !important;
+            letter-spacing: 0 !important;
+            user-select: none;
+            margin: 0 !important;
+        }
+        .multi-dropdown-paneel label:hover { background: #f5f5f5; }
+        .multi-dropdown-paneel input[type="checkbox"] {
+            width: 14px !important;
+            height: 14px !important;
+            flex-shrink: 0;
+            accent-color: var(--kleur-primair);
+            cursor: pointer;
+        }
+        .md-pijl { font-size: 0.75rem; opacity: 0.5; transition: transform 0.15s; }
+        .multi-dropdown-open .md-pijl { transform: rotate(180deg); }
+
+        .filter-rij { display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:1.25rem; }
+        .filter-chip {
+            padding:0.3rem 0.85rem; border-radius:20px; font-size:0.81rem; font-weight:600;
+            border:2px solid; cursor:pointer; transition:all 0.15s; background:transparent;
+            font-family:inherit; line-height:1.4;
+        }
+        .boeking-rij {
+            display:flex; justify-content:space-between; align-items:center; gap:1rem;
+            padding:0.85rem 0; border-bottom:1px solid #f0f0f0;
+        }
+        .boeking-rij:last-child { border-bottom:none; }
+        .boeking-rijder { font-weight:700; font-size:0.97rem; }
+        .boeking-omschrijving { font-size:0.85rem; color:var(--kleur-subtekst); margin-top:0.15rem; }
+        .boeking-meta { display:flex; flex-direction:column; align-items:flex-end; gap:0.25rem; flex-shrink:0; }
+        .boeking-badge { font-size:0.75rem; font-weight:700; padding:0.2rem 0.6rem; border-radius:20px; white-space:nowrap; }
+        .boeking-bedrag { font-size:0.85rem; font-weight:600; }
+        .boeking-datum { font-size:0.78rem; color:var(--kleur-subtekst); }
+        .geen-boekingen { text-align:center; color:var(--kleur-subtekst); padding:2rem 0; font-size:0.9rem; }
+
+        .paginering-rij {
+            display:flex; align-items:center; justify-content:center; gap:0.35rem;
+            padding-top:1.25rem; flex-wrap:wrap;
+        }
+        .pag-knop {
+            width:36px; height:36px; border-radius:8px; border:1px solid #ddd;
+            background:var(--kleur-wit); cursor:pointer; font-size:0.88rem; font-weight:600;
+            font-family:inherit; color:var(--kleur-tekst); transition:all 0.15s;
+            display:flex; align-items:center; justify-content:center;
+        }
+        .pag-knop:hover:not(:disabled) { border-color:var(--kleur-primair); color:var(--kleur-primair); }
+        .pag-knop:disabled { opacity:0.35; cursor:default; }
+        .pag-knop.pag-actief { background:var(--kleur-primair); color:#fff; border-color:var(--kleur-primair); }
+        .pag-puntjes { font-size:0.88rem; color:var(--kleur-subtekst); padding:0 0.1rem; line-height:36px; }
+        .pag-label { font-size:0.8rem; color:var(--kleur-subtekst); margin-left:0.5rem; }
+
+        #geen-profiel-melding {
+            background: var(--kleur-wit);
+            border-radius: var(--rand);
+            box-shadow: var(--schaduw);
+            padding: 3rem 2rem;
+            text-align: center;
+            max-width: 500px;
+            margin: 3rem auto;
+        }
+        #geen-profiel-melding h2 { margin-bottom: 0.75rem; }
+        #geen-profiel-melding p { color: var(--kleur-subtekst); margin-bottom: 1.5rem; }
+    </style>
+</head>
+<body>
+
+<nav>
+    <span class="nav-logo">Race<span>Coach</span>Finder</span>
+    <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="coaches.html">Coaches</a></li>
+    </ul>
+</nav>
+
+<div class="dashboard-header">
+    <div class="container">
+        <div class="dashboard-welkom">
+            <h1>Coach Dashboard</h1>
+            <p id="welkom-naam">Welkom terug</p>
+        </div>
+        <div id="header-acties"></div>
+    </div>
+</div>
+
+<div class="container" style="padding-top:2rem;padding-bottom:3rem">
+    <div id="melding"></div>
+
+    <!-- Toon dit als er nog geen profiel is -->
+    <div id="geen-profiel-melding" style="display:none">
+        <h2>Profiel aanmaken</h2>
+        <p>Je hebt nog geen coachprofiel. Vul hieronder je gegevens in om zichtbaar te worden op het platform.</p>
+        <button class="btn btn-primair" onclick="toonProfielFormulier(true)">Profiel aanmaken</button>
+    </div>
+
+    <!-- Stat kaartjes (alleen zichtbaar als profiel bestaat) -->
+    <div id="stats-sectie" style="display:none">
+        <div class="stat-rij" id="stat-rij">
+            <div class="stat-kaartje">
+                <div class="getal" id="stat-weergaven">–</div>
+                <div class="label">Profielweergaven</div>
+            </div>
+            <div class="stat-kaartje">
+                <div class="getal" id="stat-boekingen">0</div>
+                <div class="label">Boekingen</div>
+            </div>
+            <div class="stat-kaartje">
+                <div class="getal" id="stat-rijders">–</div>
+                <div class="label">Favoriete rijders</div>
+            </div>
+            <div class="stat-kaartje">
+                <div class="getal" id="stat-aanvragen">–</div>
+                <div class="label">Passende aanvragen</div>
+            </div>
+        </div>
+
+        <!-- Publiceer status balk -->
+        <div id="status-balk" class="status-balk"></div>
+
+        <div class="acties-rij" style="margin-bottom:1.75rem">
+            <button id="btn-publiceer" class="btn" onclick="togglePubliceer()"></button>
+            <a id="link-profiel" href="#" class="btn btn-donker" target="_blank">Profiel bekijken</a>
+        </div>
+    </div>
+
+    <!-- Boekingen overzicht -->
+    <div id="boekingen-sectie" style="display:none;max-width:750px;margin:0 auto 2rem">
+        <div class="dashboard-kaart">
+            <h3>Boekingen</h3>
+            <div class="filter-rij" id="filter-rij"></div>
+            <div id="boekingen-lijst"></div>
+        </div>
+    </div>
+
+    <!-- Passende aanvragen widget -->
+    <div id="aanvragen-widget" style="display:none;max-width:750px;margin:0 auto 2rem">
+        <div class="dashboard-kaart">
+            <h3 style="display:flex;justify-content:space-between;align-items:center">
+                <span>Recente aanvragen</span>
+                <a href="coach-gezocht.html" style="font-size:0.82rem;font-weight:600;color:var(--kleur-primair);text-decoration:none">Alle aanvragen →</a>
+            </h3>
+            <div id="aanvragen-widget-lijst"></div>
+        </div>
+    </div>
+
+    <!-- Profiel formulier (aanmaken + bewerken) -->
+    <div id="profiel-formulier" style="display:none">
+        <div class="dashboard-grid">
+            <div class="dashboard-kaart">
+                <h3 id="formulier-titel">Mijn profiel</h3>
+                <form onsubmit="slaanProfiel(event)">
+                    <!-- Profielfoto -->
+                    <div class="foto-kiezer">
+                        <div class="foto-cirkel" onclick="document.getElementById('foto-invoer').click()" id="foto-cirkel">
+                            <span id="foto-initialen"></span>
+                            <div class="foto-overlay">📷</div>
+                        </div>
+                        <div class="foto-label">Klik om foto te wijzigen</div>
+                        <input type="file" id="foto-invoer" accept="image/*" style="display:none" onchange="uploadFoto(this)">
+                        <input type="hidden" id="fotoUrl">
+                        <div id="foto-melding" style="font-size:0.78rem;margin-top:0.3rem"></div>
+                    </div>
+
+                    <div class="formulier-rij">
+                        <div class="formulier-groep">
+                            <label>Woonplaats</label>
+                            <input type="text" id="woonplaats">
+                        </div>
+                        <div class="formulier-groep">
+                            <label>Nationaliteit</label>
+                            <input type="text" id="nationaliteit">
+                        </div>
+                    </div>
+                    <div class="formulier-rij">
+                        <div class="formulier-groep">
+                            <label>Leeftijd</label>
+                            <input type="number" id="leeftijd" min="16" max="99">
+                        </div>
+                        <div class="formulier-groep">
+                            <label>Jaren ervaring</label>
+                            <input type="number" id="jarenErvaring" min="0">
+                        </div>
+                    </div>
+                    <div class="formulier-groep">
+                        <label>Talen</label>
+                        <input type="text" id="talen" placeholder="bijv. Nederlands, Engels">
+                    </div>
+                    <div class="formulier-groep">
+                        <label>Specialisaties <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel)</span></label>
+                        <div id="specialisaties-kiezer"></div>
+                    </div>
+                    <div class="formulier-groep">
+                        <label>Kwaliteiten <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel)</span></label>
+                        <div id="kwaliteiten-kiezer"></div>
+                    </div>
+                    <div class="formulier-groep">
+                        <label>Bio <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel)</span></label>
+                        <textarea id="bio" rows="3" placeholder="Sell yourself!! Vertel kort wat over jezelf"></textarea>
+                    </div>
+                    <div class="formulier-groep">
+                        <label>Behaalde resultaten <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel)</span></label>
+                        <textarea id="behaaldResultaten" rows="2" placeholder="Dit kan op rijders en coach vlak zijn bijv. Nederlands kampioen 2018, of welke rijders je tot bepaalde resultaten hebt geholpen."></textarea>
+                    </div>
+                    <div class="formulier-groep">
+                        <label>Beschikbare banen <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel)</span></label>
+                        <input type="text" id="beschikbareBanen" placeholder="bijv. Oldenzaal, wanneer je geen thuis baan hebt kan je dit ook leeg laten.">
+                    </div>
+                    <div class="formulier-groep">
+                        <label>Instagram gebruikersnaam <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel)</span></label>
+                        <input type="text" id="instagram" placeholder="bijv. damian_kartracing (zonder @)">
+                    </div>
+                    <div class="formulier-groep">
+                        <div class="checkbox-rij">
+                            <input type="checkbox" id="onlineCoaching">
+                            <label for="onlineCoaching">Online coaching beschikbaar</label>
+                        </div>
+                    </div>
+
+                    <!-- Prijspakketten -->
+                    <div class="formulier-groep">
+                        <label>Prijspakketten</label>
+                        <div id="prijzen-preview" class="prijzen-preview"></div>
+                        <button type="button" class="btn btn-donker" onclick="openModal()" style="margin-top:0.6rem;font-size:0.85rem;padding:0.4rem 1rem">
+                            Prijzen instellen
+                        </button>
+                    </div>
+
+                    <div style="display:flex;gap:0.75rem;margin-top:0.5rem">
+                        <button type="submit" class="btn btn-primair" id="btn-opslaan">Opslaan</button>
+                        <button type="button" class="btn btn-donker" onclick="annuleer()" id="btn-annuleer" style="display:none">Annuleren</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Prijspakketten Modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="sluitModalBuiten(event)">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Prijspakketten instellen</h3>
+            <button class="modal-sluit" onclick="sluitModal()">&#x2715;</button>
+        </div>
+        <div class="modal-body">
+            <p style="color:var(--kleur-subtekst);font-size:0.88rem;margin-bottom:1rem">
+                Voeg services met prijzen toe, bijv. <em>"Racedag coachen – €150"</em>.
+            </p>
+            <div id="pakket-lijst"></div>
+            <button type="button" class="btn btn-donker" onclick="voegPakketToe()" style="font-size:0.85rem;padding:0.4rem 1rem;margin-top:0.5rem">
+                + Pakket toevoegen
+            </button>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-donker" onclick="sluitModal()">Sluiten</button>
+            <button class="btn btn-primair" onclick="slaanPrijzenOp()">Opslaan</button>
+        </div>
+    </div>
+</div>
+
+<footer>
+    <div class="footer-inhoud">
+        <div class="footer-links">
+            <a href="contact.html">Contact</a>
+            <a href="disclaimer.html">Disclaimer</a>
+        </div>
+        <p>&copy; 2026 RaceCoachFinder</p>
+    </div>
+</footer>
+
+<script src="js/auth.js"></script>
+<script src="js/foto-upload.js"></script>
+<script src="js/prijzen-modal.js"></script>
+<script>
+if (!vereisAuth('Coach')) { /* redirect happens inside vereisAuth */ }
+
+const gebruiker = getGebruiker();
+let heeftProfiel = false;
+let profielAanMaken = false;
+
+const SPECIALISATIES = ['Huurkart','Rotax Max','OK','KZ / Shifter','Superkart','Simracing','Algemeen'];
+const KWALITEITEN = ['Sprint','Endurance','Regenrijden','Snelheid','Basis','Inhalen','Verdedigen','Kwalificatie','Race brain','Algemeen'];
+
+function maakMultiDropdown(containerId, opties) {
+    const el = document.getElementById(containerId);
+    el.className = 'multi-dropdown';
+    el.innerHTML = `
+        <button type="button" class="multi-dropdown-knop">
+            <span class="md-label">Niets gekozen</span>
+            <span class="md-pijl">▾</span>
+        </button>
+        <div class="multi-dropdown-paneel" id="${containerId}-paneel">
+            ${opties.map(s => `<label><input type="checkbox" value="${s}"> ${s}</label>`).join('')}
+        </div>`;
+    const knop = el.querySelector('.multi-dropdown-knop');
+    knop.addEventListener('click', e => {
+        e.stopPropagation();
+        document.querySelectorAll('.multi-dropdown-open').forEach(d => { if (d !== el) d.classList.remove('multi-dropdown-open'); });
+        el.classList.toggle('multi-dropdown-open');
+    });
+    el.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.addEventListener('change', updateLabel);
+    });
+    function updateLabel() {
+        const g = getGekozen();
+        el.querySelector('.md-label').textContent = g.length === 0 ? 'Niets gekozen' : g.length === 1 ? g[0] : g.length + ' gekozen';
+    }
+    function getGekozen() { return [...el.querySelectorAll('input:checked')].map(c => c.value); }
+    function setGekozen(waarden) {
+        el.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = waarden.includes(cb.value));
+        updateLabel();
+    }
+    return { getGekozen, setGekozen };
+}
+
+document.addEventListener('click', () => {
+    document.querySelectorAll('.multi-dropdown-open').forEach(d => d.classList.remove('multi-dropdown-open'));
+});
+
+const specsDropdown = maakMultiDropdown('specialisaties-kiezer', SPECIALISATIES);
+const kwalsDropdown = maakMultiDropdown('kwaliteiten-kiezer', KWALITEITEN);
+
+document.getElementById('welkom-naam').textContent = 'Welkom, ' + gebruiker.naam;
+
+async function laadDashboard() {
+    try {
+        const coach = await authVerzoek('/coach/mijn');
+        heeftProfiel = true;
+        vulFormulier(coach);
+        toonMetProfiel(coach);
+    } catch (e) {
+        if (e.message.includes('404') || e.message === 'Fout 404') {
+            toonGeenProfiel();
+        } else {
+            toonMelding('Fout bij laden: ' + e.message, 'fout');
+        }
+    }
+}
+
+function toonGeenProfiel() {
+    document.getElementById('geen-profiel-melding').style.display = '';
+    document.getElementById('stats-sectie').style.display = 'none';
+    document.getElementById('profiel-formulier').style.display = 'none';
+    document.getElementById('boekingen-sectie').style.display = 'none';
+    document.getElementById('aanvragen-widget').style.display = 'none';
+}
+
+function toonMetProfiel(coach) {
+    document.getElementById('geen-profiel-melding').style.display = 'none';
+    document.getElementById('stats-sectie').style.display = '';
+
+    document.getElementById('stat-weergaven').textContent = coach.aantalWeergaven ?? 0;
+
+    const gepubliceerd = coach.isGepubliceerd;
+    const statusBalk = document.getElementById('status-balk');
+    if (gepubliceerd) {
+        statusBalk.className = 'status-balk status-gepubliceerd';
+        statusBalk.innerHTML = '✅ Je profiel is zichtbaar voor rijders.';
+    } else {
+        statusBalk.className = 'status-balk status-ongepubliceerd';
+        statusBalk.innerHTML = '🔴 Je profiel is nog niet gepubliceerd. Rijders kunnen je niet vinden.';
+    }
+
+    const btnPubliceer = document.getElementById('btn-publiceer');
+    btnPubliceer.className = gepubliceerd ? 'btn btn-gevaar' : 'btn btn-primair';
+    btnPubliceer.textContent = gepubliceerd ? 'Depubliceren' : 'Publiceren';
+
+    document.getElementById('link-profiel').href = 'coach-detail.html?id=' + coach.id;
+
+    toonProfielFormulier(false);
+    laadBoekingen();
+    laadExtraStats(coach);
+    laadPassendeAanvragen(coach);
+}
+
+function toonProfielFormulier(nieuw) {
+    profielAanMaken = nieuw;
+    document.getElementById('geen-profiel-melding').style.display = 'none';
+    document.getElementById('profiel-formulier').style.display = '';
+    document.getElementById('formulier-titel').textContent = nieuw ? 'Profiel aanmaken' : 'Profiel bewerken';
+    document.getElementById('btn-annuleer').style.display = nieuw && heeftProfiel ? '' : (heeftProfiel ? '' : 'none');
+    if (!heeftProfiel) {
+        document.getElementById('stats-sectie').style.display = 'none';
+        toonFotoCirkel('', gebruiker.naam);
+    }
+}
+
+function annuleer() {
+    document.getElementById('profiel-formulier').style.display = 'none';
+    if (heeftProfiel) document.getElementById('stats-sectie').style.display = '';
+    else toonGeenProfiel();
+}
+
+function vulFormulier(coach) {
+    document.getElementById('woonplaats').value = coach.woonplaats || '';
+    document.getElementById('nationaliteit').value = coach.nationaliteit || '';
+    document.getElementById('leeftijd').value = coach.leeftijd || '';
+    document.getElementById('jarenErvaring').value = coach.jarenErvaring || '';
+    document.getElementById('talen').value = coach.talen || '';
+    document.getElementById('bio').value = coach.bio || '';
+    document.getElementById('behaaldResultaten').value = coach.behaaldResultaten || '';
+    document.getElementById('beschikbareBanen').value = coach.beschikbareBanen || '';
+    document.getElementById('instagram').value = coach.instagram || '';
+    document.getElementById('onlineCoaching').checked = coach.onlineCoaching || false;
+    specsDropdown.setGekozen((coach.discipline || '').split(',').map(s => s.trim()).filter(Boolean));
+    kwalsDropdown.setGekozen((coach.kwaliteiten || '').split(',').map(s => s.trim()).filter(Boolean));
+    laadPakketten(coach.prijsPakketten || '');
+    document.getElementById('fotoUrl').value = coach.fotoUrl || '';
+    toonFotoCirkel(coach.fotoUrl, coach.naam);
+    toonProfielFormulier(false);
+}
+
+function toonFotoCirkel(fotoUrl, naam) {
+    const cirkel = document.getElementById('foto-cirkel');
+    const initialenEl = document.getElementById('foto-initialen');
+    const initialen = (naam || gebruiker.naam || '?').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+
+    const oudeImg = cirkel.querySelector('img');
+    if (oudeImg) oudeImg.remove();
+
+    if (fotoUrl) {
+        if (initialenEl) initialenEl.textContent = '';
+        const img = document.createElement('img');
+        img.src = 'http://localhost:5000' + fotoUrl;
+        img.alt = naam || '';
+        cirkel.insertBefore(img, cirkel.firstChild);
+    } else {
+        if (initialenEl) initialenEl.textContent = initialen;
+    }
+}
+
+async function slaanProfiel(event) {
+    event.preventDefault();
+    toonMelding('', '');
+
+    const gegevens = {
+        naam: gebruiker.naam,
+        email: gebruiker.email,
+        woonplaats: document.getElementById('woonplaats').value,
+        nationaliteit: document.getElementById('nationaliteit').value,
+        leeftijd: parseInt(document.getElementById('leeftijd').value) || 0,
+        jarenErvaring: parseInt(document.getElementById('jarenErvaring').value) || 0,
+        talen: document.getElementById('talen').value,
+        discipline: specsDropdown.getGekozen().join(','),
+        kwaliteiten: kwalsDropdown.getGekozen().join(','),
+        specialisatie: '',
+        bio: document.getElementById('bio').value,
+        behaaldResultaten: document.getElementById('behaaldResultaten').value,
+        beschikbareBanen: document.getElementById('beschikbareBanen').value,
+        onlineCoaching: document.getElementById('onlineCoaching').checked,
+        prijsPakketten: JSON.stringify(huidigePakketten.filter(p => p.label.trim() !== '')),
+        fotoUrl: document.getElementById('fotoUrl').value,
+        instagram: document.getElementById('instagram').value.trim().replace(/^@/, '')
+    };
+
+    try {
+        let coach;
+        if (heeftProfiel) {
+            coach = await authVerzoek('/coach/mijn', 'PUT', gegevens);
+        } else {
+            coach = await authVerzoek('/coach', 'POST', gegevens);
+            heeftProfiel = true;
+        }
+        toonMelding('Profiel opgeslagen!', 'succes');
+        toonMetProfiel(coach);
+    } catch (e) {
+        toonMelding('Fout: ' + e.message, 'fout');
+    }
+}
+
+async function togglePubliceer() {
+    try {
+        const resultaat = await authVerzoek('/coach/mijn/publiceer', 'POST');
+        await laadDashboard();
+        toonMelding(resultaat.isGepubliceerd ? 'Profiel gepubliceerd!' : 'Profiel gedepubliceerd.', resultaat.isGepubliceerd ? 'succes' : 'info');
+    } catch (e) {
+        toonMelding('Fout: ' + e.message, 'fout');
+    }
+}
+
+function toonMelding(tekst, type) {
+    const el = document.getElementById('melding');
+    if (!tekst) { el.innerHTML = ''; return; }
+    const klasse = type === 'succes' ? 'melding-succes' : type === 'info' ? 'melding-info' : 'melding-fout';
+    el.innerHTML = '<div class="melding ' + klasse + '">' + tekst + '</div>';
+    if (type === 'succes') setTimeout(() => el.innerHTML = '', 4000);
+}
+
+const STATUS_KLEUREN = {
+    'Nog niet betaald': '#e65100',
+    'Beide nog niet geaccepteerd': '#f57c00',
+    'Rijder nog niet geaccepteerd': '#1565c0',
+    'Coach niet geaccepteerd': '#6a1b9a',
+    'Volledig voldaan': '#2e7d32'
+};
+
+let alleBoekingen = [];
+let actieveFilter = null;
+let huidigePagina = 1;
+const PER_PAGINA = 10;
+
+async function laadBoekingen() {
+    try {
+        alleBoekingen = await authVerzoek('/boeking/coach-overzicht');
+        actieveFilter = null;
+        huidigePagina = 1;
+        maakFilterChips();
+        renderBoekingen();
+        document.getElementById('boekingen-sectie').style.display = '';
+        document.getElementById('stat-boekingen').textContent = alleBoekingen.length;
+    } catch (e) {
+        console.error('Boekingen laden mislukt:', e);
+    }
+}
+
+function maakFilterChips() {
+    const rij = document.getElementById('filter-rij');
+    rij.innerHTML = '';
+
+    const allesKleur = '#555';
+    const allesActief = actieveFilter === null;
+    const allesChip = document.createElement('button');
+    allesChip.className = 'filter-chip';
+    allesChip.textContent = 'Alles (' + alleBoekingen.length + ')';
+    allesChip.style.borderColor = allesKleur;
+    allesChip.style.color = allesActief ? '#fff' : allesKleur;
+    allesChip.style.background = allesActief ? allesKleur : 'transparent';
+    allesChip.addEventListener('click', () => { actieveFilter = null; huidigePagina = 1; maakFilterChips(); renderBoekingen(); });
+    rij.appendChild(allesChip);
+
+    Object.keys(STATUS_KLEUREN).forEach(cat => {
+        const aantal = alleBoekingen.filter(b => b.displayStatus === cat).length;
+        if (aantal === 0) return;
+        const kleur = STATUS_KLEUREN[cat];
+        const actief = actieveFilter === cat;
+        const chip = document.createElement('button');
+        chip.className = 'filter-chip';
+        chip.textContent = cat + ' (' + aantal + ')';
+        chip.style.borderColor = kleur;
+        chip.style.color = actief ? '#fff' : kleur;
+        chip.style.background = actief ? kleur : 'transparent';
+        chip.addEventListener('click', () => { actieveFilter = cat; huidigePagina = 1; maakFilterChips(); renderBoekingen(); });
+        rij.appendChild(chip);
+    });
+}
+
+function renderBoekingen() {
+    const lijst = document.getElementById('boekingen-lijst');
+    const gefilterd = actieveFilter
+        ? alleBoekingen.filter(b => b.displayStatus === actieveFilter)
+        : alleBoekingen;
+
+    if (gefilterd.length === 0) {
+        lijst.innerHTML = '<p class="geen-boekingen">Geen boekingen gevonden.</p>';
+        return;
+    }
+
+    const totaalPaginas = Math.ceil(gefilterd.length / PER_PAGINA);
+    if (huidigePagina > totaalPaginas) huidigePagina = totaalPaginas;
+    const start = (huidigePagina - 1) * PER_PAGINA;
+    const paginaRijen = gefilterd.slice(start, start + PER_PAGINA);
+
+    const rijen = paginaRijen.map(b => {
+        const kleur = STATUS_KLEUREN[b.displayStatus] || '#666';
+        const datum = new Date(b.aangemaaktOp).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' });
+        const bedrag = '€ ' + parseFloat(b.bedrag).toFixed(2).replace('.', ',');
+        return '<div class="boeking-rij">'
+            + '<div>'
+            + '<div class="boeking-rijder">' + _esc(b.rijderNaam) + '</div>'
+            + '<div class="boeking-omschrijving">' + _esc(b.omschrijving) + '</div>'
+            + '</div>'
+            + '<div class="boeking-meta">'
+            + '<span class="boeking-badge" style="background:' + kleur + '22;color:' + kleur + '">' + b.displayStatus + '</span>'
+            + '<span class="boeking-bedrag">' + bedrag + '</span>'
+            + '<span class="boeking-datum">' + datum + '</span>'
+            + '</div></div>';
+    }).join('');
+
+    lijst.innerHTML = rijen + (totaalPaginas > 1 ? maakPaginering(huidigePagina, totaalPaginas) : '');
+}
+
+function maakPaginering(huidig, totaal) {
+    const knoppen = [];
+    knoppen.push('<button class="pag-knop"' + (huidig === 1 ? ' disabled' : '') + ' onclick="naarPagina(' + (huidig - 1) + ')">&#8249;</button>');
+
+    const nummers = [...new Set([1, 2, totaal - 1, totaal, huidig - 1, huidig, huidig + 1])]
+        .filter(n => n >= 1 && n <= totaal).sort((a, b) => a - b);
+
+    let vorigeNum = null;
+    nummers.forEach(n => {
+        if (vorigeNum !== null && n - vorigeNum > 1) knoppen.push('<span class="pag-puntjes">…</span>');
+        knoppen.push('<button class="pag-knop' + (n === huidig ? ' pag-actief' : '') + '" onclick="naarPagina(' + n + ')">' + n + '</button>');
+        vorigeNum = n;
+    });
+
+    knoppen.push('<button class="pag-knop"' + (huidig === totaal ? ' disabled' : '') + ' onclick="naarPagina(' + (huidig + 1) + ')">&#8250;</button>');
+
+    return '<div class="paginering-rij">' + knoppen.join('') + '<span class="pag-label">Pagina ' + huidig + ' van ' + totaal + '</span></div>';
+}
+
+function naarPagina(n) {
+    huidigePagina = n;
+    renderBoekingen();
+    document.getElementById('boekingen-sectie').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+async function laadExtraStats(coach) {
+    // Favoriete rijders tellen
+    try {
+        const ids = await authVerzoek('/rijderfavorieten');
+        document.getElementById('stat-rijders').textContent = Array.isArray(ids) ? ids.length : 0;
+    } catch { document.getElementById('stat-rijders').textContent = 0; }
+
+    // stat-boekingen wordt bijgewerkt vanuit laadBoekingen()
+}
+
+async function laadPassendeAanvragen(coach) {
+    const container = document.getElementById('aanvragen-widget-lijst');
+    const widget = document.getElementById('aanvragen-widget');
+    try {
+        const resp = await fetch('http://localhost:5000/api/aanvragen');
+        if (!resp.ok) return;
+        const alle = await resp.json();
+
+        const coachSpecs = (coach.discipline || '').split(',').map(s => s.trim()).filter(Boolean);
+        const coachKwals = (coach.kwaliteiten || '').split(',').map(s => s.trim()).filter(Boolean);
+
+        const passend = alle.filter(a => {
+            const aSpecs = (a.specialisaties || '').split(',').map(s => s.trim()).filter(Boolean);
+            const aKwals = (a.kwaliteiten || '').split(',').map(s => s.trim()).filter(Boolean);
+            const specMatch = aSpecs.length === 0 || aSpecs.some(s => coachSpecs.includes(s));
+            const kwalMatch = aKwals.length === 0 || aKwals.some(k => coachKwals.includes(k));
+            return specMatch && kwalMatch;
+        });
+
+        document.getElementById('stat-aanvragen').textContent = passend.length;
+
+        if (passend.length === 0) {
+            container.innerHTML = '<p style="color:var(--kleur-subtekst);font-size:0.9rem;text-align:center;padding:1rem 0">Geen passende aanvragen op dit moment.</p>';
+        } else {
+            container.innerHTML = passend.slice(0, 3).map(a => {
+                const datum = a.datum ? new Date(a.datum).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' }) : '—';
+                return '<div class="boeking-rij">'
+                    + '<div style="flex:1">'
+                    + '<div class="boeking-rijder">' + _esc(a.rijderNaam) + '</div>'
+                    + '<div class="boeking-omschrijving">📍 ' + _esc(a.locatie) + '  •  📅 ' + datum + '</div>'
+                    + '<div class="boeking-omschrijving" style="margin-top:0.15rem">' + _esc(a.beschrijving) + '</div>'
+                    + '</div>'
+                    + '<a href="berichten.html?partner=' + encodeURIComponent(a.rijderId)
+                    + '&naam=' + encodeURIComponent(a.rijderNaam)
+                    + '&rol=Rijder&aanvraag=' + encodeURIComponent(a.beschrijving)
+                    + '&alocatie=' + encodeURIComponent(a.locatie)
+                    + (a.datum ? '&adatum=' + encodeURIComponent(a.datum) : '')
+                    + '" class="btn btn-primair" style="font-size:0.8rem;padding:0.35rem 0.85rem;white-space:nowrap;flex-shrink:0">Stuur bericht</a>'
+                    + '</div>';
+            }).join('');
+        }
+        widget.style.display = '';
+    } catch {}
+}
+
+updateNav();
+laadDashboard();
+</script>
+</body>
+</html>

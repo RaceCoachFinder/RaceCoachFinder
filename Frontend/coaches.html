@@ -1,0 +1,535 @@
+﻿<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coaches zoeken – RaceCoachFinder</title>
+        <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .zoek-layout {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            gap: 1.75rem;
+            align-items: start;
+        }
+
+        .filter-sidebar {
+            background: var(--kleur-wit);
+            border-radius: var(--rand);
+            box-shadow: var(--schaduw);
+            padding: 1.5rem;
+            position: sticky;
+            top: 1.5rem;
+        }
+
+        .filter-sidebar h2 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .filter-sidebar .filter-veld {
+            margin-bottom: 1rem;
+        }
+
+        .filter-sidebar label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: var(--kleur-subtekst);
+            margin-bottom: 0.35rem;
+        }
+
+        .filter-sidebar input[type="text"],
+        .filter-sidebar select {
+            width: 100%;
+            padding: 0.55rem 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            background: var(--kleur-achtergrond);
+            box-sizing: border-box;
+        }
+
+        .filter-sidebar input[type="text"]:focus,
+        .filter-sidebar select:focus {
+            outline: none;
+            border-color: var(--kleur-primair);
+        }
+
+        .multi-dropdown { position: relative; }
+        .multi-dropdown-knop {
+            width: 100%;
+            padding: 0.55rem 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: var(--kleur-achtergrond);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            text-align: left;
+            font-size: 0.9rem;
+            color: var(--kleur-tekst);
+            font-family: inherit;
+            box-sizing: border-box;
+            transition: border-color 0.15s;
+        }
+        .multi-dropdown-knop:hover,
+        .multi-dropdown-open .multi-dropdown-knop { border-color: var(--kleur-primair); }
+        .multi-dropdown-paneel {
+            position: absolute;
+            top: calc(100% + 3px);
+            left: 0; right: 0;
+            z-index: 100;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+            padding: 0.4rem;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+        }
+        .multi-dropdown-open .multi-dropdown-paneel { display: block; }
+        .multi-dropdown-paneel label {
+            display: flex !important;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.35rem 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.88rem !important;
+            font-weight: 500 !important;
+            color: var(--kleur-tekst) !important;
+            text-transform: none !important;
+            letter-spacing: 0 !important;
+            user-select: none;
+            margin: 0 !important;
+        }
+        .multi-dropdown-paneel label:hover { background: #f5f5f5; }
+        .multi-dropdown-paneel input[type="checkbox"] {
+            width: 14px !important;
+            height: 14px !important;
+            flex-shrink: 0;
+            accent-color: var(--kleur-primair);
+            cursor: pointer;
+        }
+        .md-pijl { font-size: 0.75rem; opacity: 0.5; transition: transform 0.15s; }
+        .multi-dropdown-open .md-pijl { transform: rotate(180deg); }
+
+        .filter-acties {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-top: 1.25rem;
+        }
+
+        .filter-acties .btn {
+            width: 100%;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .resultaten-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .resultaat-info {
+            color: var(--kleur-subtekst);
+            font-size: 0.9rem;
+        }
+
+        .sorteer-rij {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.88rem;
+            color: var(--kleur-subtekst);
+        }
+
+        .sorteer-rij select {
+            padding: 0.4rem 0.65rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.88rem;
+            background: var(--kleur-wit);
+            cursor: pointer;
+        }
+
+        @media (max-width: 700px) {
+            .zoek-layout {
+                grid-template-columns: 1fr;
+            }
+            .filter-sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<nav>
+    <span class="nav-logo">Race<span>Coach</span>Finder</span>
+    <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="coaches.html" class="actief">Coaches</a></li>
+    </ul>
+</nav>
+
+<div class="container pagina-sectie">
+    <h1 class="sectie-titel">Coaches zoeken</h1>
+
+    <div class="zoek-layout">
+
+        <!-- Sidebar filters -->
+        <aside class="filter-sidebar">
+            <h2>Filters</h2>
+
+            <div class="filter-veld">
+                <label for="f-naam">Naam</label>
+                <input type="text" id="f-naam" placeholder="bijv. Jan de Vries">
+            </div>
+            <div class="filter-veld">
+                <label for="f-locatie">Locatie</label>
+                <input type="text" id="f-locatie" placeholder="bijv. Den Haag">
+            </div>
+            <div class="filter-veld">
+                <label>Specialisaties</label>
+                <div id="f-specialisaties"></div>
+            </div>
+            <div class="filter-veld">
+                <label>Kwaliteiten</label>
+                <div id="f-kwaliteiten"></div>
+            </div>
+            <div class="filter-veld">
+                <label for="f-taal">Taal</label>
+                <input type="text" id="f-taal" placeholder="bijv. Nederlands, Engels">
+            </div>
+            <div class="filter-veld">
+                <label for="f-ervaring">Jaren ervaring (min.)</label>
+                <select id="f-ervaring">
+                    <option value="0">Alle</option>
+                    <option value="2">2+ jaar</option>
+                    <option value="5">5+ jaar</option>
+                    <option value="10">10+ jaar</option>
+                    <option value="15">15+ jaar</option>
+                </select>
+            </div>
+            <div class="filter-veld">
+                <label for="f-maxprijs">Max. prijs (goedkoopste pakket)</label>
+                <select id="f-maxprijs">
+                    <option value="0">Alle prijzen</option>
+                    <option value="50">Tot €50</option>
+                    <option value="100">Tot €100</option>
+                    <option value="150">Tot €150</option>
+                    <option value="200">Tot €200</option>
+                </select>
+            </div>
+            <div class="filter-veld" style="display:flex;align-items:center;gap:0.5rem;margin-top:0.25rem">
+                <input type="checkbox" id="f-online" style="width:auto;accent-color:var(--kleur-primair)">
+                <label for="f-online" style="text-transform:none;font-size:0.88rem;font-weight:500;color:var(--kleur-tekst);margin:0;cursor:pointer">Alleen online coaching</label>
+            </div>
+            <div class="filter-veld" id="f-favorieten-veld" style="display:none;align-items:center;gap:0.5rem;margin-top:0.25rem">
+                <input type="checkbox" id="f-favorieten" style="width:auto;accent-color:var(--kleur-primair)">
+                <label for="f-favorieten" style="text-transform:none;font-size:0.88rem;font-weight:500;color:var(--kleur-tekst);margin:0;cursor:pointer">★ Alleen favorieten</label>
+            </div>
+
+            <div class="filter-acties">
+                <button class="btn btn-primair" onclick="zoekCoaches()">Zoeken</button>
+                <button class="btn btn-secundair" style="color:#555;border-color:#ccc" onclick="resetFilters()">Reset filters</button>
+            </div>
+        </aside>
+
+        <!-- Resultaten -->
+        <div>
+            <div class="resultaten-header">
+                <span class="resultaat-info" id="resultaat-info"></span>
+                <div class="sorteer-rij">
+                    <span>Sorteren op:</span>
+                    <select id="f-sortering" onchange="renderCoaches()">
+                        <option value="">Standaard</option>
+                        <option value="prijs-laag">Prijs laag → hoog</option>
+                        <option value="prijs-hoog">Prijs hoog → laag</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="coach-grid" id="coach-grid">
+                <div class="laden">
+                    <div class="spinner"></div>
+                    <p>Coaches laden...</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<footer>
+    <div class="footer-inhoud">
+        <div class="footer-links">
+            <a href="contact.html">Contact</a>
+            <a href="disclaimer.html">Disclaimer</a>
+        </div>
+        <p>&copy; 2026 RaceCoachFinder</p>
+    </div>
+</footer>
+
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script>
+const SPECIALISATIES = ['Huurkart','Rotax Max','OK','KZ / Shifter','Superkart','Simracing','Algemeen'];
+const KWALITEITEN = ['Sprint','Endurance','Regenrijden','Snelheid','Basis','Inhalen','Verdedigen','Kwalificatie','Race brain','Algemeen'];
+
+function maakMultiDropdown(containerId, opties, onChangeFn) {
+    const el = document.getElementById(containerId);
+    el.className = 'multi-dropdown';
+    el.innerHTML = `
+        <button type="button" class="multi-dropdown-knop">
+            <span class="md-label">Niets gekozen</span>
+            <span class="md-pijl">▾</span>
+        </button>
+        <div class="multi-dropdown-paneel" id="${containerId}-paneel">
+            ${opties.map(s => `<label><input type="checkbox" value="${s}"> ${s}</label>`).join('')}
+        </div>`;
+    const knop = el.querySelector('.multi-dropdown-knop');
+    knop.addEventListener('click', e => {
+        e.stopPropagation();
+        document.querySelectorAll('.multi-dropdown-open').forEach(d => { if (d !== el) d.classList.remove('multi-dropdown-open'); });
+        el.classList.toggle('multi-dropdown-open');
+    });
+    el.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.addEventListener('change', () => { updateLabel(); if (onChangeFn) onChangeFn(); });
+    });
+    function updateLabel() {
+        const g = getGekozen();
+        el.querySelector('.md-label').textContent = g.length === 0 ? 'Niets gekozen' : g.length === 1 ? g[0] : g.length + ' gekozen';
+    }
+    function getGekozen() { return [...el.querySelectorAll('input:checked')].map(c => c.value); }
+    function setGekozen(waarden) {
+        el.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = waarden.includes(cb.value));
+        updateLabel();
+    }
+    return { getGekozen, setGekozen };
+}
+
+document.addEventListener('click', () => {
+    document.querySelectorAll('.multi-dropdown-open').forEach(d => d.classList.remove('multi-dropdown-open'));
+});
+
+const specsDropdown = maakMultiDropdown('f-specialisaties', SPECIALISATIES, renderCoaches);
+const kwalsDropdown = maakMultiDropdown('f-kwaliteiten', KWALITEITEN, renderCoaches);
+
+let alleCoaches = [];
+
+async function zoekCoaches() {
+    const grid = document.getElementById('coach-grid');
+    grid.innerHTML = '<div class="laden"><div class="spinner"></div><p>Zoeken...</p></div>';
+
+    const filters = {
+        naam: document.getElementById('f-naam').value.trim(),
+        locatie: document.getElementById('f-locatie').value.trim(),
+    };
+
+    try {
+        alleCoaches = await CoachAPI.haalAlleOp(filters);
+        renderCoaches();
+    } catch (e) {
+        grid.innerHTML = `<div class="melding melding-fout">
+            Kan backend niet bereiken. Zorg dat de API draait op poort 5000.<br>
+            <small>${e.message}</small>
+        </div>`;
+    }
+}
+
+function renderCoaches() {
+    const grid = document.getElementById('coach-grid');
+    const sortering   = document.getElementById('f-sortering').value;
+    const taalFilter  = document.getElementById('f-taal').value.trim().toLowerCase();
+    const minErvaring = parseInt(document.getElementById('f-ervaring').value) || 0;
+    const maxPrijs    = parseInt(document.getElementById('f-maxprijs').value) || 0;
+    const alleenOnline     = document.getElementById('f-online').checked;
+    const alleenFavorieten = document.getElementById('f-favorieten').checked;
+    const gekozenSpecs = specsDropdown.getGekozen();
+    const gekozenKwals = kwalsDropdown.getGekozen();
+
+    let lijst = alleCoaches.filter(c => {
+        if (taalFilter && !(c.talen || '').toLowerCase().includes(taalFilter)) return false;
+        if (minErvaring > 0 && (c.jarenErvaring || 0) < minErvaring) return false;
+        if (maxPrijs > 0 && minPrijs(c) > maxPrijs) return false;
+        if (alleenOnline && !c.onlineCoaching) return false;
+        if (alleenFavorieten && !favorieten.has(c.id)) return false;
+        if (gekozenSpecs.length > 0) {
+            const coachSpecs = (c.discipline || '').split(',').map(s => s.trim());
+            if (!gekozenSpecs.some(s => coachSpecs.includes(s))) return false;
+        }
+        if (gekozenKwals.length > 0) {
+            const coachKwals = (c.kwaliteiten || '').split(',').map(s => s.trim());
+            if (!gekozenKwals.some(s => coachKwals.includes(s))) return false;
+        }
+        return true;
+    });
+
+    if (sortering === 'prijs-laag') {
+        lijst.sort((a, b) => minPrijs(a) - minPrijs(b));
+    } else if (sortering === 'prijs-hoog') {
+        lijst.sort((a, b) => minPrijs(b) - minPrijs(a));
+    }
+
+    document.getElementById('resultaat-info').textContent =
+        `${lijst.length} coach${lijst.length !== 1 ? 'es' : ''} gevonden`;
+
+    if (lijst.length === 0) {
+        grid.innerHTML = `<div class="geen-resultaten">
+            <p>Geen coaches gevonden met deze filters.</p>
+            <button class="btn btn-primair" style="margin-top:1rem" onclick="resetFilters()">Filters wissen</button>
+        </div>`;
+        return;
+    }
+
+    grid.innerHTML = lijst.map(coachKaartHTML).join('');
+}
+
+function resetFilters() {
+    document.getElementById('f-naam').value = '';
+    document.getElementById('f-locatie').value = '';
+    specsDropdown.setGekozen([]);
+    kwalsDropdown.setGekozen([]);
+    document.getElementById('f-taal').value = '';
+    document.getElementById('f-ervaring').value = '0';
+    document.getElementById('f-maxprijs').value = '0';
+    document.getElementById('f-online').checked = false;
+    document.getElementById('f-favorieten').checked = false;
+    document.getElementById('f-sortering').value = '';
+    zoekCoaches();
+}
+
+function minPrijs(c) {
+    try {
+        const pakketten = c.prijsPakketten ? JSON.parse(c.prijsPakketten) : [];
+        const prijzen = pakketten.map(p => p.prijs).filter(p => p > 0);
+        return prijzen.length > 0 ? Math.min(...prijzen) : Infinity;
+    } catch { return Infinity; }
+}
+
+function sterrenHtml(score) {
+    let h = '';
+    for (let i = 1; i <= 5; i++)
+        h += `<span style="color:${i <= Math.round(score) ? '#c9a800' : '#ddd'}">★</span>`;
+    return h;
+}
+
+let favorieten = new Set();
+
+async function laadFavorieten() {
+    if (!heeftRol('Rijder')) return;
+    try {
+        const ids = await authVerzoek('/favorieten');
+        if (Array.isArray(ids)) ids.forEach(id => favorieten.add(id));
+    } catch {}
+}
+
+async function toggleFavoriet(event, coachId) {
+    event.stopPropagation();
+    if (!heeftRol('Rijder')) { location.href = 'inloggen.html'; return; }
+    const knop = event.currentTarget;
+    const isHuidig = favorieten.has(coachId);
+    try {
+        if (isHuidig) {
+            await authVerzoek('/favorieten/' + coachId, 'DELETE');
+            favorieten.delete(coachId);
+        } else {
+            await authVerzoek('/favorieten/' + coachId, 'POST');
+            favorieten.add(coachId);
+        }
+        knop.textContent = favorieten.has(coachId) ? '★' : '☆';
+        knop.style.color = favorieten.has(coachId) ? 'var(--kleur-primair)' : '#ccc';
+    } catch {}
+}
+
+function coachKaartHTML(c) {
+    const initialen = c.naam.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+    const avatar = c.fotoUrl
+        ? `<img src="http://localhost:5000${c.fotoUrl}" alt="${escapeHtml(c.naam)}" style="width:52px;height:52px;border-radius:50%;object-fit:cover;flex-shrink:0">`
+        : `<div class="coach-avatar">${initialen}</div>`;
+    const isFavoriet = favorieten.has(c.id);
+    const sterKnop = `<button onclick="toggleFavoriet(event,${c.id})" title="${isFavoriet ? 'Verwijder uit favorieten' : 'Opslaan als favoriet'}" style="position:absolute;top:10px;right:10px;background:none;border:none;font-size:1.4rem;cursor:pointer;line-height:1;color:${isFavoriet ? 'var(--kleur-primair)' : '#ccc'};transition:color 0.15s">${isFavoriet ? '★' : '☆'}</button>`;
+    return `
+    <div class="coach-kaart" onclick="location.href='coach-detail.html?id=${c.id}'" style="position:relative">
+        ${sterKnop}
+        <div class="coach-kaart-header">
+            ${avatar}
+            <div>
+                <div class="coach-naam">${escapeHtml(c.naam)}</div>
+                <div class="coach-locatie">📍 ${escapeHtml(c.woonplaats || '—')}</div>
+            </div>
+        </div>
+        <div class="coach-kaart-body">
+            <div class="coach-badges">
+                ${c.onlineCoaching ? `<span class="badge badge-groen">Online</span>` : ''}
+                ${c.jarenErvaring > 0 ? `<span class="badge badge-grijs">${c.jarenErvaring} jr. ervaring</span>` : ''}
+            </div>
+            ${c.aantalReviews > 0 ? `<div style="margin:0.3rem 0;font-size:0.88rem">${sterrenHtml(c.gemiddeldeScore)} <span style="color:var(--kleur-subtekst);font-size:0.82rem">${c.gemiddeldeScore.toFixed(1)} (${c.aantalReviews})</span></div>` : ''}
+            <div class="coach-prijs">${prijsBereik(c)}</div>
+            <div class="coach-bio">${escapeHtml(c.bio || 'Geen beschrijving.')}</div>
+        </div>
+        <div class="coach-kaart-footer">
+            <small style="color:#888">${escapeHtml(c.talen || '')}</small>
+            <a href="coach-detail.html?id=${c.id}" class="btn btn-primair" style="padding:0.4rem 1rem;font-size:0.85rem">Bekijk profiel</a>
+        </div>
+    </div>`;
+}
+
+function prijsBereik(c) {
+    try {
+        const pakketten = c.prijsPakketten ? JSON.parse(c.prijsPakketten) : [];
+        const prijzen = pakketten.map(p => p.prijs).filter(p => p > 0);
+        if (prijzen.length > 0) {
+            const min = Math.min(...prijzen);
+            const max = Math.max(...prijzen);
+            return min === max ? `€${min}` : `€${min} – €${max}`;
+        }
+    } catch {}
+    return '';
+}
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = String(str);
+    return div.innerHTML;
+}
+
+updateNav();
+if (heeftRol('Rijder')) {
+    document.getElementById('f-favorieten-veld').style.display = 'flex';
+}
+laadFavorieten().then(() => zoekCoaches());
+
+// Enter in tekstvelden → zoeken via backend
+['f-naam', 'f-locatie'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') zoekCoaches(); });
+});
+
+// Client-side filters → direct herrenderen zonder backend-aanroep
+['f-taal'].forEach(id => {
+    document.getElementById(id).addEventListener('input', renderCoaches);
+});
+['f-ervaring', 'f-maxprijs'].forEach(id => {
+    document.getElementById(id).addEventListener('change', renderCoaches);
+});
+document.getElementById('f-online').addEventListener('change', renderCoaches);
+document.getElementById('f-favorieten').addEventListener('change', renderCoaches);
+</script>
+</body>
+</html>

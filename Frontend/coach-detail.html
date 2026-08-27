@@ -1,0 +1,480 @@
+﻿<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coachprofiel – RaceCoachFinder</title>
+        <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .review-kaart {
+            background: #fafafa;
+            border: 1px solid #eee;
+            border-radius: 10px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 0.75rem;
+        }
+        .review-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.4rem;
+            flex-wrap: wrap;
+        }
+        .review-auteur { font-weight: 600; font-size: 0.9rem; }
+        .review-datum { color: var(--kleur-subtekst); font-size: 0.78rem; margin-left: auto; }
+        .review-tekst-body { color: var(--kleur-subtekst); margin: 0; font-size: 0.88rem; line-height: 1.55; }
+    </style>
+</head>
+<body>
+
+<nav>
+    <span class="nav-logo">Race<span>Coach</span>Finder</span>
+    <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="coaches.html">Coaches</a></li>
+    </ul>
+</nav>
+
+<div id="laad-indicator" class="detail-header">
+    <div class="detail-header-inhoud">
+        <div class="laden" style="color:white;width:100%">
+            <div class="spinner"></div>
+            <p>Profiel laden...</p>
+        </div>
+    </div>
+</div>
+
+<div id="detail-inhoud" style="display:none">
+    <div class="detail-header">
+        <div class="detail-header-inhoud">
+            <div class="detail-avatar" id="d-avatar"></div>
+            <div>
+                <div class="detail-naam" id="d-naam"></div>
+                <div class="detail-subtitel" id="d-subtitel"></div>
+                <div id="d-score" style="display:none;margin-top:0.35rem;font-size:0.95rem"></div>
+                <div id="d-badges" style="margin-top:0.75rem;display:flex;gap:0.4rem;flex-wrap:wrap"></div>
+                <div id="d-instagram" style="display:none;margin-top:0.6rem">
+                    <a id="d-instagram-link" href="#" target="_blank" rel="noopener" style="color:#c9a800;font-size:0.88rem;text-decoration:none;display:inline-flex;align-items:center;gap:0.3rem">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                        <span id="d-instagram-naam"></span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="detail-grid">
+        <div>
+            <div class="detail-sectie">
+                <h3>Over deze coach</h3>
+                <p id="d-bio" style="color:var(--kleur-subtekst);line-height:1.7"></p>
+            </div>
+
+            <div class="detail-sectie">
+                <h3>Gegevens</h3>
+                <div class="info-rij"><span>Woonplaats</span><span id="d-woonplaats"></span></div>
+                <div class="info-rij"><span>Nationaliteit</span><span id="d-nationaliteit"></span></div>
+                <div class="info-rij"><span>Leeftijd</span><span id="d-leeftijd"></span></div>
+                <div class="info-rij"><span>Talen</span><span id="d-talen"></span></div>
+                <div class="info-rij"><span>Jaren ervaring</span><span id="d-ervaring"></span></div>
+                <div class="info-rij"><span>Online coaching</span><span id="d-online"></span></div>
+                <div id="d-reactietijd" style="display:none;margin-top:0.65rem;font-size:0.85rem;font-weight:600;color:#2e7d32"></div>
+            </div>
+
+            <div class="detail-sectie" id="d-banen-sectie">
+                <h3>Beschikbare banen</h3>
+                <p id="d-banen" style="color:var(--kleur-subtekst)"></p>
+            </div>
+
+            <div class="detail-sectie" id="d-resultaten-sectie">
+                <h3>Behaalde resultaten</h3>
+                <p id="d-resultaten" style="color:var(--kleur-subtekst)"></p>
+            </div>
+        </div>
+
+        <div>
+            <div class="detail-sectie">
+                <h3>Acties</h3>
+                <div style="display:flex;flex-direction:column;gap:0.75rem">
+                    <a id="d-bericht-link" href="#" class="btn btn-primair" style="display:none">Stuur bericht</a>
+                    <button id="d-favoriet-btn" class="btn btn-secundair" onclick="toggleFavoriet()" style="display:none">☆ Opslaan als favoriet</button>
+                    <a id="d-email-link" href="#" class="btn btn-donker">E-mail sturen</a>
+                    <a id="d-bewerk-link" href="#" class="btn btn-donker" style="display:none">Profiel bewerken</a>
+                    <button id="d-verwijder-btn" class="btn btn-gevaar" onclick="verwijderCoach()" style="display:none">Verwijder coach</button>
+                </div>
+            </div>
+
+            <div class="detail-sectie" id="d-pakketten-sectie" style="display:none">
+                <h3>Prijspakketten</h3>
+                <div id="d-pakketten" class="prijzen-preview"></div>
+            </div>
+
+            <div class="detail-sectie" id="d-specialisaties-sectie" style="display:none">
+                <h3>Specialisaties</h3>
+                <div id="d-specialisaties" style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.25rem"></div>
+            </div>
+
+            <div class="detail-sectie" id="d-kwaliteiten-sectie" style="display:none">
+                <h3>Kwaliteiten</h3>
+                <div id="d-kwaliteiten" style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.25rem"></div>
+            </div>
+        </div>
+    </div>
+
+    <div style="max-width:820px;margin:0 auto;padding:0 1.5rem 2.5rem">
+        <div class="detail-sectie">
+            <h3 id="d-reviews-titel">Beoordelingen</h3>
+            <div id="d-reviews-stroom"><p style="color:var(--kleur-subtekst);font-size:0.88rem">Laden...</p></div>
+
+            <!-- Review schrijven (alleen zichtbaar voor Rijders) -->
+            <div id="review-formulier" style="display:none;margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid #f0f0f0">
+                <h4 style="margin-bottom:0.75rem;font-size:0.95rem">Schrijf een beoordeling</h4>
+                <div id="review-melding"></div>
+                <div style="margin-bottom:0.75rem">
+                    <div id="ster-kiezer" style="display:flex;gap:0.25rem;font-size:1.8rem;cursor:pointer">
+                        <span data-ster="1">☆</span><span data-ster="2">☆</span><span data-ster="3">☆</span><span data-ster="4">☆</span><span data-ster="5">☆</span>
+                    </div>
+                </div>
+                <textarea id="review-tekst" rows="3" placeholder="Optioneel: vertel meer over je ervaring..." style="width:100%;padding:0.55rem 0.75rem;border:1px solid #ddd;border-radius:6px;font-family:inherit;font-size:0.9rem;box-sizing:border-box;resize:vertical"></textarea>
+                <button onclick="stuurReview()" class="btn btn-primair" style="margin-top:0.65rem">Beoordeling versturen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="fout-melding" style="display:none" class="container pagina-sectie">
+    <div class="melding melding-fout">Coach niet gevonden. <a href="coaches.html">Terug naar overzicht</a></div>
+</div>
+
+<footer>
+    <div class="footer-inhoud">
+        <div class="footer-links">
+            <a href="contact.html">Contact</a>
+            <a href="disclaimer.html">Disclaimer</a>
+        </div>
+        <p>&copy; 2026 RaceCoachFinder</p>
+    </div>
+</footer>
+
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script>
+const urlParams = new URLSearchParams(window.location.search);
+const coachId = parseInt(urlParams.get('id'));
+
+async function laadCoach() {
+    if (!coachId) {
+        toonFout();
+        return;
+    }
+
+    try {
+        const c = await CoachAPI.haalEenOp(coachId);
+        vulProfiel(c);
+    } catch (e) {
+        toonFout();
+    }
+}
+
+function vulProfiel(c) {
+    document.title = `${c.naam} – RaceCoachFinder`;
+
+    const initialen = c.naam.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+    const avatarEl = document.getElementById('d-avatar');
+    if (c.fotoUrl) {
+        avatarEl.innerHTML = `<img src="http://localhost:5000${c.fotoUrl}" alt="${c.naam}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+    } else {
+        avatarEl.textContent = initialen;
+    }
+    document.getElementById('d-naam').textContent = c.naam;
+    document.getElementById('d-subtitel').textContent = `📍 ${c.woonplaats || '—'}  •  ${c.jarenErvaring} jaar ervaring`;
+    document.getElementById('d-bio').textContent = c.bio || 'Geen beschrijving opgegeven.';
+    document.getElementById('d-woonplaats').textContent = c.woonplaats || '—';
+    document.getElementById('d-nationaliteit').textContent = c.nationaliteit || '—';
+    document.getElementById('d-leeftijd').textContent = c.leeftijd ? `${c.leeftijd} jaar` : '—';
+    document.getElementById('d-talen').textContent = c.talen || '—';
+    document.getElementById('d-ervaring').textContent = c.jarenErvaring ? `${c.jarenErvaring} jaar` : '—';
+    document.getElementById('d-online').textContent = c.onlineCoaching ? '✅ Ja' : '❌ Nee';
+    const rtEl = document.getElementById('d-reactietijd');
+    if (rtEl && c.gemiddeldeReactietijdUren > 0) {
+        const u = c.gemiddeldeReactietijdUren;
+        let label;
+        if (u < 1)       label = 'Reageert binnen het uur';
+        else if (u < 24) label = `Reageert meestal binnen ${Math.round(u)} uur`;
+        else if (u < 48) label = 'Reageert meestal binnen een dag';
+        else             label = `Reageert meestal binnen ${Math.round(u / 24)} dagen`;
+        rtEl.textContent = '⚡ ' + label;
+        rtEl.style.display = '';
+    }
+    if (c.discipline) {
+        const specs = c.discipline.split(',').map(s => s.trim()).filter(Boolean);
+        if (specs.length > 0) {
+            document.getElementById('d-specialisaties').innerHTML = specs.map(s => `<span class="badge badge-rood">${escapeHtml(s)}</span>`).join('');
+            document.getElementById('d-specialisaties-sectie').style.display = '';
+        }
+    }
+
+    if (c.kwaliteiten) {
+        const kwals = c.kwaliteiten.split(',').map(s => s.trim()).filter(Boolean);
+        if (kwals.length > 0) {
+            document.getElementById('d-kwaliteiten').innerHTML = kwals.map(s => `<span class="badge badge-grijs">${escapeHtml(s)}</span>`).join('');
+            document.getElementById('d-kwaliteiten-sectie').style.display = '';
+        }
+    }
+
+    if (c.beschikbareBanen) {
+        document.getElementById('d-banen').textContent = c.beschikbareBanen;
+    } else {
+        document.getElementById('d-banen-sectie').style.display = 'none';
+    }
+
+    if (c.behaaldResultaten) {
+        document.getElementById('d-resultaten').textContent = c.behaaldResultaten;
+    } else {
+        document.getElementById('d-resultaten-sectie').style.display = 'none';
+    }
+
+    const badges = document.getElementById('d-badges');
+    if (c.discipline) {
+        c.discipline.split(',').map(s => s.trim()).filter(Boolean).forEach(s => {
+            badges.innerHTML += `<span class="badge badge-rood">${escapeHtml(s)}</span>`;
+        });
+    }
+    if (c.onlineCoaching) badges.innerHTML += `<span class="badge badge-groen">Online coaching</span>`;
+
+    if (c.instagram) {
+        document.getElementById('d-instagram-naam').textContent = '@' + c.instagram;
+        document.getElementById('d-instagram-link').href = `https://www.instagram.com/${c.instagram}`;
+        document.getElementById('d-instagram').style.display = '';
+    }
+
+    if (c.email) {
+        document.getElementById('d-email-link').href = `mailto:${c.email}`;
+    } else {
+        document.getElementById('d-email-link').style.display = 'none';
+    }
+
+    // Toon bewerken/verwijder/bericht sturen op basis van rol
+    const gebruiker = getGebruiker ? getGebruiker() : null;
+    const berichtLink = document.getElementById('d-bericht-link');
+    if (gebruiker) {
+        const isEigen = gebruiker.id === c.gebruikerId;
+        const isAdmin = gebruiker.rol === 'Admin';
+        if (isEigen) {
+            document.getElementById('d-bewerk-link').style.display = '';
+            document.getElementById('d-bewerk-link').href = 'dashboard-coach.html';
+        }
+        if (isAdmin) {
+            document.getElementById('d-verwijder-btn').style.display = '';
+        }
+        if (!isEigen && c.gebruikerId) {
+            berichtLink.style.display = '';
+            berichtLink.href = `berichten.html?partner=${c.gebruikerId}&naam=${encodeURIComponent(c.naam)}&rol=Coach`;
+        }
+    } else {
+        // Niet ingelogd: knop stuurt naar inloggen
+        if (c.gebruikerId) {
+            berichtLink.style.display = '';
+            berichtLink.href = `inloggen.html`;
+            berichtLink.title = 'Log in om een bericht te sturen';
+        }
+    }
+
+    // Prijspakketten tonen
+    try {
+        const pakketten = c.prijsPakketten ? JSON.parse(c.prijsPakketten) : [];
+        if (pakketten.length > 0) {
+            const div = document.getElementById('d-pakketten');
+            div.innerHTML = pakketten.map(p =>
+                `<div class="prijs-item">
+                    <span>${escapeHtml(p.label)}</span>
+                    <span class="prijs-item-prijs">€${p.prijs}</span>
+                </div>`
+            ).join('');
+            document.getElementById('d-pakketten-sectie').style.display = 'block';
+        }
+    } catch {}
+
+    document.getElementById('laad-indicator').style.display = 'none';
+    document.getElementById('detail-inhoud').style.display = 'block';
+
+    if (c.gebruikerId) {
+        laadReviews(c.gebruikerId);
+        toonReviewFormulier(c.gebruikerId);
+    }
+}
+
+function sterrenHtml(score) {
+    let h = '';
+    for (let i = 1; i <= 5; i++)
+        h += `<span style="color:${i <= Math.round(score) ? '#c9a800' : '#ddd'}">★</span>`;
+    return h;
+}
+
+async function laadReviews(coachGebruikerId) {
+    try {
+        const reviews = await fetch(`http://localhost:5000/api/review/coach/${coachGebruikerId}`)
+            .then(r => r.json());
+        renderReviews(reviews);
+    } catch {
+        document.getElementById('d-reviews-stroom').innerHTML =
+            '<p style="color:var(--kleur-subtekst);font-size:0.88rem">Reviews kunnen niet worden geladen.</p>';
+    }
+}
+
+function renderReviews(reviews) {
+    const stroom = document.getElementById('d-reviews-stroom');
+    const titel = document.getElementById('d-reviews-titel');
+
+    if (reviews.length === 0) {
+        titel.textContent = 'Beoordelingen';
+        stroom.innerHTML = '<p style="color:var(--kleur-subtekst);font-size:0.88rem">Nog geen beoordelingen.</p>';
+        return;
+    }
+
+    const gemiddelde = reviews.reduce((s, r) => s + r.sterren, 0) / reviews.length;
+    titel.innerHTML = `Beoordelingen <span style="font-weight:400;font-size:0.92rem;color:var(--kleur-subtekst)">${sterrenHtml(gemiddelde)} ${gemiddelde.toFixed(1)} &bull; ${reviews.length} beoordeling${reviews.length !== 1 ? 'en' : ''}</span>`;
+
+    // Sterren ook in de header tonen
+    const scoreEl = document.getElementById('d-score');
+    if (scoreEl) {
+        scoreEl.innerHTML = `${sterrenHtml(gemiddelde)} <span style="color:rgba(255,255,255,0.75);font-size:0.85rem">${gemiddelde.toFixed(1)} &bull; ${reviews.length} beoordeling${reviews.length !== 1 ? 'en' : ''}</span>`;
+        scoreEl.style.display = '';
+    }
+
+    stroom.innerHTML = reviews.map(r => {
+        const datum = new Date(r.aangemaaktOp).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' });
+        return `
+        <div class="review-kaart">
+            <div class="review-header">
+                <span style="font-size:1rem">${sterrenHtml(r.sterren)}</span>
+                <span class="review-auteur">${escapeHtml(r.rijderNaam)}</span>
+                <span class="review-datum">${datum}</span>
+            </div>
+            ${r.tekst ? `<p class="review-tekst-body">${escapeHtml(r.tekst)}</p>` : ''}
+        </div>`;
+    }).join('');
+}
+
+async function verwijderCoach() {
+    if (!confirm('Weet je zeker dat je deze coach wilt verwijderen?')) return;
+    try {
+        await authVerzoek(`/admin/coaches/${coachId}`, 'DELETE');
+        alert('Coach verwijderd.');
+        location.href = 'coaches.html';
+    } catch (e) {
+        alert('Verwijderen mislukt: ' + e.message);
+    }
+}
+
+function toonFout() {
+    document.getElementById('laad-indicator').style.display = 'none';
+    document.getElementById('fout-melding').style.display = 'block';
+}
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = String(str);
+    return div.innerHTML;
+}
+
+let isFavoriet = false;
+
+async function laadFavoriet() {
+    if (!heeftRol('Rijder')) return;
+    try {
+        const ids = await authVerzoek('/favorieten');
+        if (Array.isArray(ids) && ids.includes(coachId)) {
+            isFavoriet = true;
+            updateFavorietKnop();
+        }
+    } catch {}
+    document.getElementById('d-favoriet-btn').style.display = '';
+}
+
+async function toggleFavoriet() {
+    const knop = document.getElementById('d-favoriet-btn');
+    knop.disabled = true;
+    try {
+        if (isFavoriet) {
+            await authVerzoek('/favorieten/' + coachId, 'DELETE');
+            isFavoriet = false;
+        } else {
+            await authVerzoek('/favorieten/' + coachId, 'POST');
+            isFavoriet = true;
+        }
+        updateFavorietKnop();
+    } catch {}
+    knop.disabled = false;
+}
+
+function updateFavorietKnop() {
+    const knop = document.getElementById('d-favoriet-btn');
+    if (isFavoriet) {
+        knop.textContent = '★ Favoriet opgeslagen';
+        knop.style.color = 'var(--kleur-primair)';
+        knop.style.borderColor = 'var(--kleur-primair)';
+    } else {
+        knop.textContent = '☆ Opslaan als favoriet';
+        knop.style.color = '';
+        knop.style.borderColor = '';
+    }
+}
+
+let huidigeSterren = 0;
+let reviewCoachGebruikerId = null;
+
+function initSterKiezer() {
+    const sterren = document.querySelectorAll('#ster-kiezer span');
+    sterren.forEach(s => {
+        s.addEventListener('mouseover', () => updateSterDisplay(parseInt(s.dataset.ster)));
+        s.addEventListener('mouseout',  () => updateSterDisplay(huidigeSterren));
+        s.addEventListener('click',     () => { huidigeSterren = parseInt(s.dataset.ster); updateSterDisplay(huidigeSterren); });
+    });
+}
+
+function updateSterDisplay(n) {
+    document.querySelectorAll('#ster-kiezer span').forEach((s, i) => {
+        s.textContent = i < n ? '★' : '☆';
+        s.style.color = i < n ? '#c9a800' : '#ccc';
+    });
+}
+
+async function stuurReview() {
+    const melding = document.getElementById('review-melding');
+    melding.innerHTML = '';
+    if (huidigeSterren < 1) {
+        melding.innerHTML = '<p style="color:#c62828;font-size:0.88rem;margin-bottom:0.5rem">Kies minimaal 1 ster.</p>';
+        return;
+    }
+    try {
+        await authVerzoek('/review', 'POST', {
+            coachGebruikerId: reviewCoachGebruikerId,
+            sterren: huidigeSterren,
+            tekst: document.getElementById('review-tekst').value.trim()
+        });
+        document.getElementById('review-formulier').style.display = 'none';
+        laadReviews(reviewCoachGebruikerId);
+    } catch (e) {
+        melding.innerHTML = '<p style="color:#c62828;font-size:0.88rem;margin-bottom:0.5rem">' + escapeHtml(e.message) + '</p>';
+    }
+}
+
+function toonReviewFormulier(coachGebruikerId) {
+    const gebruiker = getGebruiker();
+    if (!gebruiker) return;
+    const rollen = (gebruiker.rol || '').split(',').map(r => r.trim());
+    if (!rollen.includes('Rijder')) return;
+    if (gebruiker.id === coachGebruikerId) return;
+    reviewCoachGebruikerId = coachGebruikerId;
+    document.getElementById('review-formulier').style.display = '';
+    initSterKiezer();
+}
+
+updateNav();
+laadCoach();
+laadFavoriet();
+</script>
+</body>
+</html>

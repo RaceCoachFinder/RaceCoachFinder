@@ -1,0 +1,180 @@
+﻿<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wachtwoord resetten – RaceCoachFinder</title>
+        <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .code-invoer {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            margin: 0.5rem 0;
+        }
+        .code-invoer input {
+            width: 44px;
+            height: 52px;
+            text-align: center;
+            font-size: 1.4rem;
+            font-weight: 700;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        .code-invoer input:focus { border-color: var(--kleur-primair); }
+        .code-invoer input.gevuld { border-color: var(--kleur-primair); background: #fafaf0; }
+    </style>
+</head>
+<body>
+
+<nav>
+    <span class="nav-logo">Race<span>Coach</span>Finder</span>
+    <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="inloggen.html">Inloggen</a></li>
+    </ul>
+</nav>
+
+<div class="container">
+    <div class="formulier-kaart" style="max-width:420px">
+        <h2>Nieuw wachtwoord</h2>
+        <p style="color:var(--kleur-subtekst);font-size:0.92rem;margin-bottom:1.25rem">
+            Voer de 6-cijferige code in die je per e-mail hebt ontvangen en kies een nieuw wachtwoord.
+        </p>
+
+        <div id="melding"></div>
+
+        <form onsubmit="submitReset(event)">
+            <div class="formulier-groep">
+                <label>Verificatiecode</label>
+                <div class="code-invoer" id="code-invoer">
+                    <input type="text" inputmode="numeric" maxlength="1" id="c0" oninput="codeInput(this,0)">
+                    <input type="text" inputmode="numeric" maxlength="1" id="c1" oninput="codeInput(this,1)">
+                    <input type="text" inputmode="numeric" maxlength="1" id="c2" oninput="codeInput(this,2)">
+                    <input type="text" inputmode="numeric" maxlength="1" id="c3" oninput="codeInput(this,3)">
+                    <input type="text" inputmode="numeric" maxlength="1" id="c4" oninput="codeInput(this,4)">
+                    <input type="text" inputmode="numeric" maxlength="1" id="c5" oninput="codeInput(this,5)">
+                </div>
+            </div>
+
+            <div class="formulier-groep" style="margin-top:1rem">
+                <label for="wachtwoord-nieuw">Nieuw wachtwoord</label>
+                <input type="password" id="wachtwoord-nieuw" required placeholder="Minimaal 4 tekens" minlength="4">
+            </div>
+            <div class="formulier-groep">
+                <label for="wachtwoord-bevestig">Bevestig wachtwoord</label>
+                <input type="password" id="wachtwoord-bevestig" required placeholder="Herhaal wachtwoord">
+            </div>
+
+            <button type="submit" class="btn btn-primair" style="width:100%;margin-top:0.5rem" id="btn-reset">
+                Wachtwoord instellen
+            </button>
+        </form>
+
+        <p style="text-align:center;margin-top:1rem;color:var(--kleur-subtekst);font-size:0.88rem">
+            Geen code ontvangen?
+            <a href="wachtwoord-vergeten.html">Opnieuw versturen</a>
+        </p>
+    </div>
+</div>
+
+<footer>
+    <div class="footer-inhoud">
+        <div class="footer-links">
+            <a href="contact.html">Contact</a>
+            <a href="disclaimer.html">Disclaimer</a>
+        </div>
+        <p>&copy; 2026 RaceCoachFinder</p>
+    </div>
+</footer>
+
+<script>
+const urlParams = new URLSearchParams(window.location.search);
+const emailParam = urlParams.get('email') || '';
+
+function codeInput(el, index) {
+    // Alleen cijfers toestaan
+    el.value = el.value.replace(/\D/g, '').slice(-1);
+    el.classList.toggle('gevuld', el.value !== '');
+
+    // Automatisch naar volgend veld
+    if (el.value && index < 5) {
+        document.getElementById('c' + (index + 1)).focus();
+    }
+}
+
+// Backspace gaat naar vorig veld
+document.querySelectorAll('.code-invoer input').forEach((el, i) => {
+    el.addEventListener('keydown', e => {
+        if (e.key === 'Backspace' && !el.value && i > 0) {
+            document.getElementById('c' + (i - 1)).focus();
+        }
+    });
+    el.addEventListener('paste', e => {
+        e.preventDefault();
+        const tekst = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 6);
+        tekst.split('').forEach((c, j) => {
+            const veld = document.getElementById('c' + j);
+            if (veld) { veld.value = c; veld.classList.add('gevuld'); }
+        });
+        const laatste = Math.min(tekst.length, 5);
+        document.getElementById('c' + laatste)?.focus();
+    });
+});
+
+function getCode() {
+    return [0,1,2,3,4,5].map(i => document.getElementById('c'+i).value).join('');
+}
+
+async function submitReset(event) {
+    event.preventDefault();
+    const melding = document.getElementById('melding');
+    const btn = document.getElementById('btn-reset');
+
+    melding.innerHTML = '';
+
+    const code = getCode();
+    if (code.length !== 6) {
+        melding.innerHTML = `<div class="melding melding-fout">Vul alle 6 cijfers van de code in.</div>`;
+        return;
+    }
+
+    const nieuw = document.getElementById('wachtwoord-nieuw').value;
+    const bevestig = document.getElementById('wachtwoord-bevestig').value;
+    if (nieuw !== bevestig) {
+        melding.innerHTML = `<div class="melding melding-fout">De wachtwoorden komen niet overeen.</div>`;
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Instellen...';
+
+    try {
+        const resp = await fetch('http://localhost:5000/api/auth/wachtwoord-reset', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: emailParam, code, nieuwWachtwoord: nieuw })
+        });
+
+        if (!resp.ok) {
+            const fout = await resp.text();
+            throw new Error(fout || 'Mislukt');
+        }
+
+        melding.innerHTML = `<div class="melding melding-succes">Wachtwoord succesvol gewijzigd!</div>`;
+        setTimeout(() => location.href = 'inloggen.html', 1500);
+
+    } catch (e) {
+        const tekst = e.message.includes('ongeldig') ? 'Code is ongeldig of verlopen. Vraag een nieuwe aan.'
+            : 'Er ging iets mis. Probeer het opnieuw.';
+        melding.innerHTML = `<div class="melding melding-fout">${tekst}</div>`;
+        btn.disabled = false;
+        btn.textContent = 'Wachtwoord instellen';
+    }
+}
+</script>
+</body>
+</html>

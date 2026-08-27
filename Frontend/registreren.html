@@ -1,0 +1,350 @@
+﻿<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registreren – RaceCoachFinder</title>
+        <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .reg-kaart {
+            max-width: 520px;
+            margin: 3rem auto;
+            background: var(--kleur-wit);
+            border-radius: var(--rand);
+            box-shadow: var(--schaduw);
+            padding: 2.25rem 2.5rem 2rem;
+        }
+        .reg-kaart h2 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.25rem; }
+
+        /* Stappen indicator */
+        .stap-indicator { display: flex; align-items: center; margin: 1.5rem 0 2rem; }
+        .stap-wrapper { display: flex; flex-direction: column; align-items: center; }
+        .stap-bal {
+            width: 32px; height: 32px; border-radius: 50%;
+            border: 2px solid #ddd;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.82rem; font-weight: 700; color: #aaa;
+            background: var(--kleur-wit); flex-shrink: 0;
+            transition: all 0.2s; position: relative; z-index: 1;
+        }
+        .stap-bal.actief { border-color: var(--kleur-primair); background: var(--kleur-primair); color: #fff; }
+        .stap-bal.klaar  { border-color: var(--kleur-primair); background: var(--kleur-primair); color: #fff; }
+        .stap-lijn { flex: 1; height: 2px; background: #ddd; margin: 0 -1px 1.1rem; transition: background 0.2s; }
+        .stap-lijn.actief { background: var(--kleur-primair); }
+        .stap-label { font-size: 0.72rem; color: var(--kleur-subtekst); margin-top: 0.35rem; font-weight: 500; white-space: nowrap; }
+
+        /* Rolkeuze */
+        .rol-keuze { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.75rem; }
+        .rol-optie {
+            border: 2px solid #e0e0e0; border-radius: var(--rand);
+            padding: 1.5rem 1rem; text-align: center; cursor: pointer;
+            transition: border-color 0.2s, background 0.2s, box-shadow 0.2s; user-select: none;
+        }
+        .rol-optie:hover { border-color: var(--kleur-primair); box-shadow: 0 2px 12px rgba(0,0,0,0.07); }
+        .rol-optie.gekozen { border-color: var(--kleur-primair); background: #f9f9f0; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+        .rol-icoon { font-size: 2.25rem; margin-bottom: 0.5rem; }
+        .rol-naam { font-weight: 700; font-size: 1rem; }
+        .rol-omschrijving { font-size: 0.8rem; color: var(--kleur-subtekst); margin-top: 0.25rem; }
+
+        /* Betaalscherm */
+        .plan-kaart {
+            border: 2px solid var(--kleur-primair);
+            border-radius: var(--rand);
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 1.5rem;
+            background: #fafaf0;
+        }
+        .plan-naam { font-weight: 700; font-size: 1rem; margin-bottom: 0.15rem; }
+        .plan-prijs { font-size: 2rem; font-weight: 800; color: var(--kleur-primair); line-height: 1.1; }
+        .plan-prijs span { font-size: 0.9rem; font-weight: 500; color: var(--kleur-subtekst); }
+        .plan-voordelen { list-style: none; padding: 0; margin: 0.9rem 0 0; display: flex; flex-direction: column; gap: 0.4rem; }
+        .plan-voordelen li { font-size: 0.88rem; display: flex; align-items: center; gap: 0.5rem; }
+        .plan-voordelen li::before { content: "✓"; color: var(--kleur-primair); font-weight: 700; flex-shrink: 0; }
+
+        .cc-veld-rij { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+
+        .cc-kaart-logo {
+            position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%);
+            font-size: 1.1rem; pointer-events: none;
+        }
+        .invoer-met-logo { position: relative; }
+        .invoer-met-logo input { padding-right: 2.5rem; }
+
+        .betaal-veilig {
+            display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+            font-size: 0.78rem; color: var(--kleur-subtekst); margin-top: 0.75rem;
+        }
+
+        /* Navigatie */
+        .reg-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 1.75rem; gap: 0.75rem; }
+        .reg-nav .btn { min-width: 130px; }
+
+        .stap-inhoud { display: none; }
+        .stap-inhoud.actief { display: block; }
+
+        .vinkje-rij {
+            display: flex; align-items: flex-start; gap: 0.6rem;
+            margin-top: 1rem; cursor: pointer; font-size: 0.85rem;
+            color: var(--kleur-subtekst); line-height: 1.5;
+        }
+        .vinkje-rij input[type="checkbox"] { flex-shrink: 0; margin-top: 0.2rem; width: 16px; height: 16px; accent-color: var(--kleur-primair); cursor: pointer; }
+        .vinkje-rij a { color: var(--kleur-primair); }
+    </style>
+</head>
+<body>
+
+<nav>
+    <span class="nav-logo">Race<span>Coach</span>Finder</span>
+    <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="coaches.html">Coaches zoeken</a></li>
+        <li><a href="inloggen.html">Inloggen</a></li>
+    </ul>
+</nav>
+
+<div class="container">
+    <div class="reg-kaart">
+        <h2>Account aanmaken</h2>
+        <div id="melding"></div>
+
+        <!-- Stap indicator -->
+        <div class="stap-indicator" id="stap-indicator"></div>
+
+        <!-- Stap 1: Rolkeuze -->
+        <div class="stap-inhoud actief" id="stap-1">
+            <p style="color:var(--kleur-subtekst);font-size:0.9rem;margin-bottom:1.25rem">Ik wil mij aanmelden als:</p>
+            <div class="rol-keuze">
+                <div class="rol-optie" id="optie-rijder" onclick="kiesRol('Rijder')">
+                    <div class="rol-icoon">🏎️</div>
+                    <div class="rol-naam">Rijder</div>
+                    <div class="rol-omschrijving">Ik zoek een coach</div>
+                </div>
+                <div class="rol-optie" id="optie-coach" onclick="kiesRol('Coach')">
+                    <div class="rol-icoon">🏁</div>
+                    <div class="rol-naam">Coach</div>
+                    <div class="rol-omschrijving">Ik bied coaching aan</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stap 2: Accountgegevens -->
+        <div class="stap-inhoud" id="stap-2">
+            <div class="formulier-groep">
+                <label for="naam">Naam</label>
+                <input type="text" id="naam" placeholder="Voornaam Achternaam">
+            </div>
+            <div class="formulier-groep">
+                <label for="email">E-mailadres</label>
+                <input type="email" id="email" placeholder="jouw@email.com">
+            </div>
+            <div class="formulier-groep">
+                <label for="wachtwoord">Wachtwoord</label>
+                <input type="password" id="wachtwoord" placeholder="Minimaal 4 tekens">
+            </div>
+            <label class="vinkje-rij">
+                <input type="checkbox" id="leeftijd-vinkje">
+                <span>Ik ben 16 jaar of ouder, of heb toestemming van een ouder of voogd. Ik ga akkoord met de <a href="disclaimer.html" target="_blank">disclaimer</a>.</span>
+            </label>
+        </div>
+
+        <!-- Stap 3: Betaling (alleen voor coaches) -->
+        <div class="stap-inhoud" id="stap-3">
+            <div class="plan-kaart">
+                <div class="plan-naam">RaceCoachFinder Pro</div>
+                <div class="plan-prijs">€10 <span>/ maand</span></div>
+                <ul class="plan-voordelen">
+                    <li>Zichtbaar voor alle rijders op het platform</li>
+                    <li>Onbeperkt berichten en boekingen ontvangen</li>
+                    <li>Eigen coachprofiel met foto en statistieken</li>
+                    <li>Beoordelingen en reviews van rijders</li>
+                    <li>Op elk moment opzegbaar</li>
+                </ul>
+            </div>
+
+            <div class="formulier-groep">
+                <label>Kaartnummer</label>
+                <div class="invoer-met-logo">
+                    <input type="text" placeholder="1234  5678  9012  3456" maxlength="19"
+                           oninput="formatKaartNummer(this)">
+                    <span class="cc-kaart-logo">💳</span>
+                </div>
+            </div>
+            <div class="cc-veld-rij">
+                <div class="formulier-groep">
+                    <label>Vervaldatum</label>
+                    <input type="text" placeholder="MM / JJ" maxlength="7" oninput="formatVervaldatum(this)">
+                </div>
+                <div class="formulier-groep">
+                    <label>CVV</label>
+                    <input type="text" placeholder="123" maxlength="3" inputmode="numeric">
+                </div>
+            </div>
+            <div class="formulier-groep">
+                <label>Naam op kaart</label>
+                <input type="text" placeholder="Voornaam Achternaam">
+            </div>
+
+            <div class="betaal-veilig">
+                🔒 Beveiligde betaling via SSL-encryptie
+            </div>
+        </div>
+
+        <!-- Navigatie -->
+        <div class="reg-nav">
+            <button class="btn btn-donker" id="btn-terug" onclick="naarStap(huidigeStap - 1)" style="display:none">
+                &#8592; Terug
+            </button>
+            <div></div>
+            <button class="btn btn-primair" id="btn-volgende" onclick="volgendeStap()">
+                Volgende &#8594;
+            </button>
+        </div>
+
+        <p style="text-align:center;margin-top:1.5rem;color:var(--kleur-subtekst);font-size:0.9rem">
+            Al een account? <a href="inloggen.html">Inloggen</a>
+        </p>
+    </div>
+</div>
+
+<footer>
+    <div class="footer-inhoud">
+        <div class="footer-links">
+            <a href="contact.html">Contact</a>
+            <a href="disclaimer.html">Disclaimer</a>
+        </div>
+        <p>&copy; 2026 RaceCoachFinder</p>
+    </div>
+</footer>
+
+<script src="js/auth.js"></script>
+<script>
+let gekozenRol = '';
+let huidigeStap = 1;
+
+function stapLabels() {
+    if (gekozenRol === 'Coach') return ['Rol kiezen', 'Accountgegevens', 'Abonnement'];
+    if (gekozenRol === 'Rijder') return ['Rol kiezen', 'Accountgegevens'];
+    return ['Rol kiezen', 'Accountgegevens'];
+}
+
+function totaalStappen() { return stapLabels().length; }
+
+function bouwIndicator() {
+    const labels = stapLabels();
+    const totaal = labels.length;
+    const el = document.getElementById('stap-indicator');
+    let html = '';
+    for (let i = 0; i < totaal; i++) {
+        const num = i + 1;
+        const klaar = num < huidigeStap;
+        const actief = num === huidigeStap;
+        html += '<div class="stap-wrapper">'
+            + '<div class="stap-bal ' + (klaar ? 'klaar' : actief ? 'actief' : '') + '">'
+            + (klaar ? '✓' : num)
+            + '</div>'
+            + '<div class="stap-label">' + labels[i] + '</div>'
+            + '</div>';
+        if (i < totaal - 1) {
+            html += '<div class="stap-lijn ' + (klaar ? 'actief' : '') + '"></div>';
+        }
+    }
+    el.innerHTML = html;
+}
+
+function naarStap(stap) {
+    document.getElementById('stap-' + huidigeStap).classList.remove('actief');
+    huidigeStap = stap;
+    document.getElementById('stap-' + huidigeStap).classList.add('actief');
+
+    document.getElementById('btn-terug').style.display = huidigeStap > 1 ? '' : 'none';
+
+    const isLaatste = huidigeStap === totaalStappen();
+    const btnVolgende = document.getElementById('btn-volgende');
+    if (isLaatste && gekozenRol === 'Coach') {
+        btnVolgende.textContent = 'Betalen & account aanmaken';
+    } else if (isLaatste) {
+        btnVolgende.textContent = 'Account aanmaken';
+    } else {
+        btnVolgende.textContent = 'Volgende →';
+    }
+
+    bouwIndicator();
+    document.getElementById('melding').innerHTML = '';
+}
+
+function kiesRol(rol) {
+    gekozenRol = rol;
+    document.getElementById('optie-rijder').classList.toggle('gekozen', rol === 'Rijder');
+    document.getElementById('optie-coach').classList.toggle('gekozen', rol === 'Coach');
+    bouwIndicator();
+}
+
+function volgendeStap() {
+    if (huidigeStap === 1) {
+        if (!gekozenRol) { toonMelding('Kies eerst of je een rijder of coach bent.', 'fout'); return; }
+        naarStap(2);
+        return;
+    }
+    if (huidigeStap === 2) {
+        const naam = document.getElementById('naam').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const wachtwoord = document.getElementById('wachtwoord').value;
+        if (!naam)              { toonMelding('Vul je naam in.', 'fout'); return; }
+        if (!email)             { toonMelding('Vul je e-mailadres in.', 'fout'); return; }
+        if (wachtwoord.length < 4) { toonMelding('Wachtwoord moet minimaal 4 tekens zijn.', 'fout'); return; }
+        if (!document.getElementById('leeftijd-vinkje').checked) { toonMelding('Bevestig dat je 16+ bent of toestemming hebt.', 'fout'); return; }
+
+        if (gekozenRol === 'Coach') { naarStap(3); return; }
+        submitRegistreren();
+        return;
+    }
+    if (huidigeStap === 3) {
+        submitRegistreren();
+    }
+}
+
+async function submitRegistreren() {
+    try {
+        const antwoord = await fetch('http://localhost:5000/api/auth/registreren', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                naam: document.getElementById('naam').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                wachtwoord: document.getElementById('wachtwoord').value,
+                rol: gekozenRol
+            })
+        });
+        if (!antwoord.ok) throw new Error(await antwoord.text());
+        const data = await antwoord.json();
+        const berichtTekst = data.tweedeRol
+            ? 'Tweede rol toegevoegd! Je kan nu inloggen.'
+            : 'Account aangemaakt! Je wordt doorgestuurd...';
+        toonMelding(berichtTekst, 'succes');
+        setTimeout(() => location.href = 'inloggen.html', 1500);
+    } catch (e) {
+        toonMelding(e.message, 'fout');
+    }
+}
+
+function formatKaartNummer(el) {
+    let v = el.value.replace(/\D/g, '').slice(0, 16);
+    el.value = v.match(/.{1,4}/g)?.join('  ') || v;
+}
+
+function formatVervaldatum(el) {
+    let v = el.value.replace(/\D/g, '').slice(0, 4);
+    if (v.length >= 3) v = v.slice(0, 2) + ' / ' + v.slice(2);
+    el.value = v;
+}
+
+function toonMelding(tekst, type) {
+    const klasse = type === 'succes' ? 'melding-succes' : 'melding-fout';
+    document.getElementById('melding').innerHTML = '<div class="melding ' + klasse + '">' + tekst + '</div>';
+}
+
+bouwIndicator();
+</script>
+</body>
+</html>

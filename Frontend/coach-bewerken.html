@@ -1,0 +1,260 @@
+﻿<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profiel bewerken – RaceCoachFinder</title>
+        <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav>
+    <span class="nav-logo">Race<span>Coach</span>Finder</span>
+    <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="coaches.html">Coaches zoeken</a></li>
+        <li><a href="coach-toevoegen.html">Coach toevoegen</a></li>
+    </ul>
+</nav>
+
+<div class="container">
+    <div class="formulier-kaart">
+        <h2>Coachprofiel bewerken</h2>
+        <div id="melding"></div>
+
+        <div id="laad-indicator" class="laden">
+            <div class="spinner"></div>
+            <p>Gegevens laden...</p>
+        </div>
+
+        <form id="coach-form" onsubmit="submitBewerken(event)" style="display:none">
+
+            <div class="formulier-rij">
+                <div class="formulier-groep">
+                    <label for="naam">Naam *</label>
+                    <input type="text" id="naam" required>
+                </div>
+                <div class="formulier-groep">
+                    <label for="email">E-mailadres *</label>
+                    <input type="email" id="email" required>
+                </div>
+            </div>
+
+            <div class="formulier-rij">
+                <div class="formulier-groep">
+                    <label for="woonplaats">Woonplaats *</label>
+                    <input type="text" id="woonplaats" required>
+                </div>
+                <div class="formulier-groep">
+                    <label for="nationaliteit">Nationaliteit</label>
+                    <input type="text" id="nationaliteit">
+                </div>
+            </div>
+
+            <div class="formulier-rij">
+                <div class="formulier-groep">
+                    <label for="leeftijd">Leeftijd</label>
+                    <input type="number" id="leeftijd" min="10" max="99">
+                </div>
+                <div class="formulier-groep">
+                    <label for="jarenErvaring">Jaren ervaring</label>
+                    <input type="number" id="jarenErvaring" min="0" max="60">
+                </div>
+            </div>
+
+            <div class="formulier-groep">
+                <label for="talen">Talen</label>
+                <input type="text" id="talen">
+            </div>
+
+            <div class="formulier-rij">
+                <div class="formulier-groep">
+                    <label for="discipline">Discipline *</label>
+                    <select id="discipline" required>
+                        <option value="">Kies een discipline</option>
+                        <option>Indoor huurkart</option>
+                        <option>Outdoor huurkart</option>
+                        <option>Sprintkarting</option>
+                        <option>Endurance</option>
+                        <option>Rotax</option>
+                        <option>IAME</option>
+                        <option>KZ / Schakelkart</option>
+                        <option>Simracing</option>
+                    </select>
+                </div>
+                <div class="formulier-groep">
+                    <label for="specialisatie">Specialisatie</label>
+                    <select id="specialisatie">
+                        <option value="">Kies een specialisatie</option>
+                        <option>Racelijnen</option>
+                        <option>Remtechniek</option>
+                        <option>Inhalen</option>
+                        <option>Verdedigen</option>
+                        <option>Kwalificatie</option>
+                        <option>Racecraft</option>
+                        <option>Data-analyse</option>
+                        <option>Mentale coaching</option>
+                        <option>Fysieke coaching</option>
+                        <option>Set-up</option>
+                        <option>Regenrijden</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="formulier-groep">
+                <label for="bio">Korte beschrijving / bio</label>
+                <textarea id="bio" rows="4"></textarea>
+            </div>
+
+            <div class="formulier-groep">
+                <label for="beschikbareBanen">Beschikbare kartbanen</label>
+                <input type="text" id="beschikbareBanen">
+                <small>Meerdere banen scheiden met een komma</small>
+            </div>
+
+            <div class="formulier-groep">
+                <label for="behaaldResultaten">Behaalde resultaten</label>
+                <textarea id="behaaldResultaten" rows="3"></textarea>
+            </div>
+
+            <!-- Prijspakketten -->
+            <div class="formulier-groep">
+                <label>Prijspakketten</label>
+                <div id="prijzen-preview" class="prijzen-preview"></div>
+                <button type="button" class="btn btn-donker" style="margin-top:0.5rem;width:fit-content" onclick="openModal()">
+                    + Prijzen instellen
+                </button>
+            </div>
+
+            <div class="formulier-groep">
+                <div class="checkbox-rij">
+                    <input type="checkbox" id="onlineCoaching">
+                    <label for="onlineCoaching">Online coaching mogelijk</label>
+                </div>
+            </div>
+
+            <div style="display:flex;gap:1rem;margin-top:0.5rem">
+                <button type="submit" class="btn btn-primair">Wijzigingen opslaan</button>
+                <a id="terug-link" href="coaches.html" class="btn btn-secundair" style="color:#555;border-color:#ccc">Annuleren</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="sluitModalBuiten(event)">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Prijspakketten instellen</h3>
+            <button class="modal-sluit" onclick="sluitModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p style="color:var(--kleur-subtekst);font-size:0.9rem;margin-bottom:1rem">
+                Voeg je diensten toe met een naam en prijs. Bijvoorbeeld: <em>Racedag coachen, €150</em>
+            </p>
+            <div id="pakket-lijst"></div>
+            <button type="button" class="btn btn-donker" style="margin-top:0.5rem;font-size:0.9rem" onclick="voegPakketToe()">
+                + Pakket toevoegen
+            </button>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secundair" style="color:#555;border-color:#ccc" onclick="sluitModal()">Annuleren</button>
+            <button type="button" class="btn btn-primair" onclick="slaanPrijzenOp()">Opslaan</button>
+        </div>
+    </div>
+</div>
+
+<footer>
+    <div class="footer-inhoud">
+        <div class="footer-links">
+            <a href="contact.html">Contact</a>
+            <a href="disclaimer.html">Disclaimer</a>
+        </div>
+        <p>&copy; 2026 RaceCoachFinder</p>
+    </div>
+</footer>
+
+<script src="js/api.js"></script>
+<script src="js/prijzen-modal.js"></script>
+<script>
+const urlParams = new URLSearchParams(window.location.search);
+const coachId = parseInt(urlParams.get('id'));
+
+async function laadCoach() {
+    if (!coachId) {
+        document.getElementById('melding').innerHTML =
+            `<div class="melding melding-fout">Geen coach ID opgegeven. <a href="coaches.html">Terug</a></div>`;
+        document.getElementById('laad-indicator').style.display = 'none';
+        return;
+    }
+
+    try {
+        const c = await CoachAPI.haalEenOp(coachId);
+        vulFormulier(c);
+    } catch (e) {
+        document.getElementById('melding').innerHTML =
+            `<div class="melding melding-fout">Coach niet gevonden. <a href="coaches.html">Terug</a></div>`;
+        document.getElementById('laad-indicator').style.display = 'none';
+    }
+}
+
+function vulFormulier(c) {
+    document.title = `${c.naam} bewerken – RaceCoachFinder`;
+    document.getElementById('terug-link').href = `coach-detail.html?id=${c.id}`;
+
+    document.getElementById('naam').value = c.naam || '';
+    document.getElementById('email').value = c.email || '';
+    document.getElementById('woonplaats').value = c.woonplaats || '';
+    document.getElementById('nationaliteit').value = c.nationaliteit || '';
+    document.getElementById('leeftijd').value = c.leeftijd || '';
+    document.getElementById('jarenErvaring').value = c.jarenErvaring || '';
+    document.getElementById('talen').value = c.talen || '';
+    document.getElementById('discipline').value = c.discipline || '';
+    document.getElementById('specialisatie').value = c.specialisatie || '';
+    document.getElementById('bio').value = c.bio || '';
+    document.getElementById('beschikbareBanen').value = c.beschikbareBanen || '';
+    document.getElementById('behaaldResultaten').value = c.behaaldResultaten || '';
+    document.getElementById('onlineCoaching').checked = c.onlineCoaching || false;
+    laadPakketten(c.prijsPakketten || '');
+
+    document.getElementById('laad-indicator').style.display = 'none';
+    document.getElementById('coach-form').style.display = 'block';
+}
+
+async function submitBewerken(event) {
+    event.preventDefault();
+    const melding = document.getElementById('melding');
+    melding.innerHTML = '';
+
+    const coach = {
+        id: coachId,
+        naam: document.getElementById('naam').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        woonplaats: document.getElementById('woonplaats').value.trim(),
+        nationaliteit: document.getElementById('nationaliteit').value.trim(),
+        leeftijd: parseInt(document.getElementById('leeftijd').value) || 0,
+        jarenErvaring: parseInt(document.getElementById('jarenErvaring').value) || 0,
+        talen: document.getElementById('talen').value.trim(),
+        discipline: document.getElementById('discipline').value,
+        specialisatie: document.getElementById('specialisatie').value,
+        bio: document.getElementById('bio').value.trim(),
+        beschikbareBanen: document.getElementById('beschikbareBanen').value.trim(),
+        behaaldResultaten: document.getElementById('behaaldResultaten').value.trim(),
+        onlineCoaching: document.getElementById('onlineCoaching').checked,
+        prijsPakketten: JSON.stringify(huidigePakketten),
+    };
+
+    try {
+        await CoachAPI.pasAan(coachId, coach);
+        melding.innerHTML = `<div class="melding melding-succes">Opgeslagen! Doorverwijzen...</div>`;
+        setTimeout(() => location.href = `coach-detail.html?id=${coachId}`, 1200);
+    } catch (e) {
+        melding.innerHTML = `<div class="melding melding-fout">Opslaan mislukt: ${e.message}</div>`;
+    }
+}
+
+laadCoach();
+</script>
+</body>
+</html>
