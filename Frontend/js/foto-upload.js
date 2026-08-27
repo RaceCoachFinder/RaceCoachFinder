@@ -174,7 +174,7 @@ async function uploadFoto(input) {
         const formData = new FormData();
         formData.append('bestand', blob, 'profielfoto.jpg');
 
-        const antwoord = await fetch('http://localhost:5000/api/upload/profielfoto', {
+        const antwoord = await fetch('https://racecoachfinder-production.up.railway.app/api/upload/profielfoto', {
             method: 'POST',
             headers: authHeader(),
             body: formData

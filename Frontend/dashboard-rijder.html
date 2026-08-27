@@ -354,7 +354,7 @@ function toonFotoCirkel(fotoUrl, naam) {
     if (fotoUrl) {
         if (initialenEl) initialenEl.textContent = '';
         const img = document.createElement('img');
-        img.src = `http://localhost:5000${fotoUrl}`;
+        img.src = `https://racecoachfinder-production.up.railway.app${fotoUrl}`;
         img.alt = naam || '';
         cirkel.insertBefore(img, cirkel.firstChild);
     } else {

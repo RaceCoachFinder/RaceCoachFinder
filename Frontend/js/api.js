@@ -1,5 +1,5 @@
 // Pas dit aan als je backend op een ander adres draait
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = 'https://racecoachfinder-production.up.railway.app/api';
 
 async function apiVerzoek(pad, methode = 'GET', body = null) {
     const opties = {

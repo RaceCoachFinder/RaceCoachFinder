@@ -28,7 +28,7 @@ async function authVerzoek(pad, methode, body) {
         headers: Object.assign({ 'Content-Type': 'application/json' }, authHeader()),
     };
     if (body) opties.body = JSON.stringify(body);
-    const antwoord = await fetch('http://localhost:5000/api' + pad, opties);
+    const antwoord = await fetch('https://racecoachfinder-production.up.railway.app/api' + pad, opties);
     if (antwoord.status === 401) { uitloggen(); return; }
     if (!antwoord.ok) {
         const tekst = await antwoord.text();

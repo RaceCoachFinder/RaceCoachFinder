@@ -461,7 +461,7 @@ async function toggleFavoriet(event, coachId) {
 function coachKaartHTML(c) {
     const initialen = c.naam.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
     const avatar = c.fotoUrl
-        ? `<img src="http://localhost:5000${c.fotoUrl}" alt="${escapeHtml(c.naam)}" style="width:52px;height:52px;border-radius:50%;object-fit:cover;flex-shrink:0">`
+        ? `<img src="https://racecoachfinder-production.up.railway.app${c.fotoUrl}" alt="${escapeHtml(c.naam)}" style="width:52px;height:52px;border-radius:50%;object-fit:cover;flex-shrink:0">`
         : `<div class="coach-avatar">${initialen}</div>`;
     const isFavoriet = favorieten.has(c.id);
     const sterKnop = `<button onclick="toggleFavoriet(event,${c.id})" title="${isFavoriet ? 'Verwijder uit favorieten' : 'Opslaan als favoriet'}" style="position:absolute;top:10px;right:10px;background:none;border:none;font-size:1.4rem;cursor:pointer;line-height:1;color:${isFavoriet ? 'var(--kleur-primair)' : '#ccc'};transition:color 0.15s">${isFavoriet ? '★' : '☆'}</button>`;

@@ -509,7 +509,7 @@ function renderGesprekkenLijst(gesprekken) {
     lijst.innerHTML = alles.map(g => {
         partnerFotos[g.partnerId] = g.partnerFotoUrl || '';
         const initialen = g.partnerFotoUrl
-            ? '<img src="http://localhost:5000' + g.partnerFotoUrl + '" alt="">'
+            ? '<img src="https://racecoachfinder-production.up.railway.app' + g.partnerFotoUrl + '" alt="">'
             : g.partnerNaam.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
         const isActief = g.partnerId === huidigPartnerId;
         const heeftOngelezen = g.aantalOngelezen > 0;
@@ -551,7 +551,7 @@ async function openGesprek(partnerId, partnerNaam, partnerRol) {
     const avatarEl = document.getElementById('partner-avatar');
     const fotoUrl = partnerFotos[partnerId] || '';
     if (fotoUrl) {
-        avatarEl.innerHTML = '<img src="http://localhost:5000' + fotoUrl + '" alt="' + partnerNaam + '">';
+        avatarEl.innerHTML = '<img src="https://racecoachfinder-production.up.railway.app' + fotoUrl + '" alt="' + partnerNaam + '">';
     } else {
         avatarEl.textContent = partnerNaam.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
     }

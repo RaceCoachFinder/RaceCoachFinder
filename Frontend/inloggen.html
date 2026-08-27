@@ -126,7 +126,7 @@ async function submitInloggen(event) {
     document.getElementById('melding').innerHTML = '';
 
     try {
-        const data = await (await fetch('http://localhost:5000/api/auth/inloggen', {
+        const data = await (await fetch('https://racecoachfinder-production.up.railway.app/api/auth/inloggen', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

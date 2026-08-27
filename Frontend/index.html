@@ -102,7 +102,7 @@ async function laadHome() {
     }
 
     try {
-        const aantalRijders = await fetch('http://localhost:5000/api/rijder/aantal').then(r => r.json());
+        const aantalRijders = await fetch('https://racecoachfinder-production.up.railway.app/api/rijder/aantal').then(r => r.json());
         document.getElementById('stat-rijders').textContent = aantalRijders;
     } catch {}
 }
@@ -137,7 +137,7 @@ async function laadAanbevolen(alleCoaches) {
 function coachKaartHTML(c) {
     const initialen = c.naam.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
     const avatar = c.fotoUrl
-        ? `<img src="http://localhost:5000${c.fotoUrl}" alt="${escapeHtml(c.naam)}" style="width:52px;height:52px;border-radius:50%;object-fit:cover;flex-shrink:0">`
+        ? `<img src="https://racecoachfinder-production.up.railway.app${c.fotoUrl}" alt="${escapeHtml(c.naam)}" style="width:52px;height:52px;border-radius:50%;object-fit:cover;flex-shrink:0">`
         : `<div class="coach-avatar">${initialen}</div>`;
     return `
     <div class="coach-kaart" onclick="location.href='coach-detail.html?id=${c.id}'">

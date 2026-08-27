@@ -153,7 +153,7 @@ async function submitReset(event) {
     btn.textContent = 'Instellen...';
 
     try {
-        const resp = await fetch('http://localhost:5000/api/auth/wachtwoord-reset', {
+        const resp = await fetch('https://racecoachfinder-production.up.railway.app/api/auth/wachtwoord-reset', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: emailParam, code, nieuwWachtwoord: nieuw })

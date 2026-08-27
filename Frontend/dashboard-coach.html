@@ -533,7 +533,7 @@ function toonFotoCirkel(fotoUrl, naam) {
     if (fotoUrl) {
         if (initialenEl) initialenEl.textContent = '';
         const img = document.createElement('img');
-        img.src = 'http://localhost:5000' + fotoUrl;
+        img.src = 'https://racecoachfinder-production.up.railway.app' + fotoUrl;
         img.alt = naam || '';
         cirkel.insertBefore(img, cirkel.firstChild);
     } else {
@@ -730,7 +730,7 @@ async function laadPassendeAanvragen(coach) {
     const container = document.getElementById('aanvragen-widget-lijst');
     const widget = document.getElementById('aanvragen-widget');
     try {
-        const resp = await fetch('http://localhost:5000/api/aanvragen');
+        const resp = await fetch('https://racecoachfinder-production.up.railway.app/api/aanvragen');
         if (!resp.ok) return;
         const alle = await resp.json();
 

@@ -262,7 +262,7 @@ async function init() {
 
     // Laad alle aanvragen
     try {
-        const resp = await fetch('http://localhost:5000/api/aanvragen');
+        const resp = await fetch('https://racecoachfinder-production.up.railway.app/api/aanvragen');
         alleAanvragen = await resp.json();
         renderAanvragen();
     } catch {

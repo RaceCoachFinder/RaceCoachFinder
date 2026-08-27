@@ -183,7 +183,7 @@ function vulProfiel(c) {
     const initialen = c.naam.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
     const avatarEl = document.getElementById('d-avatar');
     if (c.fotoUrl) {
-        avatarEl.innerHTML = `<img src="http://localhost:5000${c.fotoUrl}" alt="${c.naam}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+        avatarEl.innerHTML = `<img src="https://racecoachfinder-production.up.railway.app${c.fotoUrl}" alt="${c.naam}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
     } else {
         avatarEl.textContent = initialen;
     }
@@ -314,7 +314,7 @@ function sterrenHtml(score) {
 
 async function laadReviews(coachGebruikerId) {
     try {
-        const reviews = await fetch(`http://localhost:5000/api/review/coach/${coachGebruikerId}`)
+        const reviews = await fetch(`https://racecoachfinder-production.up.railway.app/api/review/coach/${coachGebruikerId}`)
             .then(r => r.json());
         renderReviews(reviews);
     } catch {
