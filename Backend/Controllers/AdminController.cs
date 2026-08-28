@@ -100,14 +100,15 @@ public class AdminController : ControllerBase
             Naam = verzoek.Naam.Trim(),
             Rol = "Coach",
             EmailConfirmed = true,
-            HeeftAccountIngericht = false
+            HeeftAccountIngericht = false,
+            GratisVerlooptOp = DateTime.UtcNow.AddMonths(verzoek.GratisMananden)
         };
 
         var resultaat = await _userManager.CreateAsync(gebruiker, wachtwoord);
         if (!resultaat.Succeeded)
             return BadRequest(string.Join(", ", resultaat.Errors.Select(e => e.Description)));
 
-        return Ok(new { code, wachtwoord, naam = gebruiker.Naam });
+        return Ok(new { code, wachtwoord, naam = gebruiker.Naam, gratisMananden = verzoek.GratisMananden });
     }
 
     private static string GenereerWachtwoord()
@@ -117,4 +118,4 @@ public class AdminController : ControllerBase
     }
 }
 
-public record CoachUitnodigingVerzoek(string Naam);
+public record CoachUitnodigingVerzoek(string Naam, int GratisMananden = 3);

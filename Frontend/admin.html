@@ -80,12 +80,18 @@
         <p style="font-size:0.88rem;color:var(--kleur-subtekst);margin-bottom:1.25rem">
             Vul de naam van de coach in. Er wordt automatisch een inlogcode en wachtwoord gegenereerd die je deelt met de coach.
         </p>
-        <div style="display:flex;gap:0.75rem;align-items:flex-end">
-            <div class="formulier-groep" style="margin:0;flex:1">
+        <div style="display:flex;flex-direction:column;gap:0.75rem">
+            <div class="formulier-groep" style="margin:0">
                 <label style="font-size:0.85rem">Naam van de coach</label>
                 <input type="text" id="uitnodiging-naam" placeholder="bijv. Jan de Vries">
             </div>
-            <button class="btn btn-primair" onclick="maakUitnodiging()" style="flex-shrink:0">Aanmaken</button>
+            <div style="display:flex;gap:0.75rem;align-items:flex-end">
+                <div class="formulier-groep" style="margin:0;flex:1">
+                    <label style="font-size:0.85rem">Gratis periode (maanden)</label>
+                    <input type="number" id="uitnodiging-maanden" value="3" min="1" max="24">
+                </div>
+                <button class="btn btn-primair" onclick="maakUitnodiging()" style="flex-shrink:0">Aanmaken</button>
+            </div>
         </div>
         <div id="uitnodiging-resultaat" style="display:none;margin-top:1.25rem;background:#f9f9f0;border:2px solid var(--kleur-primair);border-radius:var(--rand);padding:1.1rem 1.25rem">
             <p style="font-size:0.82rem;color:var(--kleur-subtekst);margin-bottom:0.75rem">Stuur deze gegevens naar de coach:</p>
@@ -97,6 +103,10 @@
                 <div style="display:flex;justify-content:space-between;align-items:center">
                     <span style="font-size:0.85rem;color:var(--kleur-subtekst)">Wachtwoord</span>
                     <span id="res-wachtwoord" style="font-size:1rem;font-weight:700;font-family:monospace"></span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                    <span style="font-size:0.85rem;color:var(--kleur-subtekst)">Gratis periode</span>
+                    <span id="res-maanden" style="font-size:0.9rem;font-weight:700;color:#2e7d32"></span>
                 </div>
             </div>
             <button class="btn btn-donker" onclick="kopieerUitnodiging()" style="width:100%;margin-top:1rem;font-size:0.85rem">
@@ -357,11 +367,13 @@ function esc(str) {
 
 async function maakUitnodiging() {
     const naam = document.getElementById('uitnodiging-naam').value.trim();
+    const gratisMananden = parseInt(document.getElementById('uitnodiging-maanden').value) || 3;
     if (!naam) { alert('Vul een naam in.'); return; }
     try {
-        const data = await authVerzoek('/admin/coach-uitnodiging', 'POST', { naam });
+        const data = await authVerzoek('/admin/coach-uitnodiging', 'POST', { naam, gratisMananden });
         document.getElementById('res-code').textContent = data.code;
         document.getElementById('res-wachtwoord').textContent = data.wachtwoord;
+        document.getElementById('res-maanden').textContent = data.gratisMananden + ' maanden gratis';
         document.getElementById('uitnodiging-resultaat').style.display = '';
         document.getElementById('uitnodiging-naam').value = '';
     } catch (e) {
