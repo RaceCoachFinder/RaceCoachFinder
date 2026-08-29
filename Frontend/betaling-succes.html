@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Betaling geslaagd – RaceCoachFinder</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .succes-wrapper {
+            min-height: 60vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem 1rem;
+        }
+        .succes-kaart {
+            background: var(--kleur-wit);
+            border-radius: var(--rand);
+            box-shadow: var(--schaduw);
+            padding: 3rem 2.5rem;
+            text-align: center;
+            max-width: 480px;
+            width: 100%;
+        }
+        .succes-icoon {
+            font-size: 3.5rem;
+            margin-bottom: 1.25rem;
+        }
+        .succes-kaart h1 {
+            font-size: 1.6rem;
+            margin-bottom: 0.75rem;
+        }
+        .succes-kaart p {
+            color: var(--kleur-subtekst);
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+
+<nav>
+    <span class="nav-logo">Race<span>Coach</span>Finder</span>
+    <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="coaches.html">Coaches</a></li>
+    </ul>
+</nav>
+
+<div class="succes-wrapper">
+    <div class="succes-kaart">
+        <div class="succes-icoon">&#10003;</div>
+        <h1>Betaling geslaagd!</h1>
+        <p>
+            Bedankt voor je betaling. Je abonnement is nu actief en wordt elke maand automatisch verlengd.<br><br>
+            Je kunt nu volledig gebruik maken van RaceCoachFinder als coach.
+        </p>
+        <a href="dashboard-coach.html" class="btn btn-primair">Ga naar dashboard</a>
+    </div>
+</div>
+
+<footer>
+    <div class="footer-inhoud">
+        <div class="footer-links">
+            <a href="hoe-werkt-het.html">Hoe werkt het</a>
+            <a href="contact.html">Contact</a>
+            <a href="disclaimer.html">Disclaimer</a>
+        </div>
+        <p>&copy; 2026 RaceCoachFinder</p>
+    </div>
+</footer>
+
+<script src="js/auth.js"></script>
+<script>updateNav();</script>
+</body>
+</html>

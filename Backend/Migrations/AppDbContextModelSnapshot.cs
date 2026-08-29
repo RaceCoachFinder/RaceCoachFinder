@@ -25,6 +25,12 @@ namespace Backend.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("AbonnementActief")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("AbonnementVerlooptOp")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
                         .HasColumnType("TEXT");
@@ -41,6 +47,9 @@ namespace Backend.Migrations
 
                     b.Property<bool>("HeeftAccountIngericht")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("MollieKlantId")
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("INTEGER");

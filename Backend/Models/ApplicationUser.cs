@@ -8,4 +8,7 @@ public class ApplicationUser : IdentityUser
     public string Rol { get; set; } = "Rijder"; // Coach, Rijder, Admin
     public bool HeeftAccountIngericht { get; set; } = true; // false = code-account, moet nog email+wachtwoord instellen
     public DateTime? GratisVerlooptOp { get; set; }
+    public string? MollieKlantId { get; set; }
+    public bool AbonnementActief { get; set; } = false;
+    public DateTime? AbonnementVerlooptOp { get; set; }
 }

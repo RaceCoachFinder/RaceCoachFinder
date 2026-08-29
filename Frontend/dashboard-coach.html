@@ -26,6 +26,17 @@
         .status-gepubliceerd { background: #e8f5e9; color: #2e7d32; }
         .status-ongepubliceerd { background: #fde8ea; color: #c62828; border: 2px solid #c62828; }
 
+        .abonnement-balk {
+            display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;
+            padding: 0.85rem 1.25rem;
+            border-radius: var(--rand);
+            font-size: 0.9rem; font-weight: 600;
+            margin-bottom: 1.25rem;
+        }
+        .abonnement-actief { background: #e8f5e9; color: #2e7d32; }
+        .abonnement-gratis { background: #fff8e1; color: #f57f17; }
+        .abonnement-verlopen { background: #fde8ea; color: #c62828; border: 2px solid #c62828; }
+
         .stat-rij { display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 2rem; }
         .stat-kaartje {
             background: var(--kleur-wit);
@@ -197,6 +208,7 @@
 
 <div class="container" style="padding-top:2rem;padding-bottom:3rem">
     <div id="melding"></div>
+    <div id="abonnement-balk" style="display:none"></div>
 
     <!-- Toon dit als er nog geen profiel is -->
     <div id="geen-profiel-melding" style="display:none">
@@ -772,8 +784,44 @@ async function laadPassendeAanvragen(coach) {
     } catch {}
 }
 
+async function laadAbonnementStatus() {
+    try {
+        const status = await authVerzoek('/betaling/status');
+        const balk = document.getElementById('abonnement-balk');
+        balk.style.display = '';
+
+        if (status.abonnementActief) {
+            const datum = new Date(status.abonnementVerlooptOp).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' });
+            balk.className = 'abonnement-balk abonnement-actief';
+            balk.innerHTML = `<span>✅ Abonnement actief — geldig tot ${datum}</span>`;
+        } else if (status.inGratisperiode) {
+            const datum = new Date(status.gratisVerlooptOp).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' });
+            balk.className = 'abonnement-balk abonnement-gratis';
+            balk.innerHTML = `<span>🎁 Gratis periode actief — verloopt op ${datum}</span>`;
+        } else {
+            balk.className = 'abonnement-balk abonnement-verlopen';
+            balk.innerHTML = `
+                <span>⚠️ Geen actief abonnement. Abonneer voor €10/maand om coach te blijven.</span>
+                <button class="btn btn-primair" style="font-size:0.85rem;padding:0.4rem 1rem" onclick="startAbonnement()">Abonnement starten</button>
+            `;
+        }
+    } catch {}
+}
+
+async function startAbonnement() {
+    try {
+        const data = await authVerzoek('/betaling/start-abonnement', 'POST');
+        if (data.checkoutUrl) {
+            window.location.href = data.checkoutUrl;
+        }
+    } catch (e) {
+        toonMelding('Betaling starten mislukt: ' + e.message, 'fout');
+    }
+}
+
 updateNav();
 laadDashboard();
+laadAbonnementStatus();
 </script>
 </body>
 </html>
