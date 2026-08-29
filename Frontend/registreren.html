@@ -62,15 +62,6 @@
         .plan-voordelen li { font-size: 0.88rem; display: flex; align-items: center; gap: 0.5rem; }
         .plan-voordelen li::before { content: "✓"; color: var(--kleur-primair); font-weight: 700; flex-shrink: 0; }
 
-        .cc-veld-rij { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-
-        .cc-kaart-logo {
-            position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%);
-            font-size: 1.1rem; pointer-events: none;
-        }
-        .invoer-met-logo { position: relative; }
-        .invoer-met-logo input { padding-right: 2.5rem; }
-
         .betaal-veilig {
             display: flex; align-items: center; justify-content: center; gap: 0.4rem;
             font-size: 0.78rem; color: var(--kleur-subtekst); margin-top: 0.75rem;
@@ -162,31 +153,12 @@
                 </ul>
             </div>
 
-            <div class="formulier-groep">
-                <label>Kaartnummer</label>
-                <div class="invoer-met-logo">
-                    <input type="text" placeholder="1234  5678  9012  3456" maxlength="19"
-                           oninput="formatKaartNummer(this)">
-                    <span class="cc-kaart-logo">💳</span>
-                </div>
-            </div>
-            <div class="cc-veld-rij">
-                <div class="formulier-groep">
-                    <label>Vervaldatum</label>
-                    <input type="text" placeholder="MM / JJ" maxlength="7" oninput="formatVervaldatum(this)">
-                </div>
-                <div class="formulier-groep">
-                    <label>CVV</label>
-                    <input type="text" placeholder="123" maxlength="3" inputmode="numeric">
-                </div>
-            </div>
-            <div class="formulier-groep">
-                <label>Naam op kaart</label>
-                <input type="text" placeholder="Voornaam Achternaam">
-            </div>
-
+            <p style="color:var(--kleur-subtekst);font-size:0.88rem;line-height:1.6;margin-bottom:0.75rem">
+                Na het klikken op de knop wordt je account aangemaakt en doorgestuurd naar Mollie voor veilige betaling.
+                Je kunt betalen via <strong>iDEAL</strong>, creditcard, Bancontact en meer.
+            </p>
             <div class="betaal-veilig">
-                🔒 Beveiligde betaling via SSL-encryptie
+                🔒 Beveiligde betaling via Mollie
             </div>
         </div>
 
@@ -263,7 +235,7 @@ function naarStap(stap) {
     const isLaatste = huidigeStap === totaalStappen();
     const btnVolgende = document.getElementById('btn-volgende');
     if (isLaatste && gekozenRol === 'Coach') {
-        btnVolgende.textContent = 'Betalen & account aanmaken';
+        btnVolgende.textContent = 'Registreren & betalen via Mollie';
     } else if (isLaatste) {
         btnVolgende.textContent = 'Account aanmaken';
     } else {
@@ -306,8 +278,13 @@ function volgendeStap() {
 }
 
 async function submitRegistreren() {
+    const btn = document.getElementById('btn-volgende');
+    btn.disabled = true;
+    const origTekst = btn.textContent;
+    btn.textContent = 'Bezig...';
+
     try {
-        const antwoord = await fetch('https://racecoachfinder-production.up.railway.app/api/auth/registreren', {
+        const regAntwoord = await fetch('https://racecoachfinder-production.up.railway.app/api/auth/registreren', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -317,28 +294,52 @@ async function submitRegistreren() {
                 rol: gekozenRol
             })
         });
-        if (!antwoord.ok) throw new Error(await antwoord.text());
-        const data = await antwoord.json();
-        const berichtTekst = data.tweedeRol
-            ? 'Tweede rol toegevoegd! Je kan nu inloggen.'
-            : 'Account aangemaakt! Je wordt doorgestuurd...';
-        toonMelding(berichtTekst, 'succes');
-        setTimeout(() => location.href = 'inloggen.html', 1500);
+        if (!regAntwoord.ok) throw new Error(await regAntwoord.text());
+        const regData = await regAntwoord.json();
+
+        if (gekozenRol === 'Coach' && !regData.tweedeRol) {
+            // Automatisch inloggen
+            const loginAntwoord = await fetch('https://racecoachfinder-production.up.railway.app/api/auth/inloggen', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: document.getElementById('email').value.trim(),
+                    wachtwoord: document.getElementById('wachtwoord').value
+                })
+            });
+            if (!loginAntwoord.ok) throw new Error('Inloggen mislukt');
+            const loginData = await loginAntwoord.json();
+            localStorage.setItem('kcf_token', loginData.token);
+            localStorage.setItem('kcf_gebruiker', JSON.stringify({
+                naam: loginData.naam,
+                email: loginData.email,
+                rol: loginData.rol,
+                heeftAccountIngericht: loginData.heeftAccountIngericht
+            }));
+
+            // Mollie betaling starten
+            btn.textContent = 'Doorsturen naar betaling...';
+            const betalingAntwoord = await fetch('https://racecoachfinder-production.up.railway.app/api/betaling/start-abonnement', {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + loginData.token }
+            });
+            if (!betalingAntwoord.ok) throw new Error('Betaling starten mislukt');
+            const betalingData = await betalingAntwoord.json();
+            window.location.href = betalingData.checkoutUrl;
+        } else {
+            const berichtTekst = regData.tweedeRol
+                ? 'Tweede rol toegevoegd! Je kan nu inloggen.'
+                : 'Account aangemaakt! Je wordt doorgestuurd...';
+            toonMelding(berichtTekst, 'succes');
+            setTimeout(() => location.href = 'inloggen.html', 1500);
+        }
     } catch (e) {
         toonMelding(e.message, 'fout');
+        btn.disabled = false;
+        btn.textContent = origTekst;
     }
 }
 
-function formatKaartNummer(el) {
-    let v = el.value.replace(/\D/g, '').slice(0, 16);
-    el.value = v.match(/.{1,4}/g)?.join('  ') || v;
-}
-
-function formatVervaldatum(el) {
-    let v = el.value.replace(/\D/g, '').slice(0, 4);
-    if (v.length >= 3) v = v.slice(0, 2) + ' / ' + v.slice(2);
-    el.value = v;
-}
 
 function toonMelding(tekst, type) {
     const klasse = type === 'succes' ? 'melding-succes' : 'melding-fout';
