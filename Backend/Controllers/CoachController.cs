@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
@@ -12,10 +13,12 @@ namespace Backend.Controllers;
 public class CoachController : ControllerBase
 {
     private readonly AppDbContext _context;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    public CoachController(AppDbContext context)
+    public CoachController(AppDbContext context, UserManager<ApplicationUser> userManager)
     {
         _context = context;
+        _userManager = userManager;
     }
 
     // Publiek: alleen gepubliceerde coaches (met gemiddelde score)
@@ -177,6 +180,19 @@ public class CoachController : ControllerBase
         var gebruikerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         var coach = await _context.Coaches.FirstOrDefaultAsync(c => c.GebruikerId == gebruikerId);
         if (coach == null) return NotFound();
+
+        // Alleen publiceren toestaan als abonnement of gratis periode actief is
+        if (!coach.IsGepubliceerd)
+        {
+            var gebruiker = await _userManager.FindByIdAsync(gebruikerId!);
+            var nu = DateTime.UtcNow;
+            var heeftToegang = gebruiker != null && (
+                (gebruiker.AbonnementActief && gebruiker.AbonnementVerlooptOp > nu) ||
+                (gebruiker.GratisVerlooptOp.HasValue && gebruiker.GratisVerlooptOp > nu)
+            );
+            if (!heeftToegang)
+                return BadRequest("Geen actief abonnement. Abonneer eerst voor €10/maand.");
+        }
 
         coach.IsGepubliceerd = !coach.IsGepubliceerd;
         await _context.SaveChangesAsync();

@@ -94,6 +94,18 @@ public class BetalingController : ControllerBase
         });
     }
 
+    [HttpPost("test-activeer")]
+    [Authorize(Roles = "Coach")]
+    public async Task<IActionResult> TestActiveer()
+    {
+        var gebruiker = await _userManager.GetUserAsync(User);
+        if (gebruiker == null) return Unauthorized();
+        gebruiker.AbonnementActief = true;
+        gebruiker.AbonnementVerlooptOp = DateTime.UtcNow.AddMonths(1);
+        await _userManager.UpdateAsync(gebruiker);
+        return Ok(new { bericht = "Testabonnement geactiveerd." });
+    }
+
     [HttpPost("webhook")]
     [AllowAnonymous]
     public async Task<IActionResult> Webhook([FromForm] string id)

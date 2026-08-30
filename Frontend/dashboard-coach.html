@@ -802,20 +802,45 @@ async function laadAbonnementStatus() {
             balk.className = 'abonnement-balk abonnement-verlopen';
             balk.innerHTML = `
                 <span>⚠️ Geen actief abonnement. Abonneer voor €10/maand om coach te blijven.</span>
-                <button class="btn btn-primair" style="font-size:0.85rem;padding:0.4rem 1rem" onclick="startAbonnement()">Abonnement starten</button>
+                <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+                    <button class="btn btn-primair" style="font-size:0.85rem;padding:0.4rem 1rem" onclick="startAbonnement()">Abonnement starten</button>
+                    <button class="btn btn-donker" style="font-size:0.75rem;padding:0.4rem 0.8rem;opacity:0.7" onclick="testActiveer()" title="Alleen voor testen">🧪 Test activeren</button>
+                </div>
             `;
         }
     } catch {}
 }
 
-async function startAbonnement() {
+async function testActiveer() {
     try {
-        const data = await authVerzoek('/betaling/start-abonnement', 'POST');
+        await authVerzoek('/betaling/test-activeer', 'POST');
+        toonMelding('Testabonnement geactiveerd!', 'succes');
+        setTimeout(() => location.reload(), 1500);
+    } catch (e) {
+        toonMelding('Fout: ' + e.message, 'fout');
+    }
+}
+
+async function startAbonnement() {
+    toonMelding('Betaling starten…', 'info');
+    try {
+        const antwoord = await fetch('https://racecoachfinder-production.up.railway.app/api/betaling/start-abonnement', {
+            method: 'POST',
+            headers: Object.assign({ 'Content-Type': 'application/json' }, authHeader())
+        });
+        const tekst = await antwoord.text();
+        if (!antwoord.ok) {
+            toonMelding('Betaling mislukt (' + antwoord.status + '): ' + tekst, 'fout');
+            return;
+        }
+        const data = JSON.parse(tekst);
         if (data.checkoutUrl) {
             window.location.href = data.checkoutUrl;
+        } else {
+            toonMelding('Geen checkout URL ontvangen: ' + tekst, 'fout');
         }
     } catch (e) {
-        toonMelding('Betaling starten mislukt: ' + e.message, 'fout');
+        toonMelding('Netwerkfout: ' + e.message, 'fout');
     }
 }
 
