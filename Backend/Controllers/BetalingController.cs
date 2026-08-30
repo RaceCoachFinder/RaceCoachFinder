@@ -36,34 +36,42 @@ public class BetalingController : ControllerBase
     [Authorize(Roles = "Coach")]
     public async Task<IActionResult> StartAbonnement()
     {
-        var gebruiker = await _userManager.GetUserAsync(User);
-        if (gebruiker == null) return Unauthorized();
-
-        var klantClient = new CustomerClient(ApiKey);
-        var betalingClient = new PaymentClient(ApiKey);
-
-        if (string.IsNullOrEmpty(gebruiker.MollieKlantId))
+        try
         {
-            var klant = await klantClient.CreateCustomerAsync(new CustomerRequest
+            var gebruiker = await _userManager.GetUserAsync(User);
+            if (gebruiker == null) return Unauthorized();
+
+            var klantClient = new CustomerClient(ApiKey);
+            var betalingClient = new PaymentClient(ApiKey);
+
+            if (string.IsNullOrEmpty(gebruiker.MollieKlantId))
             {
-                Name = gebruiker.Naam,
-                Email = gebruiker.Email ?? gebruiker.Naam
+                var klant = await klantClient.CreateCustomerAsync(new CustomerRequest
+                {
+                    Name = gebruiker.Naam,
+                    Email = gebruiker.Email ?? gebruiker.Naam
+                });
+                gebruiker.MollieKlantId = klant.Id;
+                await _userManager.UpdateAsync(gebruiker);
+            }
+
+            var betaling = await betalingClient.CreatePaymentAsync(new PaymentRequest
+            {
+                Amount = new Amount(Currency.EUR, "10.00"),
+                Description = "RaceCoachFinder – maandelijks abonnement",
+                RedirectUrl = $"{FrontendUrl}/betaling-succes.html",
+                WebhookUrl = $"{BackendUrl}/api/betaling/webhook",
+                SequenceType = SequenceType.First,
+                CustomerId = gebruiker.MollieKlantId
             });
-            gebruiker.MollieKlantId = klant.Id;
-            await _userManager.UpdateAsync(gebruiker);
+
+            return Ok(new { checkoutUrl = betaling.Links.Checkout?.Href });
         }
-
-        var betaling = await betalingClient.CreatePaymentAsync(new PaymentRequest
+        catch (Exception ex)
         {
-            Amount = new Amount(Currency.EUR, "10.00"),
-            Description = "RaceCoachFinder – maandelijks abonnement",
-            RedirectUrl = $"{FrontendUrl}/betaling-succes.html",
-            WebhookUrl = $"{BackendUrl}/api/betaling/webhook",
-            SequenceType = SequenceType.First,
-            CustomerId = gebruiker.MollieKlantId
-        });
-
-        return Ok(new { checkoutUrl = betaling.Links.Checkout?.Href });
+            Console.Error.WriteLine("StartAbonnement fout: " + ex.ToString());
+            return StatusCode(500, ex.Message);
+        }
     }
 
     [HttpGet("status")]
