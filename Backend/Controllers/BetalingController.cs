@@ -6,6 +6,7 @@ using Backend.Models;
 using Mollie.Api.Client;
 using Mollie.Api.Models;
 using Mollie.Api.Models.Customer;
+using Mollie.Api.Models.Payment;
 using Mollie.Api.Models.Payment.Request;
 using Mollie.Api.Models.Subscription;
 
