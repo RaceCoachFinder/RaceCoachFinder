@@ -47,10 +47,12 @@ public class BetalingController : ControllerBase
 
             if (string.IsNullOrEmpty(gebruiker.MollieKlantId))
             {
+                var email = gebruiker.Email;
+                var geldigEmail = !string.IsNullOrEmpty(email) && email.Contains('@') && email.IndexOf('.', email.IndexOf('@')) > 0;
                 var klant = await klantClient.CreateCustomerAsync(new CustomerRequest
                 {
                     Name = gebruiker.Naam,
-                    Email = gebruiker.Email ?? gebruiker.Naam
+                    Email = geldigEmail ? email : null
                 });
                 gebruiker.MollieKlantId = klant.Id;
                 await _userManager.UpdateAsync(gebruiker);
