@@ -15,7 +15,8 @@ var dbPath = Environment.GetEnvironmentVariable("DB_PATH") ?? "coachfinder.db";
 var dbDir = Path.GetDirectoryName(dbPath);
 if (!string.IsNullOrEmpty(dbDir)) Directory.CreateDirectory(dbDir);
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite($"Data Source={dbPath}"));
+    options.UseSqlite($"Data Source={dbPath}")
+           .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)));
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
