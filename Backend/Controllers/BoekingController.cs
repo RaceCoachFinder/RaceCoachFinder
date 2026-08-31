@@ -60,9 +60,14 @@ public class BoekingController : ControllerBase
         var factuurnummer = verzoek.FactuurnummerTekst ?? $"F-{DateTime.UtcNow:yyyy}-{boeking.Id:D4}";
         var berichtenUrl = $"{FrontendUrl}/berichten.html?partner={coachId}";
 
-        _ = _email.VerstuurAsync(
-            coach?.Email ?? "", coachNaam, $"Factuur {factuurnummer} verstuurd",
-            EmailTemplates.FactuurCoach(coachNaam, rijderNaam, factuurnummer, verzoek.Omschrijving, verzoek.Bedrag));
+        var coachEmail = coach?.Email ?? "";
+        var geldigCoachEmail = coachEmail.Contains('@') && coachEmail.IndexOf('.', coachEmail.IndexOf('@')) > 0;
+        if (geldigCoachEmail)
+        {
+            _ = _email.VerstuurAsync(
+                coachEmail, coachNaam, $"Factuur {factuurnummer} verstuurd",
+                EmailTemplates.FactuurCoach(coachNaam, rijderNaam, factuurnummer, verzoek.Omschrijving, verzoek.Bedrag));
+        }
 
         if (!string.IsNullOrEmpty(rijder.Email) && rijder.Email.Contains('@') && rijder.Email.Contains('.'))
         {
