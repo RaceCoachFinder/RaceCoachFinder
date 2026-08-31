@@ -141,6 +141,40 @@ public static class EmailTemplates
         return Omhulsel(inhoud);
     }
 
+    public static string FactuurCoach(string coachNaam, string rijderNaam, string factuurnummer, string omschrijving, decimal bedrag)
+    {
+        var inhoud =
+            "<h2 style=\"margin:0 0 8px;color:#111111;font-size:1.2rem\">Factuur verstuurd ✓</h2>" +
+            "<p style=\"color:#555;margin:0 0 16px\">Hallo " + Esc(coachNaam) + ",</p>" +
+            "<p style=\"color:#555;margin:0 0 24px\">Je factuur <strong>" + Esc(factuurnummer) + "</strong> is verstuurd naar <strong>" + Esc(rijderNaam) + "</strong>.</p>" +
+            "<table width=\"100%\" cellpadding=\"10\" cellspacing=\"0\" style=\"border:1px solid #eee;border-radius:8px;margin-bottom:24px\">" +
+            "<tr><td style=\"color:#999;font-size:0.82rem\">Omschrijving</td><td style=\"color:#999;font-size:0.82rem;text-align:right\">Bedrag</td></tr>" +
+            "<tr><td style=\"color:#111;font-weight:600\">" + Esc(omschrijving) + "</td>" +
+            "<td style=\"color:#111;font-weight:700;text-align:right\">€ " + bedrag.ToString("F2").Replace(".", ",") + "</td></tr>" +
+            "</table>" +
+            "<p style=\"color:#aaa;font-size:0.82rem;margin:0\">De rijder ontvangt een e-mail met betaalinstructies.</p>";
+        return Omhulsel(inhoud);
+    }
+
+    public static string FactuurRijder(string rijderNaam, string coachNaam, string factuurnummer, string omschrijving, decimal bedrag, int termijn, string berichtenUrl)
+    {
+        var vervaldatum = DateTime.Now.AddDays(termijn).ToString("d MMMM yyyy", new System.Globalization.CultureInfo("nl-NL"));
+        var inhoud =
+            "<h2 style=\"margin:0 0 8px;color:#111111;font-size:1.2rem\">Factuur van " + Esc(coachNaam) + "</h2>" +
+            "<p style=\"color:#555;margin:0 0 16px\">Hallo " + Esc(rijderNaam) + ",</p>" +
+            "<p style=\"color:#555;margin:0 0 20px\">Je hebt een factuur ontvangen van coach <strong>" + Esc(coachNaam) + "</strong>.</p>" +
+            "<table width=\"100%\" cellpadding=\"10\" cellspacing=\"0\" style=\"border:1px solid #eee;border-radius:8px;margin-bottom:8px\">" +
+            "<tr style=\"background:#f9f9f9\"><td style=\"color:#999;font-size:0.82rem;border-bottom:1px solid #eee\">Factuurnummer</td>" +
+            "<td style=\"color:#999;font-size:0.82rem;border-bottom:1px solid #eee;text-align:right\">" + Esc(factuurnummer) + "</td></tr>" +
+            "<tr><td style=\"color:#111;font-weight:600\">" + Esc(omschrijving) + "</td>" +
+            "<td style=\"color:#111;font-weight:700;text-align:right\">€ " + bedrag.ToString("F2").Replace(".", ",") + "</td></tr>" +
+            "</table>" +
+            "<p style=\"color:#e65100;font-size:0.85rem;margin:0 0 24px\">Betalen vóór: <strong>" + vervaldatum + "</strong></p>" +
+            Knop(berichtenUrl, "Betaal nu via RaceCoachFinder") +
+            "<p style=\"color:#aaa;font-size:0.78rem;margin:24px 0 0\">Klik op de knop om veilig te betalen via onze website.</p>";
+        return Omhulsel(inhoud);
+    }
+
     private static string Esc(string s) =>
         s.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\"", "&quot;");
 }

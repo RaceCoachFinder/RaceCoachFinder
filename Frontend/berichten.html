@@ -234,19 +234,34 @@
         .boeking-status.geannuleerd { background: #f8d7da; color: #721c24; }
         .boeking-acties { display: flex; gap: 0.4rem; flex-wrap: wrap; }
 
-        /* Betaalverzoek formulier */
+        /* Factuur formulier */
         .verzoek-formulier {
             background: #fafafe;
-            border-top: 1px solid #e8e8f0;
-            padding: 0.85rem 1.5rem;
+            border-top: 2px solid var(--kleur-primair);
+            padding: 1rem 1.5rem 1.25rem;
             display: none;
             flex-direction: column;
-            gap: 0.6rem;
+            gap: 0.85rem;
             flex-shrink: 0;
+            max-height: 75vh;
+            overflow-y: auto;
         }
         .verzoek-formulier.zichtbaar { display: flex; }
-        .verzoek-formulier-titel { font-size: 0.78rem; font-weight: 700; color: var(--kleur-subtekst); text-transform: uppercase; letter-spacing: 0.4px; }
-        .verzoek-velden { display: flex; gap: 0.5rem; }
+        .verzoek-formulier-titel { font-size: 0.82rem; font-weight: 700; color: #111; display: flex; align-items: center; gap: 0.4rem; }
+        .factuur-meta { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; }
+        .factuur-meta label, .factuur-regels-header label { font-size: 0.72rem; font-weight: 700; color: var(--kleur-subtekst); text-transform: uppercase; letter-spacing: 0.3px; display: block; margin-bottom: 0.25rem; }
+        .factuur-input {
+            width: 100%; padding: 0.4rem 0.65rem; border: 1.5px solid #ddd; border-radius: 7px;
+            font-size: 0.85rem; font-family: inherit; box-sizing: border-box; background: #fff;
+        }
+        .factuur-input:focus { outline: none; border-color: var(--kleur-primair); }
+        .factuur-regels-header { display: grid; grid-template-columns: 1fr 60px 90px 70px 36px; gap: 0.35rem; align-items: end; }
+        .factuur-regel { display: grid; grid-template-columns: 1fr 60px 90px 70px 36px; gap: 0.35rem; align-items: center; }
+        .factuur-regel-verwijder { background: none; border: 1.5px solid #ddd; border-radius: 6px; cursor: pointer; color: #999; font-size: 0.9rem; height: 34px; width: 34px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+        .factuur-regel-verwijder:hover { border-color: #c62828; color: #c62828; }
+        .factuur-totaal { display: flex; flex-direction: column; align-items: flex-end; gap: 0.2rem; font-size: 0.85rem; padding-top: 0.5rem; border-top: 1px solid #eee; }
+        .factuur-totaal-rij { display: flex; gap: 1rem; justify-content: flex-end; color: var(--kleur-subtekst); }
+        .factuur-totaal-rij.totaal { font-weight: 800; font-size: 1rem; color: #111; }
         .verzoek-velden input {
             padding: 0.45rem 0.75rem;
             border: 1.5px solid #ddd;
@@ -380,14 +395,56 @@
             <div class="berichten-stroom" id="berichten-stroom"></div>
 
             <div class="verzoek-formulier" id="verzoek-formulier">
-                <div class="verzoek-formulier-titel">Betaalverzoek sturen</div>
-                <div class="verzoek-velden">
-                    <input class="verzoek-omschrijving" id="verzoek-omschrijving" type="text" placeholder="Omschrijving (bijv. 1 coachsessie)" maxlength="200">
-                    <input class="verzoek-bedrag" id="verzoek-bedrag" type="number" placeholder="Bedrag €" min="1" step="0.01">
+                <div class="verzoek-formulier-titel">📄 Factuur versturen</div>
+
+                <!-- Meta: factuurnummer, datum, betalingstermijn -->
+                <div class="factuur-meta">
+                    <div>
+                        <label>Factuurnummer</label>
+                        <input class="factuur-input" id="factuur-nummer" type="text" placeholder="F-2026-001">
+                    </div>
+                    <div>
+                        <label>Factuurdatum</label>
+                        <input class="factuur-input" id="factuur-datum" type="date">
+                    </div>
+                    <div>
+                        <label>Betalingstermijn</label>
+                        <select class="factuur-input" id="factuur-termijn">
+                            <option value="7">7 dagen</option>
+                            <option value="14" selected>14 dagen</option>
+                            <option value="30">30 dagen</option>
+                        </select>
+                    </div>
                 </div>
+
+                <!-- Regelkoppen -->
+                <div class="factuur-regels-header">
+                    <label>Omschrijving</label>
+                    <label>Aantal</label>
+                    <label>Prijs excl.</label>
+                    <label>BTW</label>
+                    <label></label>
+                </div>
+
+                <!-- Factuurregels -->
+                <div id="factuur-regels"></div>
+
+                <button type="button" onclick="voegRegelToe()" style="align-self:flex-start;background:none;border:1.5px dashed #ccc;border-radius:7px;padding:0.3rem 0.85rem;font-size:0.82rem;cursor:pointer;color:var(--kleur-subtekst);font-family:inherit;transition:all 0.15s" onmouseover="this.style.borderColor='var(--kleur-primair)'" onmouseout="this.style.borderColor='#ccc'">
+                    + Regel toevoegen
+                </button>
+
+                <!-- Totalen -->
+                <div class="factuur-totaal" id="factuur-totaal"></div>
+
+                <!-- Notities -->
+                <div>
+                    <label style="font-size:0.72rem;font-weight:700;color:var(--kleur-subtekst);text-transform:uppercase;letter-spacing:0.3px;display:block;margin-bottom:0.25rem">Notities <span style="font-weight:400;opacity:0.6">(optioneel)</span></label>
+                    <textarea class="factuur-input" id="factuur-notities" rows="2" placeholder="Bijv. bedankt voor de samenwerking!" style="resize:vertical"></textarea>
+                </div>
+
                 <div style="display:flex;gap:0.5rem">
-                    <button class="btn btn-primair" onclick="stuurBetaalverzoek()" style="font-size:0.85rem;padding:0.4rem 1rem">Versturen</button>
-                    <button class="btn btn-secundair" onclick="sluitVerzoekFormulier()" style="font-size:0.85rem;padding:0.4rem 1rem">Annuleren</button>
+                    <button class="btn btn-primair" onclick="stuurBetaalverzoek()" style="font-size:0.85rem;padding:0.4rem 1.1rem">📨 Factuur versturen</button>
+                    <button class="btn btn-donker" onclick="sluitVerzoekFormulier()" style="font-size:0.85rem;padding:0.4rem 1rem">Annuleren</button>
                 </div>
             </div>
 
@@ -567,8 +624,8 @@ async function openGesprek(partnerId, partnerNaam, partnerRol) {
         document.getElementById('aanvraag-context').style.display = 'none';
     }
 
-    // Toon betaalverzoek knop alleen voor coaches
-    document.getElementById('btn-betaalverzoek').style.display = gebruiker.rol === 'Coach' ? '' : 'none';
+    // Toon betaalverzoek knop alleen voor coaches (ook bij dubbele rol)
+    document.getElementById('btn-betaalverzoek').style.display = heeftRol('Coach') ? '' : 'none';
     sluitVerzoekFormulier();
 
     // Stop oude polling, start nieuwe
@@ -672,7 +729,7 @@ function renderBoeking(b) {
     const tijd = new Date(_ts).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
     const bedragStr = '€ ' + parseFloat(b.bedrag).toFixed(2).replace('.', ',');
 
-    const ikBenCoach = gebruiker.rol === 'Coach';
+    const ikBenCoach = heeftRol('Coach');
     const heeftBevestigd = ikBenCoach ? b.coachHeeftBevestigd : b.rijderHeeftBevestigd;
 
     let acties = '';
@@ -835,28 +892,129 @@ async function submitReview() {
     }
 }
 
+let factuurRegels = [];
+
 function toggleVerzoekFormulier() {
-    document.getElementById('verzoek-formulier').classList.toggle('zichtbaar');
+    const f = document.getElementById('verzoek-formulier');
+    if (f.classList.contains('zichtbaar')) {
+        sluitVerzoekFormulier();
+    } else {
+        initFactuurFormulier();
+        f.classList.add('zichtbaar');
+    }
+}
+
+function initFactuurFormulier() {
+    // Datum vandaag
+    const nu = new Date();
+    document.getElementById('factuur-datum').value = nu.toISOString().split('T')[0];
+
+    // Factuurnummer genereren
+    const jaar = nu.getFullYear();
+    const volgnr = String(Math.floor(Math.random() * 900) + 100);
+    document.getElementById('factuur-nummer').value = `F-${jaar}-${volgnr}`;
+
+    // Begin met 1 lege regel
+    factuurRegels = [];
+    voegRegelToe();
+}
+
+function voegRegelToe() {
+    const id = Date.now();
+    factuurRegels.push({ id, omschrijving: '', aantal: 1, prijs: 0, btw: 21 });
+    renderRegels();
+}
+
+function verwijderRegel(id) {
+    factuurRegels = factuurRegels.filter(r => r.id !== id);
+    if (factuurRegels.length === 0) voegRegelToe();
+    else renderRegels();
+}
+
+function leesRegelWaarden() {
+    factuurRegels.forEach(r => {
+        const el = document.getElementById('regel-' + r.id);
+        if (!el) return;
+        r.omschrijving = el.querySelector('.r-omschrijving').value;
+        r.aantal = parseFloat(el.querySelector('.r-aantal').value) || 0;
+        r.prijs = parseFloat(el.querySelector('.r-prijs').value) || 0;
+        r.btw = parseFloat(el.querySelector('.r-btw').value) || 0;
+    });
+}
+
+function renderRegels() {
+    const container = document.getElementById('factuur-regels');
+    container.innerHTML = factuurRegels.map(r => `
+        <div class="factuur-regel" id="regel-${r.id}">
+            <input class="factuur-input r-omschrijving" type="text" placeholder="Omschrijving" value="${esc(r.omschrijving)}" oninput="berekenTotaal()">
+            <input class="factuur-input r-aantal" type="number" min="0.01" step="0.01" value="${r.aantal}" style="text-align:right" oninput="berekenTotaal()">
+            <input class="factuur-input r-prijs" type="number" min="0" step="0.01" value="${r.prijs}" placeholder="€" style="text-align:right" oninput="berekenTotaal()">
+            <select class="factuur-input r-btw" onchange="berekenTotaal()">
+                <option value="0" ${r.btw===0?'selected':''}>0%</option>
+                <option value="9" ${r.btw===9?'selected':''}>9%</option>
+                <option value="21" ${r.btw===21?'selected':''}>21%</option>
+            </select>
+            <button type="button" class="factuur-regel-verwijder" onclick="verwijderRegel(${r.id})" title="Verwijder">✕</button>
+        </div>`).join('');
+    berekenTotaal();
+}
+
+function berekenTotaal() {
+    leesRegelWaarden();
+    let exclBtw = 0, btwBedrag = 0;
+    factuurRegels.forEach(r => {
+        const sub = r.aantal * r.prijs;
+        exclBtw += sub;
+        btwBedrag += sub * (r.btw / 100);
+    });
+    const totaal = exclBtw + btwBedrag;
+    const fmt = n => '€ ' + n.toFixed(2).replace('.', ',');
+    document.getElementById('factuur-totaal').innerHTML =
+        `<div class="factuur-totaal-rij"><span>Subtotaal excl. BTW</span><span>${fmt(exclBtw)}</span></div>` +
+        `<div class="factuur-totaal-rij"><span>BTW</span><span>${fmt(btwBedrag)}</span></div>` +
+        `<div class="factuur-totaal-rij totaal"><span>Totaal te betalen</span><span>${fmt(totaal)}</span></div>`;
+    return totaal;
 }
 
 function sluitVerzoekFormulier() {
     document.getElementById('verzoek-formulier').classList.remove('zichtbaar');
-    document.getElementById('verzoek-omschrijving').value = '';
-    document.getElementById('verzoek-bedrag').value = '';
+    factuurRegels = [];
 }
 
 async function stuurBetaalverzoek() {
     if (!huidigPartnerId) return;
-    const omschrijving = document.getElementById('verzoek-omschrijving').value.trim();
-    const bedragStr = document.getElementById('verzoek-bedrag').value.trim();
-    if (!omschrijving) { alert('Voer een omschrijving in.'); return; }
-    if (!bedragStr || parseFloat(bedragStr) <= 0) { alert('Voer een geldig bedrag in.'); return; }
+    leesRegelWaarden();
+
+    const nummer = document.getElementById('factuur-nummer').value.trim();
+    const termijn = parseInt(document.getElementById('factuur-termijn').value) || 14;
+    const notities = document.getElementById('factuur-notities').value.trim();
+
+    if (factuurRegels.every(r => !r.omschrijving.trim())) {
+        alert('Voer minimaal één omschrijving in.'); return;
+    }
+
+    let exclBtw = 0, btwBedrag = 0;
+    factuurRegels.forEach(r => {
+        const sub = r.aantal * r.prijs;
+        exclBtw += sub;
+        btwBedrag += sub * (r.btw / 100);
+    });
+    const totaal = exclBtw + btwBedrag;
+    if (totaal <= 0) { alert('Totaalbedrag moet groter zijn dan €0.'); return; }
+
+    const omschrijving = factuurRegels.filter(r => r.omschrijving.trim())
+        .map(r => r.omschrijving.trim()).join(', ');
+
+    const factuurJson = JSON.stringify({ regels: factuurRegels, notities, factuurnummer: nummer, betalingstermijn: termijn });
 
     try {
         await authVerzoek('/boeking', 'POST', {
             rijderGebruikerId: huidigPartnerId,
             omschrijving,
-            bedrag: parseFloat(bedragStr)
+            bedrag: Math.round(totaal * 100) / 100,
+            factuurnummerTekst: nummer,
+            betalingsTermijn: termijn,
+            factuurJson
         });
         sluitVerzoekFormulier();
         await laadBerichten(huidigPartnerId);

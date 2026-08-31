@@ -145,12 +145,22 @@ namespace Backend.Migrations
                     b.Property<decimal>("Bedrag")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("BetalingsTermijn")
+                        .HasDefaultValue(14)
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("CoachGebruikerId")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("CoachHeeftBevestigd")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string?>("FactuurJson")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string?>("FactuurnummerTekst")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Omschrijving")
                         .IsRequired()

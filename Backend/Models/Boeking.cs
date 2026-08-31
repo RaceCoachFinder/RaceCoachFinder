@@ -11,4 +11,7 @@ public class Boeking
     public DateTime AangemaaktOp { get; set; } = DateTime.UtcNow;
     public bool CoachHeeftBevestigd { get; set; }
     public bool RijderHeeftBevestigd { get; set; }
+    public string? FactuurnummerTekst { get; set; }
+    public int BetalingsTermijn { get; set; } = 14;
+    public string? FactuurJson { get; set; }
 }

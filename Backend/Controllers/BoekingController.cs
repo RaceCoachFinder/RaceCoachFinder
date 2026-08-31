@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using Backend.Data;
 using Backend.Models;
+using Backend.Services;
 
 namespace Backend.Controllers;
 
@@ -15,19 +16,23 @@ public class BoekingController : ControllerBase
 {
     private readonly AppDbContext _context;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IEmailService _email;
+    private const string FrontendUrl = "https://racecoachfinder.netlify.app";
 
-    public BoekingController(AppDbContext context, UserManager<ApplicationUser> userManager)
+    public BoekingController(AppDbContext context, UserManager<ApplicationUser> userManager, IEmailService email)
     {
         _context = context;
         _userManager = userManager;
+        _email = email;
     }
 
-    // Coach stuurt betaalverzoek naar rijder
+    // Coach stuurt betaalverzoek/factuur naar rijder
     [HttpPost]
     [Authorize(Roles = "Coach")]
     public async Task<IActionResult> MaakBoeking([FromBody] BoekingVerzoek verzoek)
     {
         var coachId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var coach = await _userManager.FindByIdAsync(coachId!);
         var rijder = await _userManager.FindByIdAsync(verzoek.RijderGebruikerId);
         if (rijder == null) return NotFound("Rijder niet gevonden.");
         if (string.IsNullOrWhiteSpace(verzoek.Omschrijving)) return BadRequest("Omschrijving is verplicht.");
@@ -40,11 +45,32 @@ public class BoekingController : ControllerBase
             Omschrijving = verzoek.Omschrijving.Trim(),
             Bedrag = verzoek.Bedrag,
             Status = "Openstaand",
-            AangemaaktOp = DateTime.UtcNow
+            AangemaaktOp = DateTime.UtcNow,
+            FactuurnummerTekst = verzoek.FactuurnummerTekst,
+            BetalingsTermijn = verzoek.BetalingsTermijn > 0 ? verzoek.BetalingsTermijn : 14,
+            FactuurJson = verzoek.FactuurJson
         };
 
         _context.Boekingen.Add(boeking);
         await _context.SaveChangesAsync();
+
+        // Emails versturen (op de achtergrond, fouten negeren)
+        var coachNaam = coach?.Naam ?? "Coach";
+        var rijderNaam = rijder.Naam ?? "Rijder";
+        var factuurnummer = verzoek.FactuurnummerTekst ?? $"F-{DateTime.UtcNow:yyyy}-{boeking.Id:D4}";
+        var berichtenUrl = $"{FrontendUrl}/berichten.html?partner={coachId}";
+
+        _ = _email.VerstuurAsync(
+            coach?.Email ?? "", coachNaam, $"Factuur {factuurnummer} verstuurd",
+            EmailTemplates.FactuurCoach(coachNaam, rijderNaam, factuurnummer, verzoek.Omschrijving, verzoek.Bedrag));
+
+        if (!string.IsNullOrEmpty(rijder.Email) && rijder.Email.Contains('@') && rijder.Email.Contains('.'))
+        {
+            _ = _email.VerstuurAsync(
+                rijder.Email, rijderNaam, $"Factuur {factuurnummer} van {coachNaam}",
+                EmailTemplates.FactuurRijder(rijderNaam, coachNaam, factuurnummer, verzoek.Omschrijving, verzoek.Bedrag, boeking.BetalingsTermijn, berichtenUrl));
+        }
+
         return Ok(boeking);
     }
 
@@ -198,4 +224,11 @@ public class BoekingController : ControllerBase
     }
 }
 
-public record BoekingVerzoek(string RijderGebruikerId, string Omschrijving, decimal Bedrag);
+public record BoekingVerzoek(
+    string RijderGebruikerId,
+    string Omschrijving,
+    decimal Bedrag,
+    string? FactuurnummerTekst,
+    int BetalingsTermijn,
+    string? FactuurJson
+);
