@@ -245,7 +245,7 @@ public static class PdfService
                     {
                         t.Span("Betaling verloopt via ").FontColor(Grijs).FontSize(8);
                         t.Span("RaceCoachFinder").Bold().FontColor(Geel).FontSize(8);
-                        t.Span(" — racecoachfinder.netlify.app").FontColor(Grijs).FontSize(8);
+                        t.Span(" — race-coach-finder.vercel.app").FontColor(Grijs).FontSize(8);
                     });
             });
         }).GeneratePdf();

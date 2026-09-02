@@ -112,13 +112,13 @@ public static class EmailTemplates
         {
             actieKnop =
                 "<p style=\"color:#555;margin:0 0 24px\">Maak je profiel aan en publiceer het zodat rijders je kunnen vinden.</p>" +
-                Knop("https://racecoachfinder.netlify.app/dashboard-coach.html", "Profiel aanmaken");
+                Knop("https://race-coach-finder.vercel.app/dashboard-coach.html", "Profiel aanmaken");
         }
         else
         {
             actieKnop =
                 "<p style=\"color:#555;margin:0 0 24px\">Zoek een coach die bij jou past en stuur een bericht.</p>" +
-                Knop("https://racecoachfinder.netlify.app/coaches.html", "Coaches bekijken");
+                Knop("https://race-coach-finder.vercel.app/coaches.html", "Coaches bekijken");
         }
 
         var inhoud =
