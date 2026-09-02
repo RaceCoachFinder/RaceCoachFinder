@@ -729,7 +729,7 @@ function renderBoeking(b) {
     const tijd = new Date(_ts).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
     const bedragStr = '€ ' + parseFloat(b.bedrag).toFixed(2).replace('.', ',');
 
-    const ikBenCoach = heeftRol('Coach');
+    const ikBenCoach = b.coachGebruikerId !== huidigPartnerId;
     const heeftBevestigd = ikBenCoach ? b.coachHeeftBevestigd : b.rijderHeeftBevestigd;
 
     let acties = '';
