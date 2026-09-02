@@ -44,7 +44,7 @@ public class EmailService : IEmailService
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         using var smtp = new SmtpClient();
-        await smtp.ConnectAsync(host, port, SecureSocketOptions.StartTls, cts.Token);
+        await smtp.ConnectAsync(host, 465, SecureSocketOptions.SslOnConnect, cts.Token);
         await smtp.AuthenticateAsync(afzender, wachtwoord, cts.Token);
         await smtp.SendAsync(bericht, cancellationToken: cts.Token);
         await smtp.DisconnectAsync(true);
