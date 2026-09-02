@@ -1,6 +1,4 @@
-using MimeKit;
-using MailKit.Net.Smtp;
-using MailKit.Security;
+using System.Net.Http.Json;
 
 namespace Backend.Services;
 
@@ -13,6 +11,7 @@ public class EmailService : IEmailService
 {
     private readonly IConfiguration _config;
     private readonly ILogger<EmailService> _logger;
+    private static readonly HttpClient _http = new();
 
     public EmailService(IConfiguration config, ILogger<EmailService> logger)
     {
@@ -22,34 +21,36 @@ public class EmailService : IEmailService
 
     public async Task VerstuurAsync(string naarEmail, string naarNaam, string onderwerp, string htmlBody)
     {
-        var host = _config["Email:Host"];
-        var afzender = _config["Email:Afzender"];
-        var wachtwoord = _config["Email:Wachtwoord"];
+        var apiKey = _config["Email:BrevoApiKey"];
+        var afzender = _config["Email:Afzender"] ?? "racecoachfinder@gmail.com";
+        var naamAfzender = _config["Email:NaamAfzender"] ?? "RaceCoachFinder";
 
-        if (string.IsNullOrEmpty(host) || string.IsNullOrEmpty(afzender) ||
-            string.IsNullOrEmpty(wachtwoord) || afzender.StartsWith("JOUW"))
+        if (string.IsNullOrEmpty(apiKey))
         {
-            _logger.LogWarning("E-mail niet verzonden: vul Email:Afzender en Email:Wachtwoord in in appsettings.json.");
+            _logger.LogWarning("Brevo API key niet geconfigureerd.");
             return;
         }
 
-        var port = int.Parse(_config["Email:Port"] ?? "587");
-        var naamAfzender = _config["Email:NaamAfzender"] ?? "RaceCoachFinder";
+        var payload = new
+        {
+            sender = new { name = naamAfzender, email = afzender },
+            to = new[] { new { email = naarEmail, name = naarNaam } },
+            subject = onderwerp,
+            htmlContent = htmlBody
+        };
 
-        var bericht = new MimeMessage();
-        bericht.From.Add(new MailboxAddress(naamAfzender, afzender));
-        bericht.To.Add(new MailboxAddress(naarNaam, naarEmail));
-        bericht.Subject = onderwerp;
-        bericht.Body = new TextPart("html") { Text = htmlBody };
+        using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.brevo.com/v3/smtp/email");
+        request.Headers.Add("api-key", apiKey);
+        request.Content = JsonContent.Create(payload);
 
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        using var smtp = new SmtpClient();
-        await smtp.ConnectAsync(host, 465, SecureSocketOptions.SslOnConnect, cts.Token);
-        await smtp.AuthenticateAsync(afzender, wachtwoord, cts.Token);
-        await smtp.SendAsync(bericht, cancellationToken: cts.Token);
-        await smtp.DisconnectAsync(true);
+        var response = await _http.SendAsync(request);
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync();
+            throw new Exception($"Brevo fout {(int)response.StatusCode}: {error}");
+        }
 
-        _logger.LogInformation("E-mail verstuurd naar {Email}: {Onderwerp}", naarEmail, onderwerp);
+        _logger.LogInformation("E-mail verstuurd via Brevo naar {Email}: {Onderwerp}", naarEmail, onderwerp);
     }
 }
 
@@ -86,7 +87,6 @@ public static class EmailTemplates
             "&#8220;" + Esc(berichtPreview) + "&#8221;" +
             "</div>" +
             Knop(berichtenUrl, "Bekijk bericht");
-
         return Omhulsel(inhoud);
     }
 
@@ -110,7 +110,6 @@ public static class EmailTemplates
             "<h2 style=\"margin:0 0 8px;color:#111111;font-size:1.2rem\">Welkom bij RaceCoachFinder, " + Esc(naam) + "!</h2>" +
             "<p style=\"color:#555;margin:0 0 16px\">Je account als <strong>" + Esc(rol) + "</strong> is succesvol aangemaakt.</p>" +
             actieKnop;
-
         return Omhulsel(inhoud);
     }
 
@@ -126,7 +125,6 @@ public static class EmailTemplates
             "<div style=\"font-size:2.2rem;font-weight:800;letter-spacing:10px;color:#111111\">" + Esc(code) + "</div>" +
             "</div></div>" +
             "<p style=\"color:#aaa;font-size:0.82rem;margin:0\">Als je geen wachtwoord reset hebt aangevraagd, kun je deze e-mail negeren.</p>";
-
         return Omhulsel(inhoud);
     }
 
