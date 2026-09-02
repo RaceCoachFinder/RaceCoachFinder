@@ -60,23 +60,51 @@ public class BoekingController : ControllerBase
         var factuurnummer = verzoek.FactuurnummerTekst ?? $"F-{DateTime.UtcNow:yyyy}-{boeking.Id:D4}";
         var berichtenUrl = $"{FrontendUrl}/berichten.html?partner={coachId}";
 
+        var emailFout = "";
+
         var coachEmail = coach?.Email ?? "";
         var geldigCoachEmail = coachEmail.Contains('@') && coachEmail.IndexOf('.', coachEmail.IndexOf('@')) > 0;
         if (geldigCoachEmail)
         {
-            _ = _email.VerstuurAsync(
-                coachEmail, coachNaam, $"Factuur {factuurnummer} verstuurd",
-                EmailTemplates.FactuurCoach(coachNaam, rijderNaam, factuurnummer, verzoek.Omschrijving, verzoek.Bedrag));
+            try
+            {
+                await _email.VerstuurAsync(
+                    coachEmail, coachNaam, $"Factuur {factuurnummer} verstuurd",
+                    EmailTemplates.FactuurCoach(coachNaam, rijderNaam, factuurnummer, verzoek.Omschrijving, verzoek.Bedrag));
+            }
+            catch (Exception ex)
+            {
+                emailFout = $"Coach email mislukt: {ex.Message}";
+            }
         }
 
-        if (!string.IsNullOrEmpty(rijder.Email) && rijder.Email.Contains('@') && rijder.Email.Contains('.'))
+        if (!string.IsNullOrEmpty(rijder.Email) && rijder.Email.Contains('@') && rijder.Email.IndexOf('.', rijder.Email.IndexOf('@')) > 0)
         {
-            _ = _email.VerstuurAsync(
-                rijder.Email, rijderNaam, $"Factuur {factuurnummer} van {coachNaam}",
-                EmailTemplates.FactuurRijder(rijderNaam, coachNaam, factuurnummer, verzoek.Omschrijving, verzoek.Bedrag, boeking.BetalingsTermijn, berichtenUrl));
+            try
+            {
+                await _email.VerstuurAsync(
+                    rijder.Email, rijderNaam, $"Factuur {factuurnummer} van {coachNaam}",
+                    EmailTemplates.FactuurRijder(rijderNaam, coachNaam, factuurnummer, verzoek.Omschrijving, verzoek.Bedrag, boeking.BetalingsTermijn, berichtenUrl));
+            }
+            catch (Exception ex)
+            {
+                emailFout += (emailFout.Length > 0 ? " | " : "") + $"Rijder email mislukt: {ex.Message}";
+            }
         }
 
-        return Ok(boeking);
+        return Ok(new
+        {
+            boeking.Id,
+            boeking.CoachGebruikerId,
+            boeking.RijderGebruikerId,
+            boeking.Omschrijving,
+            boeking.Bedrag,
+            boeking.Status,
+            boeking.AangemaaktOp,
+            boeking.FactuurnummerTekst,
+            boeking.BetalingsTermijn,
+            emailFout
+        });
     }
 
     // Haal boekingen op voor gesprek tussen huidige gebruiker en partner

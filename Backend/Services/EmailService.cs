@@ -1,5 +1,6 @@
-﻿using System.Net;
-using System.Net.Mail;
+using MimeKit;
+using MailKit.Net.Smtp;
+using MailKit.Security;
 
 namespace Backend.Services;
 
@@ -35,32 +36,19 @@ public class EmailService : IEmailService
         var port = int.Parse(_config["Email:Port"] ?? "587");
         var naamAfzender = _config["Email:NaamAfzender"] ?? "RaceCoachFinder";
 
-        try
-        {
-#pragma warning disable SYSLIB0006
-            using var smtp = new SmtpClient(host, port)
-            {
-                EnableSsl = true,
-                Credentials = new NetworkCredential(afzender, wachtwoord)
-            };
+        var bericht = new MimeMessage();
+        bericht.From.Add(new MailboxAddress(naamAfzender, afzender));
+        bericht.To.Add(new MailboxAddress(naarNaam, naarEmail));
+        bericht.Subject = onderwerp;
+        bericht.Body = new TextPart("html") { Text = htmlBody };
 
-            var mail = new MailMessage
-            {
-                From = new MailAddress(afzender, naamAfzender),
-                Subject = onderwerp,
-                Body = htmlBody,
-                IsBodyHtml = true
-            };
-            mail.To.Add(new MailAddress(naarEmail, naarNaam));
+        using var smtp = new SmtpClient();
+        await smtp.ConnectAsync(host, port, SecureSocketOptions.StartTls);
+        await smtp.AuthenticateAsync(afzender, wachtwoord);
+        await smtp.SendAsync(bericht);
+        await smtp.DisconnectAsync(true);
 
-            await smtp.SendMailAsync(mail);
-            _logger.LogInformation("E-mail verstuurd naar {Email}: {Onderwerp}", naarEmail, onderwerp);
-#pragma warning restore SYSLIB0006
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Fout bij verzenden e-mail naar {Email}", naarEmail);
-        }
+        _logger.LogInformation("E-mail verstuurd naar {Email}: {Onderwerp}", naarEmail, onderwerp);
     }
 }
 
@@ -108,13 +96,13 @@ public static class EmailTemplates
         {
             actieKnop =
                 "<p style=\"color:#555;margin:0 0 24px\">Maak je profiel aan en publiceer het zodat rijders je kunnen vinden.</p>" +
-                Knop("http://localhost:5500/dashboard-coach.html", "Profiel aanmaken");
+                Knop("https://racecoachfinder.netlify.app/dashboard-coach.html", "Profiel aanmaken");
         }
         else
         {
             actieKnop =
                 "<p style=\"color:#555;margin:0 0 24px\">Zoek een coach die bij jou past en stuur een bericht.</p>" +
-                Knop("http://localhost:5500/coaches.html", "Coaches bekijken");
+                Knop("https://racecoachfinder.netlify.app/coaches.html", "Coaches bekijken");
         }
 
         var inhoud =
@@ -144,7 +132,7 @@ public static class EmailTemplates
     public static string FactuurCoach(string coachNaam, string rijderNaam, string factuurnummer, string omschrijving, decimal bedrag)
     {
         var inhoud =
-            "<h2 style=\"margin:0 0 8px;color:#111111;font-size:1.2rem\">Factuur verstuurd ✓</h2>" +
+            "<h2 style=\"margin:0 0 8px;color:#111111;font-size:1.2rem\">Factuur verstuurd</h2>" +
             "<p style=\"color:#555;margin:0 0 16px\">Hallo " + Esc(coachNaam) + ",</p>" +
             "<p style=\"color:#555;margin:0 0 24px\">Je factuur <strong>" + Esc(factuurnummer) + "</strong> is verstuurd naar <strong>" + Esc(rijderNaam) + "</strong>.</p>" +
             "<table width=\"100%\" cellpadding=\"10\" cellspacing=\"0\" style=\"border:1px solid #eee;border-radius:8px;margin-bottom:24px\">" +

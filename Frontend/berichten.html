@@ -1008,7 +1008,7 @@ async function stuurBetaalverzoek() {
     const factuurJson = JSON.stringify({ regels: factuurRegels, notities, factuurnummer: nummer, betalingstermijn: termijn });
 
     try {
-        await authVerzoek('/boeking', 'POST', {
+        const data = await authVerzoek('/boeking', 'POST', {
             rijderGebruikerId: huidigPartnerId,
             omschrijving,
             bedrag: Math.round(totaal * 100) / 100,
@@ -1018,6 +1018,9 @@ async function stuurBetaalverzoek() {
         });
         sluitVerzoekFormulier();
         await laadBerichten(huidigPartnerId);
+        if (data && data.emailFout) {
+            alert('Factuur aangemaakt! Maar e-mail versturen mislukt:\n' + data.emailFout);
+        }
     } catch (e) {
         alert('Fout bij versturen: ' + e.message);
     }
