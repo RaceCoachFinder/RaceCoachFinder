@@ -42,10 +42,11 @@ public class EmailService : IEmailService
         bericht.Subject = onderwerp;
         bericht.Body = new TextPart("html") { Text = htmlBody };
 
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         using var smtp = new SmtpClient();
-        await smtp.ConnectAsync(host, port, SecureSocketOptions.StartTls);
-        await smtp.AuthenticateAsync(afzender, wachtwoord);
-        await smtp.SendAsync(bericht);
+        await smtp.ConnectAsync(host, port, SecureSocketOptions.StartTls, cts.Token);
+        await smtp.AuthenticateAsync(afzender, wachtwoord, cts.Token);
+        await smtp.SendAsync(bericht, cancellationToken: cts.Token);
         await smtp.DisconnectAsync(true);
 
         _logger.LogInformation("E-mail verstuurd naar {Email}: {Onderwerp}", naarEmail, onderwerp);
