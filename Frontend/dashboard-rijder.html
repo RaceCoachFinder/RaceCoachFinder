@@ -488,35 +488,65 @@ async function laadDashboardAanvragen() {
     }
 }
 
+const BOEKINGEN_PER_PAGINA = 5;
+let alleRijderBoekingen = [];
+let rijderBoekingPagina = 1;
+
 async function laadDashboardBoekingen() {
     const container = document.getElementById('dashboard-boekingen');
     try {
-        const lijst = await authVerzoek('/boeking/rijder-overzicht');
-        if (!lijst || lijst.length === 0) {
-            container.innerHTML = '<p style="color:var(--kleur-subtekst);font-size:0.88rem">Nog geen boekingen ontvangen.</p>';
-            return;
-        }
-        const statusKleur = { 'Openstaand': '#fff3cd', 'Betaald': '#d1ecf1', 'Voldaan': '#d4edda' };
-        const statusTekst = { 'Openstaand': '#856404', 'Betaald': '#0c5460', 'Voldaan': '#155724' };
-        container.innerHTML = lijst.map(b => {
-            const datum = b.aangemaaktOp ? new Date(b.aangemaaktOp.endsWith('Z') ? b.aangemaaktOp : b.aangemaaktOp + 'Z').toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
-            const bg = statusKleur[b.status] || '#e9ecef';
-            const kleur = statusTekst[b.status] || '#555';
-            const coachLink = b.coachProfielId ? `<a href="coach-detail.html?id=${b.coachProfielId}" style="font-size:0.78rem;color:var(--kleur-primair-donker)">Profiel →</a>` : '';
-            return `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:0.75rem 0;border-bottom:1px solid #f0f0f0;gap:0.75rem;flex-wrap:wrap">
-                <div style="flex:1;min-width:0">
-                    <div style="font-weight:600;font-size:0.9rem">${esc(b.omschrijving)}</div>
-                    <div style="font-size:0.78rem;color:var(--kleur-subtekst);margin-top:0.15rem">
-                        Coach: <strong>${esc(b.coachNaam)}</strong> ${coachLink} &nbsp;·&nbsp; €${Number(b.bedrag).toFixed(2)} &nbsp;·&nbsp; ${datum}
-                    </div>
-                    <div style="font-size:0.75rem;color:#888;margin-top:0.1rem">${esc(b.displayStatus)}</div>
-                </div>
-                <span style="background:${bg};color:${kleur};font-size:0.72rem;font-weight:700;padding:0.2rem 0.65rem;border-radius:20px;white-space:nowrap;flex-shrink:0">${esc(b.status)}</span>
-            </div>`;
-        }).join('');
+        alleRijderBoekingen = await authVerzoek('/boeking/rijder-overzicht') || [];
+        rijderBoekingPagina = 1;
+        renderRijderBoekingen();
     } catch {
         container.innerHTML = '<p style="color:var(--kleur-subtekst);font-size:0.88rem">Boekingen kunnen niet worden geladen.</p>';
     }
+}
+
+function renderRijderBoekingen() {
+    const container = document.getElementById('dashboard-boekingen');
+    if (alleRijderBoekingen.length === 0) {
+        container.innerHTML = '<p style="color:var(--kleur-subtekst);font-size:0.88rem">Nog geen boekingen ontvangen.</p>';
+        return;
+    }
+    const statusKleur = { 'Openstaand': '#fff3cd', 'Betaald': '#d1ecf1', 'Voldaan': '#d4edda' };
+    const statusTekst = { 'Openstaand': '#856404', 'Betaald': '#0c5460', 'Voldaan': '#155724' };
+    const totaal = alleRijderBoekingen.length;
+    const totaalPaginas = Math.ceil(totaal / BOEKINGEN_PER_PAGINA);
+    if (rijderBoekingPagina > totaalPaginas) rijderBoekingPagina = totaalPaginas;
+    const start = (rijderBoekingPagina - 1) * BOEKINGEN_PER_PAGINA;
+    const pagina = alleRijderBoekingen.slice(start, start + BOEKINGEN_PER_PAGINA);
+
+    const rijen = pagina.map(b => {
+        const datum = b.aangemaaktOp ? new Date(b.aangemaaktOp.endsWith('Z') ? b.aangemaaktOp : b.aangemaaktOp + 'Z').toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+        const bg = statusKleur[b.status] || '#e9ecef';
+        const kleur = statusTekst[b.status] || '#555';
+        const coachLink = b.coachProfielId ? `<a href="coach-detail.html?id=${b.coachProfielId}" style="font-size:0.78rem;color:var(--kleur-primair-donker)">Profiel →</a>` : '';
+        return `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:0.75rem 0;border-bottom:1px solid #f0f0f0;gap:0.75rem;flex-wrap:wrap">
+            <div style="flex:1;min-width:0">
+                <div style="font-weight:600;font-size:0.9rem">${esc(b.omschrijving)}</div>
+                <div style="font-size:0.78rem;color:var(--kleur-subtekst);margin-top:0.15rem">
+                    Coach: <strong>${esc(b.coachNaam)}</strong> ${coachLink} &nbsp;·&nbsp; €${Number(b.bedrag).toFixed(2)} &nbsp;·&nbsp; ${datum}
+                </div>
+                <div style="font-size:0.75rem;color:#888;margin-top:0.1rem">${esc(b.displayStatus)}</div>
+            </div>
+            <span style="background:${bg};color:${kleur};font-size:0.72rem;font-weight:700;padding:0.2rem 0.65rem;border-radius:20px;white-space:nowrap;flex-shrink:0">${esc(b.status)}</span>
+        </div>`;
+    }).join('');
+
+    let paginering = '';
+    if (totaalPaginas > 1) {
+        const vorige = rijderBoekingPagina > 1 ? `<button onclick="naarRijderPagina(${rijderBoekingPagina - 1})" style="background:none;border:1px solid #ddd;border-radius:6px;padding:0.3rem 0.75rem;cursor:pointer;font-size:0.85rem">&#8249;</button>` : `<button disabled style="background:none;border:1px solid #eee;border-radius:6px;padding:0.3rem 0.75rem;color:#ccc;font-size:0.85rem">&#8249;</button>`;
+        const volgende = rijderBoekingPagina < totaalPaginas ? `<button onclick="naarRijderPagina(${rijderBoekingPagina + 1})" style="background:none;border:1px solid #ddd;border-radius:6px;padding:0.3rem 0.75rem;cursor:pointer;font-size:0.85rem">&#8250;</button>` : `<button disabled style="background:none;border:1px solid #eee;border-radius:6px;padding:0.3rem 0.75rem;color:#ccc;font-size:0.85rem">&#8250;</button>`;
+        paginering = `<div style="display:flex;align-items:center;gap:0.5rem;justify-content:center;margin-top:1rem">${vorige}<span style="font-size:0.82rem;color:var(--kleur-subtekst)">Pagina ${rijderBoekingPagina} van ${totaalPaginas}</span>${volgende}</div>`;
+    }
+
+    container.innerHTML = rijen + paginering;
+}
+
+function naarRijderPagina(n) {
+    rijderBoekingPagina = n;
+    renderRijderBoekingen();
 }
 
 updateNav();
