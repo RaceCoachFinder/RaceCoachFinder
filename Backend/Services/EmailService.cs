@@ -4,7 +4,7 @@ namespace Backend.Services;
 
 public interface IEmailService
 {
-    Task VerstuurAsync(string naarEmail, string naarNaam, string onderwerp, string htmlBody);
+    Task VerstuurAsync(string naarEmail, string naarNaam, string onderwerp, string htmlBody, byte[]? pdfBijlage = null, string? bijlageNaam = null);
 }
 
 public class EmailService : IEmailService
@@ -19,7 +19,7 @@ public class EmailService : IEmailService
         _logger = logger;
     }
 
-    public async Task VerstuurAsync(string naarEmail, string naarNaam, string onderwerp, string htmlBody)
+    public async Task VerstuurAsync(string naarEmail, string naarNaam, string onderwerp, string htmlBody, byte[]? pdfBijlage = null, string? bijlageNaam = null)
     {
         var apiKey = _config["Email:BrevoApiKey"];
         var afzender = _config["Email:Afzender"] ?? "racecoachfinder@gmail.com";
@@ -31,13 +31,28 @@ public class EmailService : IEmailService
             return;
         }
 
-        var payload = new
+        object payload;
+        if (pdfBijlage != null && pdfBijlage.Length > 0)
         {
-            sender = new { name = naamAfzender, email = afzender },
-            to = new[] { new { email = naarEmail, name = naarNaam } },
-            subject = onderwerp,
-            htmlContent = htmlBody
-        };
+            payload = new
+            {
+                sender = new { name = naamAfzender, email = afzender },
+                to = new[] { new { email = naarEmail, name = naarNaam } },
+                subject = onderwerp,
+                htmlContent = htmlBody,
+                attachment = new[] { new { content = Convert.ToBase64String(pdfBijlage), name = bijlageNaam ?? "factuur.pdf" } }
+            };
+        }
+        else
+        {
+            payload = new
+            {
+                sender = new { name = naamAfzender, email = afzender },
+                to = new[] { new { email = naarEmail, name = naarNaam } },
+                subject = onderwerp,
+                htmlContent = htmlBody
+            };
+        }
 
         using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.brevo.com/v3/smtp/email");
         request.Headers.Add("api-key", apiKey);

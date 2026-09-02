@@ -167,6 +167,13 @@ public class CoachController : ControllerBase
         if (!string.IsNullOrEmpty(coach.FotoUrl)) bestaand.FotoUrl = coach.FotoUrl;
         bestaand.Instagram = coach.Instagram;
         bestaand.Kwaliteiten = coach.Kwaliteiten;
+        bestaand.FactuurAdres = coach.FactuurAdres;
+        bestaand.FactuurPostcode = coach.FactuurPostcode;
+        bestaand.FactuurStad = coach.FactuurStad;
+        bestaand.FactuurLand = coach.FactuurLand;
+        bestaand.FactuurTelefoon = coach.FactuurTelefoon;
+        bestaand.KvkNummer = coach.KvkNummer;
+        bestaand.BtwNummer = coach.BtwNummer;
 
         await _context.SaveChangesAsync();
         return Ok(bestaand);

@@ -54,13 +54,51 @@ public class BoekingController : ControllerBase
         _context.Boekingen.Add(boeking);
         await _context.SaveChangesAsync();
 
-        // Emails versturen (op de achtergrond, fouten negeren)
         var coachNaam = coach?.Naam ?? "Coach";
         var rijderNaam = rijder.Naam ?? "Rijder";
         var factuurnummer = verzoek.FactuurnummerTekst ?? $"F-{DateTime.UtcNow:yyyy}-{boeking.Id:D4}";
         var berichtenUrl = $"{FrontendUrl}/berichten.html?partner={coachId}";
 
+        // PDF genereren
+        byte[]? pdfBytes = null;
         var emailFout = "";
+        try
+        {
+            var coachProfiel = await _context.Coaches.FirstOrDefaultAsync(c => c.GebruikerId == coachId);
+            var factuurData = PdfService.ParseFactuurJson(verzoek.FactuurJson);
+            var regels = factuurData?.Regels ?? new List<FactuurRegel>
+            {
+                new() { Omschrijving = verzoek.Omschrijving, Aantal = 1, Prijs = (double)verzoek.Bedrag, Btw = 0 }
+            };
+
+            var (pdf, totaalMetFee) = PdfService.GenereerFactuur(
+                factuurnummer,
+                DateTime.Now,
+                boeking.BetalingsTermijn,
+                coachNaam,
+                coachProfiel?.FactuurAdres,
+                coachProfiel?.FactuurPostcode,
+                coachProfiel?.FactuurStad,
+                coachProfiel?.FactuurLand,
+                coachProfiel?.FactuurTelefoon,
+                coach?.Email ?? coachNaam,
+                coachProfiel?.KvkNummer,
+                coachProfiel?.BtwNummer,
+                rijderNaam,
+                rijder.Email ?? rijderNaam,
+                regels,
+                factuurData?.Notities);
+
+            pdfBytes = pdf;
+            boeking.Bedrag = totaalMetFee;
+            await _context.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            emailFout = $"PDF mislukt: {ex.Message}";
+        }
+
+        var pdfNaam = $"Factuur-{factuurnummer}.pdf";
 
         var coachEmail = coach?.Email ?? "";
         var geldigCoachEmail = coachEmail.Contains('@') && coachEmail.IndexOf('.', coachEmail.IndexOf('@')) > 0;
@@ -70,11 +108,12 @@ public class BoekingController : ControllerBase
             {
                 await _email.VerstuurAsync(
                     coachEmail, coachNaam, $"Factuur {factuurnummer} verstuurd",
-                    EmailTemplates.FactuurCoach(coachNaam, rijderNaam, factuurnummer, verzoek.Omschrijving, verzoek.Bedrag));
+                    EmailTemplates.FactuurCoach(coachNaam, rijderNaam, factuurnummer, verzoek.Omschrijving, boeking.Bedrag),
+                    pdfBytes, pdfNaam);
             }
             catch (Exception ex)
             {
-                emailFout = $"Coach email mislukt: {ex.Message}";
+                emailFout += (emailFout.Length > 0 ? " | " : "") + $"Coach email mislukt: {ex.Message}";
             }
         }
 
@@ -84,7 +123,8 @@ public class BoekingController : ControllerBase
             {
                 await _email.VerstuurAsync(
                     rijder.Email, rijderNaam, $"Factuur {factuurnummer} van {coachNaam}",
-                    EmailTemplates.FactuurRijder(rijderNaam, coachNaam, factuurnummer, verzoek.Omschrijving, verzoek.Bedrag, boeking.BetalingsTermijn, berichtenUrl));
+                    EmailTemplates.FactuurRijder(rijderNaam, coachNaam, factuurnummer, verzoek.Omschrijving, boeking.Bedrag, boeking.BetalingsTermijn, berichtenUrl),
+                    pdfBytes, pdfNaam);
             }
             catch (Exception ex)
             {

@@ -333,6 +333,43 @@
                         <label>Instagram gebruikersnaam <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel)</span></label>
                         <input type="text" id="instagram" placeholder="bijv. damian_kartracing (zonder @)">
                     </div>
+
+                    <div style="border-top:2px solid var(--kleur-geel,#F5C200);margin:1.2rem 0 0.8rem;padding-top:1rem">
+                        <p style="font-weight:700;font-size:1rem;margin:0 0 0.5rem">Factuurgegevens <span style="font-weight:400;font-size:0.85rem;color:var(--kleur-subtekst)">(optioneel — voor PDF-facturen)</span></p>
+                        <p style="font-size:0.82rem;color:var(--kleur-subtekst);margin:0 0 0.8rem">Deze gegevens verschijnen automatisch op de facturen die je verstuurt. Vul ze in voor een professioneel resultaat.</p>
+                    </div>
+                    <div class="formulier-groep">
+                        <label>Straatnaam + huisnummer <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel)</span></label>
+                        <input type="text" id="factuurAdres" placeholder="bijv. Hoofdstraat 12">
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 2fr;gap:0.75rem">
+                        <div class="formulier-groep">
+                            <label>Postcode</label>
+                            <input type="text" id="factuurPostcode" placeholder="bijv. 1234 AB">
+                        </div>
+                        <div class="formulier-groep">
+                            <label>Stad</label>
+                            <input type="text" id="factuurStad" placeholder="bijv. Amsterdam">
+                        </div>
+                    </div>
+                    <div class="formulier-groep">
+                        <label>Land <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel)</span></label>
+                        <input type="text" id="factuurLand" placeholder="bijv. Nederland">
+                    </div>
+                    <div class="formulier-groep">
+                        <label>Telefoonnummer <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel)</span></label>
+                        <input type="text" id="factuurTelefoon" placeholder="bijv. +31 6 12345678">
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
+                        <div class="formulier-groep">
+                            <label>KVK-nummer <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel)</span></label>
+                            <input type="text" id="kvkNummer" placeholder="bijv. 12345678">
+                        </div>
+                        <div class="formulier-groep">
+                            <label>BTW-nummer <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel)</span></label>
+                            <input type="text" id="btwNummer" placeholder="bijv. NL123456789B01">
+                        </div>
+                    </div>
                     <div class="formulier-groep">
                         <div class="checkbox-rij">
                             <input type="checkbox" id="onlineCoaching">
@@ -527,6 +564,13 @@ function vulFormulier(coach) {
     document.getElementById('beschikbareBanen').value = coach.beschikbareBanen || '';
     document.getElementById('instagram').value = coach.instagram || '';
     document.getElementById('onlineCoaching').checked = coach.onlineCoaching || false;
+    document.getElementById('factuurAdres').value = coach.factuurAdres || '';
+    document.getElementById('factuurPostcode').value = coach.factuurPostcode || '';
+    document.getElementById('factuurStad').value = coach.factuurStad || '';
+    document.getElementById('factuurLand').value = coach.factuurLand || '';
+    document.getElementById('factuurTelefoon').value = coach.factuurTelefoon || '';
+    document.getElementById('kvkNummer').value = coach.kvkNummer || '';
+    document.getElementById('btwNummer').value = coach.btwNummer || '';
     specsDropdown.setGekozen((coach.discipline || '').split(',').map(s => s.trim()).filter(Boolean));
     kwalsDropdown.setGekozen((coach.kwaliteiten || '').split(',').map(s => s.trim()).filter(Boolean));
     laadPakketten(coach.prijsPakketten || '');
@@ -575,7 +619,14 @@ async function slaanProfiel(event) {
         onlineCoaching: document.getElementById('onlineCoaching').checked,
         prijsPakketten: JSON.stringify(huidigePakketten.filter(p => p.label.trim() !== '')),
         fotoUrl: document.getElementById('fotoUrl').value,
-        instagram: document.getElementById('instagram').value.trim().replace(/^@/, '')
+        instagram: document.getElementById('instagram').value.trim().replace(/^@/, ''),
+        factuurAdres: document.getElementById('factuurAdres').value.trim(),
+        factuurPostcode: document.getElementById('factuurPostcode').value.trim(),
+        factuurStad: document.getElementById('factuurStad').value.trim(),
+        factuurLand: document.getElementById('factuurLand').value.trim(),
+        factuurTelefoon: document.getElementById('factuurTelefoon').value.trim(),
+        kvkNummer: document.getElementById('kvkNummer').value.trim(),
+        btwNummer: document.getElementById('btwNummer').value.trim()
     };
 
     try {

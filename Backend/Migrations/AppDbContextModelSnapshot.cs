@@ -203,12 +203,30 @@ namespace Backend.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string?>("BtwNummer")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Discipline")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Email")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string?>("FactuurAdres")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string?>("FactuurLand")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string?>("FactuurPostcode")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string?>("FactuurStad")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string?>("FactuurTelefoon")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("FotoUrl")
@@ -227,6 +245,9 @@ namespace Backend.Migrations
 
                     b.Property<int>("JarenErvaring")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string?>("KvkNummer")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Kwaliteiten")
                         .IsRequired()

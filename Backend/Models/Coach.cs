@@ -26,6 +26,15 @@ public class Coach
     public string Instagram { get; set; } = string.Empty;
     public string Kwaliteiten { get; set; } = string.Empty;
 
+    // Factuurgegevens (optioneel, voor PDF-facturen)
+    public string? FactuurAdres { get; set; }
+    public string? FactuurPostcode { get; set; }
+    public string? FactuurStad { get; set; }
+    public string? FactuurLand { get; set; }
+    public string? FactuurTelefoon { get; set; }
+    public string? KvkNummer { get; set; }
+    public string? BtwNummer { get; set; }
+
     [NotMapped] public double GemiddeldeScore { get; set; }
     [NotMapped] public int AantalReviews { get; set; }
     [NotMapped] public double GemiddeldeReactietijdUren { get; set; } = -1;
