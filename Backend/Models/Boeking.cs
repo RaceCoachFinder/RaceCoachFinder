@@ -14,4 +14,5 @@ public class Boeking
     public string? FactuurnummerTekst { get; set; }
     public int BetalingsTermijn { get; set; } = 14;
     public string? FactuurJson { get; set; }
+    public string? MollieBetalingId { get; set; }
 }

@@ -1026,14 +1026,8 @@ async function stuurBetaalverzoek() {
     }
 }
 
-async function betaal(id) {
-    if (!confirm('Betaling bevestigen?')) return;
-    try {
-        await authVerzoek(`/boeking/${id}/betaal`, 'PUT');
-        await laadBerichten(huidigPartnerId);
-    } catch (e) {
-        alert('Fout: ' + e.message);
-    }
+function betaal(id) {
+    window.location.href = `betalen.html?boekingId=${id}`;
 }
 
 async function annuleer(id) {

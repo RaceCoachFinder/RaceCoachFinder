@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factuur betalen – RaceCoachFinder</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .betaal-wrapper {
+            min-height: 70vh;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 3rem 1rem;
+        }
+        .betaal-kaart {
+            background: var(--kleur-wit);
+            border-radius: var(--rand);
+            box-shadow: var(--schaduw);
+            padding: 2.5rem;
+            max-width: 520px;
+            width: 100%;
+        }
+        .betaal-kaart h1 {
+            font-size: 1.4rem;
+            margin-bottom: 0.25rem;
+        }
+        .betaal-subtitel {
+            color: var(--kleur-subtekst);
+            font-size: 0.9rem;
+            margin-bottom: 2rem;
+        }
+        .factuur-info {
+            background: var(--kleur-achtergrond);
+            border-radius: 8px;
+            padding: 1.2rem 1.4rem;
+            margin-bottom: 1.5rem;
+        }
+        .factuur-info-rij {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            padding: 0.3rem 0;
+            color: var(--kleur-subtekst);
+        }
+        .factuur-info-rij strong {
+            color: var(--kleur-tekst);
+        }
+        .bedrag-tabel {
+            border-top: 1px solid var(--kleur-rand);
+            margin-top: 1.5rem;
+            padding-top: 1.25rem;
+        }
+        .bedrag-rij {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.92rem;
+            padding: 0.35rem 0;
+            color: var(--kleur-subtekst);
+        }
+        .bedrag-rij.totaal {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--kleur-tekst);
+            border-top: 2px solid var(--kleur-primair);
+            margin-top: 0.5rem;
+            padding-top: 0.75rem;
+        }
+        .bedrag-rij.fee {
+            color: var(--kleur-tekst);
+            font-size: 0.85rem;
+        }
+        .fee-uitleg {
+            font-size: 0.78rem;
+            color: var(--kleur-subtekst);
+            margin-top: 0.2rem;
+            margin-bottom: 1.5rem;
+        }
+        .btn-betaal {
+            width: 100%;
+            padding: 0.9rem;
+            font-size: 1.05rem;
+            font-weight: 700;
+            margin-top: 1rem;
+        }
+        .laden-msg {
+            text-align: center;
+            color: var(--kleur-subtekst);
+            padding: 3rem 0;
+        }
+        .fout-msg {
+            background: #fff3f3;
+            border: 1px solid #f5c6c6;
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+            color: #c0392b;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            display: none;
+        }
+        .mollie-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            justify-content: center;
+            color: var(--kleur-subtekst);
+            font-size: 0.78rem;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav-balk">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">Race<span>Coach</span>Finder</a>
+        </div>
+    </nav>
+
+    <div class="betaal-wrapper">
+        <div class="betaal-kaart">
+            <div id="laden" class="laden-msg">Factuurgegevens laden...</div>
+
+            <div id="inhoud" style="display:none">
+                <h1>Factuur betalen</h1>
+                <p class="betaal-subtitel" id="subtitel"></p>
+
+                <div class="factuur-info">
+                    <div class="factuur-info-rij">
+                        <span>Factuurnummer</span>
+                        <strong id="factuurnummer">—</strong>
+                    </div>
+                    <div class="factuur-info-rij">
+                        <span>Omschrijving</span>
+                        <strong id="omschrijving" style="text-align:right;max-width:60%"></strong>
+                    </div>
+                    <div class="factuur-info-rij">
+                        <span>Betalen vóór</span>
+                        <strong id="vervaldatum" style="color: var(--kleur-primair)"></strong>
+                    </div>
+                </div>
+
+                <div class="bedrag-tabel">
+                    <div class="bedrag-rij">
+                        <span>Factuurprijs</span>
+                        <span id="bedrag-coach"></span>
+                    </div>
+                    <div class="bedrag-rij fee">
+                        <span>Servicekosten RaceCoachFinder (2%)</span>
+                        <span id="bedrag-fee"></span>
+                    </div>
+                    <div class="bedrag-rij totaal">
+                        <span>Te betalen</span>
+                        <span id="bedrag-totaal"></span>
+                    </div>
+                </div>
+
+                <p class="fee-uitleg">De servicekosten dekken de platformkosten van RaceCoachFinder.</p>
+
+                <div class="fout-msg" id="fout-msg"></div>
+
+                <button class="btn btn-primair btn-betaal" id="btn-betalen" onclick="startBetaling()">
+                    Betaal veilig via Mollie
+                </button>
+
+                <div class="mollie-info">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    Beveiligde betaling via Mollie &mdash; iDEAL, creditcard &amp; meer
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        const params = new URLSearchParams(location.search);
+        const boekingId = params.get('boekingId');
+        let huidigBedrag = 0;
+
+        function fmt(b) {
+            return '€ ' + Number(b).toFixed(2).replace('.', ',');
+        }
+
+        async function laadBoeking() {
+            if (!boekingId) {
+                document.getElementById('laden').textContent = 'Geen boeking opgegeven.';
+                return;
+            }
+            try {
+                const data = await authVerzoek(`/boeking/${boekingId}`, 'GET');
+                if (!data) return;
+
+                huidigBedrag = data.bedrag;
+                const fee = Math.round(huidigBedrag * 0.02 * 100) / 100;
+                const totaal = Math.round((huidigBedrag + fee) * 100) / 100;
+                const vervaldatum = new Date(new Date(data.aangemaaktOp).getTime() + data.betalingsTermijn * 86400000);
+
+                document.getElementById('subtitel').textContent = `Factuur van ${data.coachNaam}`;
+                document.getElementById('factuurnummer').textContent = data.factuurnummerTekst || `F-${data.id}`;
+                document.getElementById('omschrijving').textContent = data.omschrijving;
+                document.getElementById('vervaldatum').textContent = vervaldatum.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' });
+                document.getElementById('bedrag-coach').textContent = fmt(huidigBedrag);
+                document.getElementById('bedrag-fee').textContent = fmt(fee);
+                document.getElementById('bedrag-totaal').textContent = fmt(totaal);
+
+                document.getElementById('laden').style.display = 'none';
+                document.getElementById('inhoud').style.display = 'block';
+
+                if (data.status !== 'Openstaand') {
+                    document.getElementById('btn-betalen').disabled = true;
+                    document.getElementById('btn-betalen').textContent = `Factuur is al ${data.status.toLowerCase()}`;
+                }
+            } catch (e) {
+                document.getElementById('laden').textContent = 'Kon factuurgegevens niet laden: ' + e.message;
+            }
+        }
+
+        async function startBetaling() {
+            const btn = document.getElementById('btn-betalen');
+            btn.disabled = true;
+            btn.textContent = 'Doorsturen naar betaalpagina...';
+            document.getElementById('fout-msg').style.display = 'none';
+
+            try {
+                const data = await authVerzoek(`/betaling/start-factuur/${boekingId}`, 'POST');
+                if (data?.checkoutUrl) {
+                    window.location.href = data.checkoutUrl;
+                } else {
+                    throw new Error('Geen betaallink ontvangen.');
+                }
+            } catch (e) {
+                const fout = document.getElementById('fout-msg');
+                fout.textContent = 'Fout bij starten betaling: ' + e.message;
+                fout.style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = 'Betaal veilig via Mollie';
+            }
+        }
+
+        laadBoeking();
+    </script>
+</body>
+</html>

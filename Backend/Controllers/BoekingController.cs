@@ -147,6 +147,30 @@ public class BoekingController : ControllerBase
         });
     }
 
+    // Haal één boeking op (voor betaalscherm)
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> GetBoeking(int id)
+    {
+        var mijnId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var boeking = await _context.Boekingen.FindAsync(id);
+        if (boeking == null) return NotFound();
+        if (boeking.CoachGebruikerId != mijnId && boeking.RijderGebruikerId != mijnId) return Forbid();
+
+        var coach = await _userManager.FindByIdAsync(boeking.CoachGebruikerId);
+        return Ok(new
+        {
+            boeking.Id,
+            boeking.Omschrijving,
+            boeking.Bedrag,
+            boeking.Status,
+            boeking.FactuurnummerTekst,
+            boeking.BetalingsTermijn,
+            boeking.AangemaaktOp,
+            CoachNaam = coach?.Naam ?? "Coach",
+            CoachId = boeking.CoachGebruikerId
+        });
+    }
+
     // Haal boekingen op voor gesprek tussen huidige gebruiker en partner
     [HttpGet("gesprek/{partnerId}")]
     public async Task<IActionResult> GetBoekingen(string partnerId)

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Backend.Data;
 using Backend.Models;
 using Mollie.Api.Client;
 using Mollie.Api.Models;
@@ -9,6 +10,7 @@ using Mollie.Api.Models.Customer;
 using Mollie.Api.Models.Payment;
 using Mollie.Api.Models.Payment.Request;
 using Mollie.Api.Models.Subscription;
+using System.Security.Claims;
 
 namespace Backend.Controllers;
 
@@ -18,11 +20,13 @@ public class BetalingController : ControllerBase
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IConfiguration _config;
+    private readonly AppDbContext _context;
 
-    public BetalingController(UserManager<ApplicationUser> userManager, IConfiguration config)
+    public BetalingController(UserManager<ApplicationUser> userManager, IConfiguration config, AppDbContext context)
     {
         _userManager = userManager;
         _config = config;
+        _context = context;
     }
 
     private string ApiKey =>
@@ -104,6 +108,66 @@ public class BetalingController : ControllerBase
         gebruiker.AbonnementVerlooptOp = DateTime.UtcNow.AddMonths(1);
         await _userManager.UpdateAsync(gebruiker);
         return Ok(new { bericht = "Testabonnement geactiveerd." });
+    }
+
+    [HttpPost("start-factuur/{boekingId:int}")]
+    [Authorize(Roles = "Rijder")]
+    public async Task<IActionResult> StartFactuur(int boekingId)
+    {
+        try
+        {
+            var rijderId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var boeking = await _context.Boekingen.FindAsync(boekingId);
+            if (boeking == null) return NotFound("Boeking niet gevonden.");
+            if (boeking.RijderGebruikerId != rijderId) return Forbid();
+            if (boeking.Status != "Openstaand") return BadRequest("Boeking is niet meer openstaand.");
+
+            var fee = Math.Round(boeking.Bedrag * 0.02m, 2);
+            var totaal = boeking.Bedrag + fee;
+            var factuurnummer = boeking.FactuurnummerTekst ?? $"F-{DateTime.UtcNow:yyyy}-{boeking.Id:D4}";
+
+            var betalingClient = new PaymentClient(ApiKey);
+            var betaling = await betalingClient.CreatePaymentAsync(new PaymentRequest
+            {
+                Amount = new Amount(Currency.EUR, totaal.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)),
+                Description = $"Factuur {factuurnummer} – {boeking.Omschrijving}",
+                RedirectUrl = $"{FrontendUrl}/betaling-succes.html?boekingId={boekingId}",
+                WebhookUrl = $"{BackendUrl}/api/betaling/webhook-factuur",
+            });
+
+            boeking.MollieBetalingId = betaling.Id;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { checkoutUrl = betaling.Links.Checkout?.Href });
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine("StartFactuur fout: " + ex.ToString());
+            return StatusCode(500, ex.Message);
+        }
+    }
+
+    [HttpPost("webhook-factuur")]
+    [AllowAnonymous]
+    public async Task<IActionResult> WebhookFactuur([FromForm] string id)
+    {
+        try
+        {
+            var betalingClient = new PaymentClient(ApiKey);
+            var betaling = await betalingClient.GetPaymentAsync(id);
+            if (betaling.Status?.ToString().ToLower() != "paid") return Ok();
+
+            var boeking = await _context.Boekingen.FirstOrDefaultAsync(b => b.MollieBetalingId == id);
+            if (boeking == null) return Ok();
+
+            boeking.Status = "Betaald";
+            await _context.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine("WebhookFactuur fout: " + ex.Message);
+        }
+        return Ok();
     }
 
     [HttpPost("webhook")]

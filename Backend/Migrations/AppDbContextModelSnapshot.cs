@@ -162,6 +162,9 @@ namespace Backend.Migrations
                     b.Property<string?>("FactuurnummerTekst")
                         .HasColumnType("TEXT");
 
+                    b.Property<string?>("MollieBetalingId")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Omschrijving")
                         .IsRequired()
                         .HasColumnType("TEXT");

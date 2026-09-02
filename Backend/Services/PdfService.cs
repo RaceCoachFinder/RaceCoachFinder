@@ -70,8 +70,7 @@ public static class PdfService
             exclBtw += sub;
             btwBedrag += sub * (r.Btw / 100.0);
         }
-        var fee = Math.Round(exclBtw * 0.02, 2);
-        var totaal = exclBtw + btwBedrag + fee;
+        var totaal = exclBtw + btwBedrag;
 
         static string Eur(double v) => $"€ {v:F2}".Replace(".", ",");
 
@@ -214,21 +213,6 @@ public static class PdfService
                             Cel(Eur(sub + btwBedragRegel), rechts: true);
                         }
 
-                        // RaceCoachFinder fee (2%)
-                        void FeeCell(string tekst, bool rechts = false, bool vet = false)
-                        {
-                            var cell = t.Cell().Background(LichtGrijs).Padding(5).BorderBottom(0.5f).BorderColor("#E0E0E0");
-                            var txt = cell.Text(tekst).FontColor(Grijs);
-                            if (rechts) txt.AlignRight();
-                            if (vet) txt.Bold();
-                        }
-
-                        FeeCell("RaceCoachFinder fee (2%)", vet: false);
-                        FeeCell("1", rechts: true);
-                        FeeCell(Eur(fee), rechts: true);
-                        FeeCell("0%", rechts: true);
-                        FeeCell("€ 0,00", rechts: true);
-                        FeeCell(Eur(fee), rechts: true);
                     });
 
                     // ── Totalen ──────────────────────────────────────────
@@ -251,7 +235,6 @@ public static class PdfService
 
                         TotaalRij("Subtotaal excl. BTW", Eur(exclBtw));
                         TotaalRij("BTW", Eur(btwBedrag));
-                        TotaalRij("RaceCoachFinder fee (2%)", Eur(fee));
                         TotaalRij("TOTAALBEDRAG", Eur(totaal), highlight: true);
                     });
                 });
