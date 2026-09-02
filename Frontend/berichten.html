@@ -748,6 +748,9 @@ function renderBoeking(b) {
             acties += `<button class="btn-activiteit" onclick="bevestigActiviteit(${b.id})">&#10003; Activiteit gedaan</button>`;
         }
     }
+    if (b.status === 'Voldaan' && !ikBenCoach) {
+        acties += `<button class="btn btn-secundair" onclick="openReviewVoorBoeking('${b.coachGebruikerId}')" style="font-size:0.8rem;padding:0.3rem 0.85rem">&#9733; Review schrijven</button>`;
+    }
 
     return `
     <div class="boeking-kaart">
@@ -828,6 +831,12 @@ async function bevestigActiviteit(id) {
 
 // ── Review popup ───────────────────────────────────────────────
 const STERREN_LABELS = ['', 'Slecht', 'Matig', 'Goed', 'Heel goed', 'Uitstekend'];
+
+function openReviewVoorBoeking(coachGebruikerId) {
+    pendingBevestigId = null;
+    pendingCoachGebruikerId = coachGebruikerId;
+    toonReviewPopup();
+}
 
 function toonReviewPopup() {
     gekozenSterren = 0;
