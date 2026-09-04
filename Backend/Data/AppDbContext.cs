@@ -17,4 +17,5 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<RijderAanvraag> RijderAanvragen { get; set; }
     public DbSet<RijderFavoriet> RijderFavorieten { get; set; }
     public DbSet<GebruikerInstellingen> GebruikerInstellingen { get; set; }
+    public DbSet<AgendaItem> AgendaItems { get; set; }
 }

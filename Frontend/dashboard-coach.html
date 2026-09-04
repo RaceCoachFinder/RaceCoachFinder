@@ -157,6 +157,21 @@
         .boeking-datum { font-size:0.78rem; color:var(--kleur-subtekst); }
         .geen-boekingen { text-align:center; color:var(--kleur-subtekst); padding:2rem 0; font-size:0.9rem; }
 
+        /* Agenda */
+        .agenda-nav { display:flex;align-items:center;justify-content:center;gap:1rem;margin-bottom:0.75rem; }
+        .agenda-nav-knop { background:none;border:1px solid var(--kleur-rand);border-radius:6px;width:32px;height:32px;font-size:1.2rem;cursor:pointer;color:var(--kleur-tekst);display:flex;align-items:center;justify-content:center; }
+        .agenda-nav-knop:hover { border-color:var(--kleur-primair);color:var(--kleur-primair); }
+        .agenda-weekdagen { display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:0.72rem;font-weight:700;color:var(--kleur-subtekst);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.25rem; }
+        .agenda-grid { display:grid;grid-template-columns:repeat(7,1fr);gap:2px; }
+        .agenda-dag { min-height:68px;border-radius:6px;padding:4px;cursor:pointer;border:1.5px solid transparent;transition:border-color 0.15s; }
+        .agenda-dag:hover { border-color:var(--kleur-primair); }
+        .agenda-dag.andere-maand { opacity:0.35; }
+        .agenda-dag.vandaag .agenda-dag-nr { background:var(--kleur-primair);color:#000;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-weight:800; }
+        .agenda-dag-nr { font-size:0.8rem;font-weight:600;margin-bottom:3px;width:22px;height:22px;display:flex;align-items:center;justify-content:center; }
+        .agenda-event { font-size:0.68rem;background:var(--kleur-primair);color:#000;border-radius:4px;padding:1px 5px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;font-weight:600; }
+        .agenda-event.boeking { background:#d1fae5;color:#065f46; }
+        .agenda-event:hover { opacity:0.8; }
+
         .paginering-rij {
             display:flex; align-items:center; justify-content:center; gap:0.35rem;
             padding-top:1.25rem; flex-wrap:wrap;
@@ -253,6 +268,43 @@
             <h3>Boekingen</h3>
             <div class="filter-rij" id="filter-rij"></div>
             <div id="boekingen-lijst"></div>
+        </div>
+    </div>
+
+    <!-- Agenda -->
+    <div id="agenda-sectie" style="display:none;max-width:750px;margin:0 auto 2rem">
+        <div class="dashboard-kaart">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+                <h3 style="margin:0">Agenda</h3>
+                <button class="btn btn-primair" onclick="openAgendaModal(null)" style="font-size:0.82rem;padding:0.3rem 0.85rem">+ Afspraak</button>
+            </div>
+            <div class="agenda-nav">
+                <button class="agenda-nav-knop" onclick="vorigeAgendaMaand()">&#8249;</button>
+                <span id="agenda-maand-label" style="font-weight:700;font-size:1rem"></span>
+                <button class="agenda-nav-knop" onclick="volgendeAgendaMaand()">&#8250;</button>
+            </div>
+            <div class="agenda-weekdagen">
+                <span>Ma</span><span>Di</span><span>Wo</span><span>Do</span><span>Vr</span><span>Za</span><span>Zo</span>
+            </div>
+            <div class="agenda-grid" id="agenda-grid"></div>
+        </div>
+    </div>
+
+    <!-- Agenda modal -->
+    <div class="popup-overlay" id="agenda-modal" style="display:none">
+        <div class="popup-kaart" style="max-width:380px;width:100%">
+            <button class="popup-sluiten" onclick="sluitAgendaModal()">✕</button>
+            <h3 style="margin:0 0 1rem;font-size:1.05rem">Afspraak toevoegen</h3>
+            <label style="font-size:0.8rem;font-weight:700;color:var(--kleur-subtekst);display:block;margin-bottom:0.25rem">DATUM & TIJD</label>
+            <input type="datetime-local" id="agenda-modal-datum" style="width:100%;font-size:0.9rem;padding:0.45rem 0.7rem;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;box-sizing:border-box;margin-bottom:0.75rem">
+            <label style="font-size:0.8rem;font-weight:700;color:var(--kleur-subtekst);display:block;margin-bottom:0.25rem">TITEL</label>
+            <input type="text" id="agenda-modal-titel" placeholder="Bijv. Training met rijder..." style="width:100%;font-size:0.9rem;padding:0.45rem 0.7rem;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;box-sizing:border-box;margin-bottom:0.75rem">
+            <label style="font-size:0.8rem;font-weight:700;color:var(--kleur-subtekst);display:block;margin-bottom:0.25rem">NOTITIE (optioneel)</label>
+            <textarea id="agenda-modal-notitie" rows="2" placeholder="Extra details..." style="width:100%;font-size:0.9rem;padding:0.45rem 0.7rem;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;box-sizing:border-box;resize:none"></textarea>
+            <div style="display:flex;gap:0.5rem;margin-top:1rem">
+                <button class="btn btn-primair" onclick="submitAgendaItem()" style="flex:1">Opslaan</button>
+                <button class="btn btn-secundair" onclick="sluitAgendaModal()" style="flex:1">Annuleren</button>
+            </div>
         </div>
     </div>
 
@@ -504,6 +556,7 @@ function toonGeenProfiel() {
     document.getElementById('stats-sectie').style.display = 'none';
     document.getElementById('profiel-formulier').style.display = 'none';
     document.getElementById('boekingen-sectie').style.display = 'none';
+    document.getElementById('agenda-sectie').style.display = 'none';
     document.getElementById('aanvragen-widget').style.display = 'none';
 }
 
@@ -531,6 +584,7 @@ function toonMetProfiel(coach) {
 
     toonProfielFormulier(false);
     laadBoekingen();
+    laadAgenda();
     laadExtraStats(coach);
     laadPassendeAanvragen(coach);
 }
@@ -788,6 +842,122 @@ async function laadExtraStats(coach) {
     } catch { document.getElementById('stat-rijders').textContent = 0; }
 
     // stat-boekingen wordt bijgewerkt vanuit laadBoekingen()
+}
+
+// ── Agenda ───────────────────────────────────────────────────────
+let agendaItems = [];
+let agendaMaand = new Date().getMonth();
+let agendaJaar = new Date().getFullYear();
+
+async function laadAgenda() {
+    try {
+        agendaItems = await authVerzoek('/agenda', 'GET') || [];
+        document.getElementById('agenda-sectie').style.display = '';
+        renderAgenda();
+    } catch {}
+}
+
+function renderAgenda() {
+    const maandNamen = ['Januari','Februari','Maart','April','Mei','Juni','Juli','Augustus','September','Oktober','November','December'];
+    document.getElementById('agenda-maand-label').textContent = `${maandNamen[agendaMaand]} ${agendaJaar}`;
+
+    const grid = document.getElementById('agenda-grid');
+    const vandaag = new Date();
+    const eersteVanMaand = new Date(agendaJaar, agendaMaand, 1);
+    const maandag = (eersteVanMaand.getDay() + 6) % 7;
+    const dagenInMaand = new Date(agendaJaar, agendaMaand + 1, 0).getDate();
+    const dagenInVorigeMaand = new Date(agendaJaar, agendaMaand, 0).getDate();
+
+    let html = '';
+    let dagTeller = 1;
+    let volgendeMaandDag = 1;
+
+    const totaalCellen = Math.ceil((maandag + dagenInMaand) / 7) * 7;
+
+    for (let i = 0; i < totaalCellen; i++) {
+        let dag, maand, jaar, andereM = false;
+        if (i < maandag) {
+            dag = dagenInVorigeMaand - maandag + i + 1;
+            maand = agendaMaand - 1;
+            jaar = agendaJaar;
+            andereM = true;
+        } else if (dagTeller <= dagenInMaand) {
+            dag = dagTeller++;
+            maand = agendaMaand;
+            jaar = agendaJaar;
+        } else {
+            dag = volgendeMaandDag++;
+            maand = agendaMaand + 1;
+            jaar = agendaJaar;
+            andereM = true;
+        }
+
+        const isVandaag = dag === vandaag.getDate() && maand === vandaag.getMonth() && jaar === vandaag.getFullYear();
+        const datumStr = `${jaar}-${String(maand + 1).padStart(2,'0')}-${String(dag).padStart(2,'0')}`;
+        const dagItems = agendaItems.filter(a => a.datum.startsWith(datumStr));
+
+        const evenementen = dagItems.map(a =>
+            `<div class="agenda-event${a.gekoppeldeBoekingId ? ' boeking' : ''}" onclick="event.stopPropagation();verwijderAgendaItem(${a.id},'${_esc(a.titel)}')" title="${_esc(a.titel)}${a.notitie ? ' — ' + _esc(a.notitie) : ''}">${_esc(a.titel)}</div>`
+        ).join('');
+
+        const klikDatum = `${jaar}-${String(maand + 1).padStart(2,'0')}-${String(dag).padStart(2,'0')}T09:00`;
+        html += `<div class="agenda-dag${andereM ? ' andere-maand' : ''}${isVandaag ? ' vandaag' : ''}" onclick="openAgendaModal('${klikDatum}')">
+            <div class="agenda-dag-nr">${dag}</div>
+            ${evenementen}
+        </div>`;
+    }
+
+    grid.innerHTML = html;
+}
+
+function vorigeAgendaMaand() {
+    agendaMaand--;
+    if (agendaMaand < 0) { agendaMaand = 11; agendaJaar--; }
+    renderAgenda();
+}
+
+function volgendeAgendaMaand() {
+    agendaMaand++;
+    if (agendaMaand > 11) { agendaMaand = 0; agendaJaar++; }
+    renderAgenda();
+}
+
+function openAgendaModal(datumStr) {
+    document.getElementById('agenda-modal-datum').value = datumStr || '';
+    document.getElementById('agenda-modal-titel').value = '';
+    document.getElementById('agenda-modal-notitie').value = '';
+    document.getElementById('agenda-modal').style.display = 'flex';
+    setTimeout(() => document.getElementById('agenda-modal-titel').focus(), 50);
+}
+
+function sluitAgendaModal() {
+    document.getElementById('agenda-modal').style.display = 'none';
+}
+
+async function submitAgendaItem() {
+    const datum = document.getElementById('agenda-modal-datum').value;
+    const titel = document.getElementById('agenda-modal-titel').value.trim();
+    if (!datum || !titel) { alert('Vul een datum en titel in.'); return; }
+    try {
+        const nieuw = await authVerzoek('/agenda', 'POST', {
+            titel,
+            datum: new Date(datum).toISOString(),
+            notitie: document.getElementById('agenda-modal-notitie').value.trim() || null,
+            gekoppeldeBoekingId: null
+        });
+        agendaItems.push(nieuw);
+        sluitAgendaModal();
+        renderAgenda();
+    } catch (e) { alert('Fout: ' + e.message); }
+}
+
+async function verwijderAgendaItem(id, titel) {
+    if (!confirm(`"${titel}" verwijderen uit de agenda?`)) return;
+    try {
+        await authVerzoek(`/agenda/${id}`, 'DELETE');
+        agendaItems = agendaItems.filter(a => a.id !== id);
+        renderAgenda();
+    } catch (e) { alert('Fout: ' + e.message); }
 }
 
 async function laadPassendeAanvragen(coach) {

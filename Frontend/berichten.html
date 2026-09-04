@@ -442,6 +442,14 @@
                     <textarea class="factuur-input" id="factuur-notities" rows="2" placeholder="Bijv. bedankt voor de samenwerking!" style="resize:vertical"></textarea>
                 </div>
 
+                <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.6rem;flex-wrap:wrap">
+                    <label style="display:flex;align-items:center;gap:0.35rem;font-size:0.84rem;cursor:pointer">
+                        <input type="checkbox" id="agenda-aanvinken" onchange="toggleAgendaDatum()" style="width:15px;height:15px;accent-color:var(--kleur-primair)">
+                        Voeg toe aan agenda
+                    </label>
+                    <input type="datetime-local" id="agenda-datum-input" style="display:none;font-size:0.82rem;padding:0.3rem 0.6rem;border:1.5px solid #ddd;border-radius:7px;font-family:inherit">
+                </div>
+
                 <div style="display:flex;gap:0.5rem">
                     <button class="btn btn-primair" onclick="stuurBetaalverzoek()" style="font-size:0.85rem;padding:0.4rem 1.1rem">📨 Factuur versturen</button>
                     <button class="btn btn-donker" onclick="sluitVerzoekFormulier()" style="font-size:0.85rem;padding:0.4rem 1rem">Annuleren</button>
@@ -990,6 +998,17 @@ function sluitVerzoekFormulier() {
     factuurRegels = [];
 }
 
+function toggleAgendaDatum() {
+    const cb = document.getElementById('agenda-aanvinken');
+    const inp = document.getElementById('agenda-datum-input');
+    inp.style.display = cb.checked ? '' : 'none';
+    if (cb.checked && !inp.value) {
+        const nu = new Date();
+        nu.setMinutes(0, 0, 0);
+        inp.value = nu.toISOString().slice(0, 16);
+    }
+}
+
 async function stuurBetaalverzoek() {
     if (!huidigPartnerId) return;
     leesRegelWaarden();
@@ -1025,6 +1044,20 @@ async function stuurBetaalverzoek() {
             betalingsTermijn: termijn,
             factuurJson
         });
+        const agendaCb = document.getElementById('agenda-aanvinken');
+        const agendaDatum = document.getElementById('agenda-datum-input');
+        if (agendaCb.checked && agendaDatum.value && data) {
+            try {
+                await authVerzoek('/agenda', 'POST', {
+                    titel: omschrijving,
+                    datum: new Date(agendaDatum.value).toISOString(),
+                    notitie: null,
+                    gekoppeldeBoekingId: data.id
+                });
+            } catch {}
+            agendaCb.checked = false;
+            agendaDatum.style.display = 'none';
+        }
         sluitVerzoekFormulier();
         await laadBerichten(huidigPartnerId);
         if (data && data.emailFout) {
