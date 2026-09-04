@@ -1,5 +1,6 @@
 const TOKEN_KEY = 'kcf_token';
 const GEBRUIKER_KEY = 'kcf_gebruiker';
+const ACTIEVE_ROL_KEY = 'kcf_actieve_rol';
 
 function getToken() { return localStorage.getItem(TOKEN_KEY); }
 
@@ -9,6 +10,16 @@ function getGebruiker() {
 }
 
 function isIngelogd() { return !!getToken(); }
+
+function getActieveRol() { return localStorage.getItem(ACTIEVE_ROL_KEY); }
+function setActieveRol(rol) { localStorage.setItem(ACTIEVE_ROL_KEY, rol); }
+
+function wisselRol() {
+    const actief = getActieveRol();
+    const nieuw = actief === 'Coach' ? 'Rijder' : 'Coach';
+    setActieveRol(nieuw);
+    location.href = nieuw === 'Coach' ? 'dashboard-coach.html' : 'dashboard-rijder.html';
+}
 
 function uitloggen() {
     localStorage.removeItem(TOKEN_KEY);
@@ -52,10 +63,21 @@ function vereisAuth(vereistRol) {
     if (vereistRol) {
         const rollen = (gebruiker.rol || '').split(',').map(function(r) { return r.trim(); });
         if (rollen.indexOf(vereistRol) === -1) {
+            // User doesn't have this role at all
             if (rollen.indexOf('Coach') !== -1) location.href = 'dashboard-coach.html';
             else if (rollen.indexOf('Admin') !== -1) location.href = 'admin.html';
             else location.href = 'dashboard-rijder.html';
             return false;
+        }
+        // Dual-role: enforce active role
+        const heeftBeide = rollen.indexOf('Coach') !== -1 && rollen.indexOf('Rijder') !== -1;
+        if (heeftBeide) {
+            const actief = getActieveRol();
+            if (!actief) { location.href = 'kies-rol.html'; return false; }
+            if (actief !== vereistRol) {
+                location.href = actief === 'Coach' ? 'dashboard-coach.html' : 'dashboard-rijder.html';
+                return false;
+            }
         }
     }
     return true;
@@ -104,23 +126,32 @@ function updateNav() {
         const heeftBeide = rollen.indexOf('Coach') !== -1 && rollen.indexOf('Rijder') !== -1;
 
         let dashboardHtml = '';
+        let rolKnoppenHtml = '';
         if (heeftBeide) {
+            const actief = getActieveRol();
+            const andereRol = actief === 'Coach' ? 'Rijder' : 'Coach';
+            const icoon = actief === 'Coach' ? '🏁' : '🏎️';
+            const dashUrl = actief === 'Coach' ? 'dashboard-coach.html' : 'dashboard-rijder.html';
             dashboardHtml =
-                '<li class="nav-auth"><a href="dashboard-coach.html">Coach dashboard</a></li>' +
-                '<li class="nav-auth"><a href="dashboard-rijder.html">Rijder dashboard</a></li>';
+                '<li class="nav-auth"><a href="' + dashUrl + '">' + icoon + ' ' + _esc(gebruiker.naam) + '</a></li>' +
+                '<li class="nav-auth"><a href="#" onclick="wisselRol();return false;" style="background:#f0f0f0;color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700;font-size:0.82rem;white-space:nowrap">⇄ ' + andereRol + '</a></li>';
+            // Only show role-specific buttons based on active role
+            if (actief === 'Rijder') {
+                rolKnoppenHtml = '<li class="nav-auth"><a href="coach-nodig.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Coach nodig?</a></li>';
+            } else if (actief === 'Coach') {
+                rolKnoppenHtml = '<li class="nav-auth"><a href="coach-gezocht.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Coach gezocht</a></li>';
+            }
         } else {
             let dashboardUrl = 'dashboard-rijder.html';
             if (rollen.indexOf('Coach') !== -1) dashboardUrl = 'dashboard-coach.html';
             if (rollen.indexOf('Admin') !== -1) dashboardUrl = 'admin.html';
             dashboardHtml = '<li class="nav-auth"><a href="' + dashboardUrl + '">' + _esc(gebruiker.naam) + '</a></li>';
-        }
-
-        let rolKnoppenHtml = '';
-        if (rollen.indexOf('Rijder') !== -1) {
-            rolKnoppenHtml += '<li class="nav-auth"><a href="coach-nodig.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Coach nodig?</a></li>';
-        }
-        if (rollen.indexOf('Coach') !== -1) {
-            rolKnoppenHtml += '<li class="nav-auth"><a href="coach-gezocht.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Coach gezocht</a></li>';
+            if (rollen.indexOf('Rijder') !== -1) {
+                rolKnoppenHtml += '<li class="nav-auth"><a href="coach-nodig.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Coach nodig?</a></li>';
+            }
+            if (rollen.indexOf('Coach') !== -1) {
+                rolKnoppenHtml += '<li class="nav-auth"><a href="coach-gezocht.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Coach gezocht</a></li>';
+            }
         }
 
         navLinks.innerHTML +=

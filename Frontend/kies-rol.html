@@ -43,14 +43,14 @@
         <h2 id="welkom-naam">Welkom terug!</h2>
         <p>Je hebt zowel een coach- als rijdersprofiel. Waar wil je naartoe?</p>
         <div class="rol-keuze">
-            <a class="rol-optie" href="dashboard-coach.html">
+            <a class="rol-optie" href="#" onclick="kiesRol('Coach');return false;">
                 <div class="rol-icoon">🏁</div>
-                <div class="rol-naam">Coach dashboard</div>
+                <div class="rol-naam">Coach</div>
                 <div class="rol-sub">Boekingen &amp; profiel beheren</div>
             </a>
-            <a class="rol-optie" href="dashboard-rijder.html">
+            <a class="rol-optie" href="#" onclick="kiesRol('Rijder');return false;">
                 <div class="rol-icoon">🏎️</div>
-                <div class="rol-naam">Rijder dashboard</div>
+                <div class="rol-naam">Rijder</div>
                 <div class="rol-sub">Coaches zoeken &amp; boeken</div>
             </a>
         </div>
@@ -73,6 +73,11 @@
 const g = getGebruiker();
 if (!g) location.href = 'inloggen.html';
 if (g) document.getElementById('welkom-naam').textContent = 'Welkom terug, ' + g.naam + '!';
+
+function kiesRol(rol) {
+    setActieveRol(rol);
+    location.href = rol === 'Coach' ? 'dashboard-coach.html' : 'dashboard-rijder.html';
+}
 </script>
 </body>
 </html>

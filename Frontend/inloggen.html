@@ -83,8 +83,12 @@ if (isIngelogd()) {
     const g = getGebruiker();
     if (g) {
         const rollen = (g.rol || '').split(',').map(function(r) { return r.trim(); });
-        if (rollen.indexOf('Coach') !== -1 && rollen.indexOf('Rijder') !== -1) location.href = 'kies-rol.html';
-        else if (rollen.indexOf('Coach') !== -1) location.href = 'dashboard-coach.html';
+        if (rollen.indexOf('Coach') !== -1 && rollen.indexOf('Rijder') !== -1) {
+            const actief = getActieveRol();
+            if (actief === 'Coach') location.href = 'dashboard-coach.html';
+            else if (actief === 'Rijder') location.href = 'dashboard-rijder.html';
+            else location.href = 'kies-rol.html';
+        } else if (rollen.indexOf('Coach') !== -1) location.href = 'dashboard-coach.html';
         else if (rollen.indexOf('Admin') !== -1) location.href = 'admin.html';
         else location.href = 'dashboard-rijder.html';
     }
@@ -146,8 +150,12 @@ async function submitInloggen(event) {
 
         if (data.heeftAccountIngericht === false) { location.href = 'account-inrichten.html'; return; }
         const rollen = (data.rol || '').split(',').map(function(r) { return r.trim(); });
-        if (rollen.indexOf('Coach') !== -1 && rollen.indexOf('Rijder') !== -1) location.href = 'kies-rol.html';
-        else if (rollen.indexOf('Coach') !== -1) location.href = 'dashboard-coach.html';
+        if (rollen.indexOf('Coach') !== -1 && rollen.indexOf('Rijder') !== -1) {
+            const actief = getActieveRol();
+            if (actief === 'Coach') location.href = 'dashboard-coach.html';
+            else if (actief === 'Rijder') location.href = 'dashboard-rijder.html';
+            else location.href = 'kies-rol.html';
+        } else if (rollen.indexOf('Coach') !== -1) location.href = 'dashboard-coach.html';
         else if (rollen.indexOf('Admin') !== -1) location.href = 'admin.html';
         else location.href = 'dashboard-rijder.html';
 
