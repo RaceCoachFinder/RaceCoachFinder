@@ -343,6 +343,12 @@ namespace Backend.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("AgendaReminderActief")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("AgendaReminderDagenVanTevoren")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("AlleenFavorieten")
                         .HasColumnType("INTEGER");
 
@@ -366,6 +372,9 @@ namespace Backend.Migrations
 
                     b.Property<string>("GebruikerId")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LaatsteReminderDatum")
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("ProfielOpenbaar")

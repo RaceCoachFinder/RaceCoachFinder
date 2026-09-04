@@ -49,14 +49,16 @@ public class InstellingenController : ControllerBase
             _context.GebruikerInstellingen.Add(inst);
         }
 
-        inst.EmailAan                 = update.EmailAan;
-        inst.BerichtenDrempel         = Math.Clamp(update.BerichtenDrempel, 1, 50);
-        inst.AlleenFavorieten         = update.AlleenFavorieten;
-        inst.EmailBijBetaalUpdate     = update.EmailBijBetaalUpdate;
-        inst.EmailBijNieuweAanvraag   = update.EmailBijNieuweAanvraag;
-        inst.EmailBijNieuweReview     = update.EmailBijNieuweReview;
-        inst.ProfielOpenbaar          = update.ProfielOpenbaar;
-        inst.BerichtenVanOnbekenden   = update.BerichtenVanOnbekenden;
+        inst.EmailAan                       = update.EmailAan;
+        inst.BerichtenDrempel               = Math.Clamp(update.BerichtenDrempel, 1, 50);
+        inst.AlleenFavorieten               = update.AlleenFavorieten;
+        inst.EmailBijBetaalUpdate           = update.EmailBijBetaalUpdate;
+        inst.EmailBijNieuweAanvraag         = update.EmailBijNieuweAanvraag;
+        inst.EmailBijNieuweReview           = update.EmailBijNieuweReview;
+        inst.ProfielOpenbaar                = update.ProfielOpenbaar;
+        inst.BerichtenVanOnbekenden         = update.BerichtenVanOnbekenden;
+        inst.AgendaReminderActief           = update.AgendaReminderActief;
+        inst.AgendaReminderDagenVanTevoren  = Math.Clamp(update.AgendaReminderDagenVanTevoren, 1, 30);
 
         await _context.SaveChangesAsync();
         return Ok(inst);

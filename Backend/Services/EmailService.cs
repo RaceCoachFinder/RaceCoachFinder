@@ -177,6 +177,35 @@ public static class EmailTemplates
         return Omhulsel(inhoud);
     }
 
+    public static string AgendaReminder(string naam, DateTime datum, List<Backend.Models.AgendaItem> items)
+    {
+        var datumTekst = datum.ToString("dddd d MMMM yyyy", new System.Globalization.CultureInfo("nl-NL"));
+        var itemsHtml = string.Join("", items.Select(i =>
+        {
+            var tijdTekst = i.Datum.ToString("HH:mm");
+            var notitie = string.IsNullOrWhiteSpace(i.Notitie)
+                ? ""
+                : $"<div style=\"font-size:0.82rem;color:#888;margin-top:2px\">{Esc(i.Notitie)}</div>";
+            return $"<tr><td style=\"padding:10px 12px;border-bottom:1px solid #f0f0f0\">" +
+                   $"<span style=\"font-weight:700;color:#111\">{Esc(i.Titel)}</span>" +
+                   $"<span style=\"color:#888;font-size:0.85rem;margin-left:8px\">{tijdTekst}</span>" +
+                   notitie +
+                   "</td></tr>";
+        }));
+
+        var inhoud =
+            $"<h2 style=\"margin:0 0 8px;color:#111111;font-size:1.2rem\">Agenda herinnering</h2>" +
+            $"<p style=\"color:#555;margin:0 0 16px\">Hallo {Esc(naam)},</p>" +
+            $"<p style=\"color:#555;margin:0 0 20px\">Op <strong>{datumTekst}</strong> staan de volgende items in je agenda:</p>" +
+            $"<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border:1px solid #eee;border-radius:8px;overflow:hidden;margin-bottom:24px\">" +
+            itemsHtml +
+            "</table>" +
+            Knop("https://race-coach-finder.vercel.app/dashboard-coach.html", "Naar agenda") +
+            "<p style=\"color:#aaa;font-size:0.78rem;margin:20px 0 0\">Je ontvangt deze herinnering omdat je agenda-reminders hebt ingeschakeld. " +
+            "Pas dit aan via <a href=\"https://race-coach-finder.vercel.app/instellingen.html\" style=\"color:#888\">Instellingen</a>.</p>";
+        return Omhulsel(inhoud);
+    }
+
     private static string Esc(string s) =>
         s.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\"", "&quot;");
 }

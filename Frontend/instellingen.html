@@ -234,6 +234,35 @@
             </div>
         </div>
 
+        <!-- Agenda reminders (alleen voor coaches) -->
+        <div class="inst-sectie" id="sectie-reminder" style="display:none">
+            <div class="inst-sectie-titel">Agenda reminders</div>
+
+            <div class="inst-rij">
+                <div class="inst-rij-label">
+                    <strong>Herinnering per e-mail</strong>
+                    <span>Ontvang een mail met je agenda-afspraken van die dag.</span>
+                </div>
+                <label class="schakelaar">
+                    <input type="checkbox" id="agendaReminderActief" onchange="updateReminderActief()">
+                    <span class="schakelaar-slider"></span>
+                </label>
+            </div>
+
+            <div id="reminder-opties" class="email-uitgeschakeld">
+                <div class="drempel-rij">
+                    <div class="drempel-rij-label">Hoever van tevoren?</div>
+                    <div class="drempel-rij-sub">De herinnering wordt elke ochtend om ±8 uur verstuurd.</div>
+                    <div class="drempel-knoppen">
+                        <button class="drempel-knop" data-dag="1"  onclick="kiesDagen(1)">1 dag</button>
+                        <button class="drempel-knop" data-dag="2"  onclick="kiesDagen(2)">2 dagen</button>
+                        <button class="drempel-knop" data-dag="3"  onclick="kiesDagen(3)">3 dagen</button>
+                        <button class="drempel-knop" data-dag="7"  onclick="kiesDagen(7)">1 week</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Berichten & Privacy -->
         <div class="inst-sectie">
             <div class="inst-sectie-titel">Berichten &amp; privacy</div>
@@ -290,14 +319,17 @@ if (!vereisAuth()) throw new Error();
 
 const gebruiker = getGebruiker();
 let huidigeDrempel = 1;
+let huidigeDagen = 1;
 
 document.getElementById('acc-naam').textContent  = gebruiker.naam  || '—';
 document.getElementById('acc-email').textContent = gebruiker.email || '—';
 document.getElementById('acc-rol').textContent   = (gebruiker.rol || '—').replace(',', ' & ');
 
 if (!heeftRol('Coach')) {
-    document.getElementById('rij-aanvraag').style.display = 'none';
-    document.getElementById('rij-review').style.display   = 'none';
+    document.getElementById('rij-aanvraag').style.display    = 'none';
+    document.getElementById('rij-review').style.display      = 'none';
+} else {
+    document.getElementById('sectie-reminder').style.display = '';
 }
 
 function updateEmailAan() {
@@ -305,10 +337,22 @@ function updateEmailAan() {
     document.getElementById('email-opties').classList.toggle('email-uitgeschakeld', !aan);
 }
 
+function updateReminderActief() {
+    const aan = document.getElementById('agendaReminderActief').checked;
+    document.getElementById('reminder-opties').classList.toggle('email-uitgeschakeld', !aan);
+}
+
 function kiesDrempel(val) {
     huidigeDrempel = val;
-    document.querySelectorAll('.drempel-knop').forEach(k => {
+    document.querySelectorAll('.drempel-knop[data-val]').forEach(k => {
         k.classList.toggle('actief', parseInt(k.dataset.val) === val);
+    });
+}
+
+function kiesDagen(val) {
+    huidigeDagen = val;
+    document.querySelectorAll('.drempel-knop[data-dag]').forEach(k => {
+        k.classList.toggle('actief', parseInt(k.dataset.dag) === val);
     });
 }
 
@@ -323,7 +367,10 @@ async function laadInstellingen() {
         document.getElementById('berichtenVanOnbekenden').checked  = inst.berichtenVanOnbekenden;
         document.getElementById('profielOpenbaar').checked         = inst.profielOpenbaar;
         kiesDrempel(inst.berichtenDrempel || 1);
+        document.getElementById('agendaReminderActief').checked = inst.agendaReminderActief || false;
+        kiesDagen(inst.agendaReminderDagenVanTevoren || 1);
         updateEmailAan();
+        updateReminderActief();
     } catch (e) {
         document.getElementById('melding').innerHTML = `<div class="melding melding-fout">Instellingen konden niet worden geladen: ${e.message}</div>`;
     }
@@ -337,8 +384,10 @@ async function slaOp() {
         emailBijBetaalUpdate:   document.getElementById('emailBijBetaalUpdate').checked,
         emailBijNieuweAanvraag: document.getElementById('emailBijNieuweAanvraag').checked,
         emailBijNieuweReview:   document.getElementById('emailBijNieuweReview').checked,
-        berichtenVanOnbekenden: document.getElementById('berichtenVanOnbekenden').checked,
-        profielOpenbaar:        document.getElementById('profielOpenbaar').checked,
+        berichtenVanOnbekenden:         document.getElementById('berichtenVanOnbekenden').checked,
+        profielOpenbaar:                document.getElementById('profielOpenbaar').checked,
+        agendaReminderActief:           document.getElementById('agendaReminderActief').checked,
+        agendaReminderDagenVanTevoren:  huidigeDagen,
     };
     try {
         await authVerzoek('/instellingen', 'PUT', body);

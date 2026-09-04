@@ -18,4 +18,9 @@ public class GebruikerInstellingen
 
     // Berichten
     public bool BerichtenVanOnbekenden { get; set; } = true; // Berichten van niet-favorieten toestaan
+
+    // Agenda reminders
+    public bool AgendaReminderActief { get; set; } = false;
+    public int AgendaReminderDagenVanTevoren { get; set; } = 1; // 1, 2, 3 of 7
+    public DateTime? LaatsteReminderDatum { get; set; }
 }
