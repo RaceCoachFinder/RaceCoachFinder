@@ -199,6 +199,36 @@
         }
         #geen-profiel-melding h2 { margin-bottom: 0.75rem; }
         #geen-profiel-melding p { color: var(--kleur-subtekst); margin-bottom: 1.5rem; }
+
+        .tab-balk {
+            display: flex;
+            gap: 0.4rem;
+            overflow-x: auto;
+            padding-bottom: 1.5rem;
+            margin-bottom: 1.75rem;
+            border-bottom: 2px solid #f0f0f0;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .tab-balk::-webkit-scrollbar { display: none; }
+        .tab-knop {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.5rem 1.15rem;
+            border-radius: 50px;
+            border: 2px solid #e5e5e5;
+            background: transparent;
+            color: var(--kleur-subtekst);
+            font-size: 0.86rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            font-family: inherit;
+            transition: border-color 0.14s, color 0.14s, background 0.14s;
+        }
+        .tab-knop:hover { border-color: var(--kleur-primair); color: var(--kleur-donker); }
+        .tab-knop.actief { background: var(--kleur-primair); border-color: var(--kleur-primair); color: var(--kleur-donker); }
     </style>
 </head>
 <body>
@@ -224,6 +254,15 @@
 <div class="container" style="padding-top:2rem;padding-bottom:3rem">
     <div id="melding"></div>
     <div id="abonnement-balk" style="display:none"></div>
+
+    <!-- Tab navigatie -->
+    <div class="tab-balk" id="tab-balk" style="display:none">
+        <button class="tab-knop" id="tab-overzicht" onclick="naarTab('overzicht')">📊 Overzicht</button>
+        <button class="tab-knop" id="tab-boekingen" onclick="naarTab('boekingen')">📋 Boekingen</button>
+        <button class="tab-knop" id="tab-agenda" onclick="naarTab('agenda')">📅 Agenda</button>
+        <button class="tab-knop" id="tab-aanvragen" onclick="naarTab('aanvragen')">📨 Aanvragen</button>
+        <button class="tab-knop" id="tab-profiel" onclick="naarTab('profiel')">👤 Profiel</button>
+    </div>
 
     <!-- Toon dit als er nog geen profiel is -->
     <div id="geen-profiel-melding" style="display:none">
@@ -491,6 +530,7 @@ if (!vereisAuth('Coach')) { /* redirect happens inside vereisAuth */ }
 const gebruiker = getGebruiker();
 let heeftProfiel = false;
 let profielAanMaken = false;
+let huidigTab = 'overzicht';
 
 const SPECIALISATIES = ['Huurkart','Rotax Max','OK','KZ / Shifter','Superkart','Simracing','Algemeen'];
 const KWALITEITEN = ['Sprint','Endurance','Regenrijden','Snelheid','Basis','Inhalen','Verdedigen','Kwalificatie','Race brain','Algemeen'];
@@ -551,8 +591,21 @@ async function laadDashboard() {
     }
 }
 
+function naarTab(tab) {
+    huidigTab = tab;
+    ['overzicht','boekingen','agenda','aanvragen','profiel'].forEach(t => {
+        document.getElementById('tab-' + t).classList.toggle('actief', t === tab);
+    });
+    document.getElementById('stats-sectie').style.display = tab === 'overzicht' ? '' : 'none';
+    document.getElementById('boekingen-sectie').style.display = tab === 'boekingen' ? '' : 'none';
+    document.getElementById('agenda-sectie').style.display = tab === 'agenda' ? '' : 'none';
+    document.getElementById('aanvragen-widget').style.display = tab === 'aanvragen' ? '' : 'none';
+    document.getElementById('profiel-formulier').style.display = tab === 'profiel' ? '' : 'none';
+}
+
 function toonGeenProfiel() {
     document.getElementById('geen-profiel-melding').style.display = '';
+    document.getElementById('tab-balk').style.display = 'none';
     document.getElementById('stats-sectie').style.display = 'none';
     document.getElementById('profiel-formulier').style.display = 'none';
     document.getElementById('boekingen-sectie').style.display = 'none';
@@ -562,7 +615,7 @@ function toonGeenProfiel() {
 
 function toonMetProfiel(coach) {
     document.getElementById('geen-profiel-melding').style.display = 'none';
-    document.getElementById('stats-sectie').style.display = '';
+    document.getElementById('tab-balk').style.display = '';
 
     document.getElementById('stat-weergaven').textContent = coach.aantalWeergaven ?? 0;
 
@@ -582,7 +635,7 @@ function toonMetProfiel(coach) {
 
     document.getElementById('link-profiel').href = 'coach-detail.html?id=' + coach.id;
 
-    toonProfielFormulier(false);
+    naarTab('overzicht');
     laadBoekingen();
     laadAgenda();
     laadExtraStats(coach);
@@ -592,18 +645,19 @@ function toonMetProfiel(coach) {
 function toonProfielFormulier(nieuw) {
     profielAanMaken = nieuw;
     document.getElementById('geen-profiel-melding').style.display = 'none';
-    document.getElementById('profiel-formulier').style.display = '';
     document.getElementById('formulier-titel').textContent = nieuw ? 'Profiel aanmaken' : 'Profiel bewerken';
-    document.getElementById('btn-annuleer').style.display = nieuw && heeftProfiel ? '' : (heeftProfiel ? '' : 'none');
-    if (!heeftProfiel) {
-        document.getElementById('stats-sectie').style.display = 'none';
+    document.getElementById('btn-annuleer').style.display = heeftProfiel ? '' : 'none';
+    if (heeftProfiel) {
+        document.getElementById('tab-balk').style.display = '';
+        naarTab('profiel');
+    } else {
+        document.getElementById('profiel-formulier').style.display = '';
         toonFotoCirkel('', gebruiker.naam);
     }
 }
 
 function annuleer() {
-    document.getElementById('profiel-formulier').style.display = 'none';
-    if (heeftProfiel) document.getElementById('stats-sectie').style.display = '';
+    if (heeftProfiel) naarTab('overzicht');
     else toonGeenProfiel();
 }
 
@@ -630,7 +684,6 @@ function vulFormulier(coach) {
     laadPakketten(coach.prijsPakketten || '');
     document.getElementById('fotoUrl').value = coach.fotoUrl || '';
     toonFotoCirkel(coach.fotoUrl, coach.naam);
-    toonProfielFormulier(false);
 }
 
 function toonFotoCirkel(fotoUrl, naam) {
@@ -701,8 +754,19 @@ async function slaanProfiel(event) {
 async function togglePubliceer() {
     try {
         const resultaat = await authVerzoek('/coach/mijn/publiceer', 'POST');
-        await laadDashboard();
-        toonMelding(resultaat.isGepubliceerd ? 'Profiel gepubliceerd!' : 'Profiel gedepubliceerd.', resultaat.isGepubliceerd ? 'succes' : 'info');
+        const gepubliceerd = resultaat.isGepubliceerd;
+        const statusBalk = document.getElementById('status-balk');
+        if (gepubliceerd) {
+            statusBalk.className = 'status-balk status-gepubliceerd';
+            statusBalk.innerHTML = '✅ Je profiel is zichtbaar voor rijders.';
+        } else {
+            statusBalk.className = 'status-balk status-ongepubliceerd';
+            statusBalk.innerHTML = '🔴 Je profiel is nog niet gepubliceerd. Rijders kunnen je niet vinden.';
+        }
+        const btn = document.getElementById('btn-publiceer');
+        btn.className = gepubliceerd ? 'btn btn-gevaar' : 'btn btn-primair';
+        btn.textContent = gepubliceerd ? 'Depubliceren' : 'Publiceren';
+        toonMelding(gepubliceerd ? 'Profiel gepubliceerd!' : 'Profiel gedepubliceerd.', gepubliceerd ? 'succes' : 'info');
     } catch (e) {
         toonMelding('Fout: ' + e.message, 'fout');
     }
