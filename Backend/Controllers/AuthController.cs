@@ -18,13 +18,15 @@ public class AuthController : ControllerBase
     private readonly IConfiguration _config;
     private readonly IEmailService _email;
     private readonly IWachtwoordResetService _resetService;
+    private readonly IEmailVerificatieService _verificatie;
 
-    public AuthController(UserManager<ApplicationUser> userManager, IConfiguration config, IEmailService email, IWachtwoordResetService resetService)
+    public AuthController(UserManager<ApplicationUser> userManager, IConfiguration config, IEmailService email, IWachtwoordResetService resetService, IEmailVerificatieService verificatie)
     {
         _userManager = userManager;
         _config = config;
         _email = email;
         _resetService = resetService;
+        _verificatie = verificatie;
     }
 
     [HttpPost("registreren")]
@@ -52,7 +54,7 @@ public class AuthController : ControllerBase
             Email = verzoek.Email,
             Naam = verzoek.Naam,
             Rol = verzoek.Rol,
-            EmailConfirmed = true
+            EmailConfirmed = false
         };
 
         var resultaat = await _userManager.CreateAsync(gebruiker, verzoek.Wachtwoord);
@@ -62,11 +64,12 @@ public class AuthController : ControllerBase
             return BadRequest(string.Join(", ", fouten));
         }
 
+        var code = _verificatie.MaakCode(verzoek.Email);
         _ = _email.VerstuurAsync(gebruiker.Email!, gebruiker.Naam,
-            "Welkom bij RaceCoachFinder!",
-            EmailTemplates.Welkom(gebruiker.Naam, gebruiker.Rol));
+            "Bevestig je e-mailadres – RaceCoachFinder",
+            EmailTemplates.EmailBevestiging(gebruiker.Naam, code));
 
-        return Ok(new { bericht = "Account aangemaakt. Je kan nu inloggen." });
+        return Ok(new { bericht = "Account aangemaakt. Controleer je e-mail voor de bevestigingscode.", wachtOpBevestiging = true, email = verzoek.Email });
     }
 
     [HttpPost("inloggen")]
@@ -77,6 +80,15 @@ public class AuthController : ControllerBase
                      ?? await _userManager.FindByNameAsync(verzoek.Email);
         if (gebruiker == null || !await _userManager.CheckPasswordAsync(gebruiker, verzoek.Wachtwoord))
             return Unauthorized("Onjuist e-mailadres of wachtwoord.");
+
+        if (!gebruiker.EmailConfirmed)
+        {
+            var code = _verificatie.MaakCode(verzoek.Email);
+            _ = _email.VerstuurAsync(gebruiker.Email!, gebruiker.Naam,
+                "Bevestig je e-mailadres – RaceCoachFinder",
+                EmailTemplates.EmailBevestiging(gebruiker.Naam, code));
+            return Unauthorized(new { fout = "email_niet_bevestigd", email = verzoek.Email });
+        }
 
         var token = MaakToken(gebruiker);
         return Ok(new InloggenAntwoord(token, gebruiker.Id, gebruiker.Naam, gebruiker.Email!, gebruiker.Rol, gebruiker.HeeftAccountIngericht));
@@ -147,6 +159,41 @@ public class AuthController : ControllerBase
         return Ok();
     }
 
+    [HttpPost("bevestig-email")]
+    public async Task<IActionResult> BevestigEmail([FromBody] EmailBevestigenVerzoek verzoek)
+    {
+        if (!_verificatie.ValideerCode(verzoek.Email, verzoek.Code))
+            return BadRequest("Code is ongeldig of verlopen.");
+
+        var gebruiker = await _userManager.FindByEmailAsync(verzoek.Email);
+        if (gebruiker == null) return BadRequest("Gebruiker niet gevonden.");
+
+        gebruiker.EmailConfirmed = true;
+        await _userManager.UpdateAsync(gebruiker);
+        _verificatie.VerwijderCode(verzoek.Email);
+
+        _ = _email.VerstuurAsync(gebruiker.Email!, gebruiker.Naam,
+            "Welkom bij RaceCoachFinder!",
+            EmailTemplates.Welkom(gebruiker.Naam, gebruiker.Rol));
+
+        var token = MaakToken(gebruiker);
+        return Ok(new InloggenAntwoord(token, gebruiker.Id, gebruiker.Naam, gebruiker.Email!, gebruiker.Rol, gebruiker.HeeftAccountIngericht));
+    }
+
+    [HttpPost("verificatie-opnieuw")]
+    public async Task<IActionResult> VerificatieOpnieuw([FromBody] WachtwoordVergetenVerzoek verzoek)
+    {
+        var gebruiker = await _userManager.FindByEmailAsync(verzoek.Email);
+        if (gebruiker != null && !gebruiker.EmailConfirmed)
+        {
+            var code = _verificatie.MaakCode(verzoek.Email);
+            _ = _email.VerstuurAsync(gebruiker.Email!, gebruiker.Naam,
+                "Bevestig je e-mailadres – RaceCoachFinder",
+                EmailTemplates.EmailBevestiging(gebruiker.Naam, code));
+        }
+        return Ok();
+    }
+
     private string MaakToken(ApplicationUser gebruiker)
     {
         var sleutel = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Sleutel"]!));
@@ -173,3 +220,4 @@ public class AuthController : ControllerBase
 
 public record WachtwoordVergetenVerzoek(string Email);
 public record WachtwoordResetVerzoek(string Email, string Code, string NieuwWachtwoord);
+public record EmailBevestigenVerzoek(string Email, string Code);

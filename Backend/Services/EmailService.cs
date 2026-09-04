@@ -206,6 +206,21 @@ public static class EmailTemplates
         return Omhulsel(inhoud);
     }
 
+    public static string EmailBevestiging(string naam, string code)
+    {
+        var inhoud =
+            "<h2 style=\"margin:0 0 8px;color:#111111;font-size:1.2rem\">Bevestig je e-mailadres</h2>" +
+            "<p style=\"color:#555;margin:0 0 16px\">Hallo " + Esc(naam) + ",</p>" +
+            "<p style=\"color:#555;margin:0 0 24px\">Voer de onderstaande code in om je account te activeren. De code is <strong>30 minuten</strong> geldig.</p>" +
+            "<div style=\"text-align:center;margin:0 0 24px\">" +
+            "<div style=\"display:inline-block;background:#f9f9f9;border:2px dashed #F5C200;border-radius:10px;padding:18px 36px\">" +
+            "<div style=\"font-size:0.72rem;color:#999;margin-bottom:6px;letter-spacing:1px;text-transform:uppercase\">Verificatiecode</div>" +
+            "<div style=\"font-size:2.2rem;font-weight:800;letter-spacing:10px;color:#111111\">" + Esc(code) + "</div>" +
+            "</div></div>" +
+            "<p style=\"color:#aaa;font-size:0.82rem;margin:0\">Als je dit account niet zelf hebt aangemaakt, kun je deze e-mail negeren.</p>";
+        return Omhulsel(inhoud);
+    }
+
     private static string Esc(string s) =>
         s.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\"", "&quot;");
 }

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-mail bevestigen – RaceCoachFinder</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="nav-container">
+        <a href="index.html" class="nav-logo">Race<span>Coach</span>Finder</a>
+        <ul class="nav-links" id="nav-links"></ul>
+    </div>
+</nav>
+
+<div class="auth-wrapper">
+    <div class="auth-kaart" style="max-width:440px">
+        <div style="text-align:center;margin-bottom:1.75rem">
+            <div style="font-size:2.5rem;margin-bottom:0.75rem">📬</div>
+            <h1 style="font-size:1.4rem;font-weight:800;margin:0 0 0.5rem">Bevestig je e-mailadres</h1>
+            <p id="uitleg" style="color:var(--kleur-subtekst);font-size:0.9rem;margin:0;line-height:1.5">
+                We hebben een bevestigingscode gestuurd naar<br>
+                <strong id="email-tonen"></strong>
+            </p>
+        </div>
+
+        <div id="melding"></div>
+
+        <form onsubmit="bevestig(event)">
+            <div class="formulier-groep">
+                <label for="code">Bevestigingscode</label>
+                <input type="text" id="code" placeholder="123456" maxlength="6"
+                    inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code"
+                    style="font-size:1.5rem;letter-spacing:0.25em;text-align:center;font-weight:700"
+                    required>
+            </div>
+
+            <button type="submit" class="btn btn-primair" id="btn-bevestig" style="width:100%;margin-top:0.5rem">
+                Account activeren
+            </button>
+        </form>
+
+        <div style="text-align:center;margin-top:1.25rem">
+            <button onclick="opnieuwVersturen()" id="btn-opnieuw"
+                style="background:none;border:none;color:var(--kleur-subtekst);font-size:0.85rem;cursor:pointer;text-decoration:underline">
+                Geen e-mail ontvangen? Opnieuw versturen
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="js/auth.js"></script>
+<script>
+const API = 'https://racecoachfinder-production.up.railway.app/api';
+const params = new URLSearchParams(location.search);
+const emailParam = params.get('email') || '';
+const rolParam = params.get('rol') || '';
+
+document.getElementById('email-tonen').textContent = emailParam;
+updateNav();
+
+async function bevestig(event) {
+    event.preventDefault();
+    const btn = document.getElementById('btn-bevestig');
+    btn.disabled = true;
+    btn.textContent = 'Bezig...';
+    document.getElementById('melding').innerHTML = '';
+
+    try {
+        const antwoord = await fetch(API + '/auth/bevestig-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: emailParam, code: document.getElementById('code').value.trim() })
+        });
+
+        if (!antwoord.ok) {
+            const fout = await antwoord.text();
+            throw new Error(fout || 'Ongeldige of verlopen code.');
+        }
+
+        const data = await antwoord.json();
+        localStorage.setItem('kcf_token', data.token);
+        localStorage.setItem('kcf_gebruiker', JSON.stringify({
+            id: data.id, naam: data.naam, email: data.email,
+            rol: data.rol, heeftAccountIngericht: data.heeftAccountIngericht
+        }));
+
+        toonMelding('E-mail bevestigd! Je wordt doorgestuurd...', 'succes');
+
+        // Coach: eerst betalen
+        if (rolParam === 'Coach' && !data.heeftAccountIngericht) {
+            btn.textContent = 'Doorsturen naar betaling...';
+            const betalingAntwoord = await fetch(API + '/betaling/start-abonnement', {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + data.token }
+            });
+            if (!betalingAntwoord.ok) throw new Error('Betaling starten mislukt. Probeer in te loggen.');
+            const betalingData = await betalingAntwoord.json();
+            window.location.href = betalingData.checkoutUrl;
+            return;
+        }
+
+        // Rijder of al ingericht account
+        setTimeout(function() {
+            if (data.heeftAccountIngericht === false) { location.href = 'account-inrichten.html'; return; }
+            const rollen = (data.rol || '').split(',').map(function(r) { return r.trim(); });
+            if (rollen.indexOf('Coach') !== -1 && rollen.indexOf('Rijder') !== -1) location.href = 'kies-rol.html';
+            else if (rollen.indexOf('Coach') !== -1) location.href = 'dashboard-coach.html';
+            else location.href = 'dashboard-rijder.html';
+        }, 1000);
+
+    } catch (e) {
+        toonMelding(e.message, 'fout');
+        btn.disabled = false;
+        btn.textContent = 'Account activeren';
+    }
+}
+
+async function opnieuwVersturen() {
+    const btn = document.getElementById('btn-opnieuw');
+    btn.disabled = true;
+    btn.textContent = 'Versturen...';
+    try {
+        await fetch(API + '/auth/verificatie-opnieuw', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: emailParam })
+        });
+        toonMelding('Nieuwe code verstuurd. Controleer je inbox (en spamfolder).', 'succes');
+    } catch {
+        toonMelding('Kon de code niet opnieuw versturen.', 'fout');
+    }
+    setTimeout(function() { btn.disabled = false; btn.textContent = 'Geen e-mail ontvangen? Opnieuw versturen'; }, 30000);
+}
+
+function toonMelding(tekst, type) {
+    const klasse = type === 'succes' ? 'melding-succes' : 'melding-fout';
+    document.getElementById('melding').innerHTML = '<div class="melding ' + klasse + '" style="margin-bottom:1rem">' + tekst + '</div>';
+}
+</script>
+</body>
+</html>

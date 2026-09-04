@@ -53,6 +53,7 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddSingleton<IEmailService, EmailService>();
 builder.Services.AddSingleton<IWachtwoordResetService, WachtwoordResetService>();
+builder.Services.AddSingleton<IEmailVerificatieService, EmailVerificatieService>();
 builder.Services.AddHostedService<AgendaReminderService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

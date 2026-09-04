@@ -133,16 +133,24 @@ async function submitInloggen(event) {
     document.getElementById('melding').innerHTML = '';
 
     try {
-        const data = await (await fetch('https://racecoachfinder-production.up.railway.app/api/auth/inloggen', {
+        const email = document.getElementById('login-invoer').value.trim();
+        const antwoord = await fetch('https://racecoachfinder-production.up.railway.app/api/auth/inloggen', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                email: document.getElementById('login-invoer').value.trim(),
-                wachtwoord: document.getElementById('wachtwoord').value
-            })
-        })).json();
+            body: JSON.stringify({ email: email, wachtwoord: document.getElementById('wachtwoord').value })
+        });
 
-        if (!data.token) throw new Error(data.title || 'Inloggen mislukt.');
+        if (antwoord.status === 401) {
+            const foutData = await antwoord.json().catch(() => ({}));
+            if (foutData.fout === 'email_niet_bevestigd') {
+                location.href = 'bevestig-email.html?email=' + encodeURIComponent(foutData.email || email);
+                return;
+            }
+            throw new Error('Onjuist e-mailadres of wachtwoord.');
+        }
+
+        const data = await antwoord.json();
+        if (!data.token) throw new Error('Inloggen mislukt.');
 
         localStorage.setItem('kcf_token', data.token);
         localStorage.setItem('kcf_gebruiker', JSON.stringify({

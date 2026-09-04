@@ -299,41 +299,13 @@ async function submitRegistreren() {
         if (!regAntwoord.ok) throw new Error(await regAntwoord.text());
         const regData = await regAntwoord.json();
 
-        if (gekozenRol === 'Coach' && !regData.tweedeRol) {
-            // Automatisch inloggen
-            const loginAntwoord = await fetch('https://racecoachfinder-production.up.railway.app/api/auth/inloggen', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: document.getElementById('email').value.trim(),
-                    wachtwoord: document.getElementById('wachtwoord').value
-                })
-            });
-            if (!loginAntwoord.ok) throw new Error('Inloggen mislukt');
-            const loginData = await loginAntwoord.json();
-            localStorage.setItem('kcf_token', loginData.token);
-            localStorage.setItem('kcf_gebruiker', JSON.stringify({
-                naam: loginData.naam,
-                email: loginData.email,
-                rol: loginData.rol,
-                heeftAccountIngericht: loginData.heeftAccountIngericht
-            }));
-
-            // Mollie betaling starten
-            btn.textContent = 'Doorsturen naar betaling...';
-            const betalingAntwoord = await fetch('https://racecoachfinder-production.up.railway.app/api/betaling/start-abonnement', {
-                method: 'POST',
-                headers: { 'Authorization': 'Bearer ' + loginData.token }
-            });
-            if (!betalingAntwoord.ok) throw new Error('Betaling starten mislukt');
-            const betalingData = await betalingAntwoord.json();
-            window.location.href = betalingData.checkoutUrl;
-        } else {
-            const berichtTekst = regData.tweedeRol
-                ? 'Tweede rol toegevoegd! Je kan nu inloggen.'
-                : 'Account aangemaakt! Je wordt doorgestuurd...';
-            toonMelding(berichtTekst, 'succes');
+        if (regData.tweedeRol) {
+            toonMelding('Tweede rol toegevoegd! Je kan nu inloggen.', 'succes');
             setTimeout(() => location.href = 'inloggen.html', 1500);
+        } else if (regData.wachtOpBevestiging) {
+            toonMelding('Account aangemaakt! Controleer je e-mail voor de bevestigingscode.', 'succes');
+            const email = encodeURIComponent(regData.email || document.getElementById('email').value.trim());
+            setTimeout(() => location.href = 'bevestig-email.html?email=' + email + '&rol=' + gekozenRol, 1500);
         }
     } catch (e) {
         toonMelding(e.message, 'fout');
