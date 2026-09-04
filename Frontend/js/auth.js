@@ -190,3 +190,62 @@ function _esc(str) {
     d.textContent = String(str);
     return d.innerHTML;
 }
+
+// Cookie consent banner
+(function() {
+    const COOKIE_KEY = 'kcf_cookie_consent';
+
+    function sluitBanner(banner) {
+        banner.style.transform = 'translateY(100%)';
+        banner.style.opacity = '0';
+        setTimeout(function() { banner.remove(); }, 300);
+    }
+
+    function toonCookieBanner() {
+        if (localStorage.getItem(COOKIE_KEY)) return;
+
+        var stijl = document.createElement('style');
+        stijl.textContent =
+            '#kcf-cookie-banner{position:fixed;bottom:0;left:0;right:0;z-index:9999;' +
+            'background:#111;color:#e8e8e8;padding:1rem 1.5rem;display:flex;align-items:center;' +
+            'gap:1.25rem;flex-wrap:wrap;box-shadow:0 -2px 16px rgba(0,0,0,0.25);' +
+            'transform:translateY(0);opacity:1;transition:transform 0.3s ease,opacity 0.3s ease;}' +
+            '#kcf-cookie-banner p{margin:0;font-size:0.83rem;line-height:1.5;flex:1;min-width:200px;}' +
+            '#kcf-cookie-banner a{color:#F5C200;text-underline-offset:2px;}' +
+            '#kcf-cookie-banner .kcf-cookie-knoppen{display:flex;gap:0.6rem;flex-shrink:0;}' +
+            '#kcf-cookie-accept{background:#F5C200;color:#111;border:none;padding:0.5rem 1.1rem;' +
+            'border-radius:6px;font-weight:700;font-size:0.82rem;cursor:pointer;}' +
+            '#kcf-cookie-accept:hover{background:#e6b800;}' +
+            '#kcf-cookie-functional{background:transparent;color:#aaa;border:1px solid #444;' +
+            'padding:0.5rem 1rem;border-radius:6px;font-size:0.82rem;cursor:pointer;}' +
+            '#kcf-cookie-functional:hover{color:#fff;border-color:#888;}';
+        document.head.appendChild(stijl);
+
+        var banner = document.createElement('div');
+        banner.id = 'kcf-cookie-banner';
+        banner.innerHTML =
+            '<p>We gebruiken functionele cookies om het platform te laten werken. ' +
+            'We plaatsen geen tracking- of advertentiecookies. ' +
+            'Lees meer in ons <a href="privacybeleid.html">privacybeleid</a>.</p>' +
+            '<div class="kcf-cookie-knoppen">' +
+            '<button id="kcf-cookie-functional">Alleen functioneel</button>' +
+            '<button id="kcf-cookie-accept">Accepteren</button>' +
+            '</div>';
+        document.body.appendChild(banner);
+
+        document.getElementById('kcf-cookie-accept').addEventListener('click', function() {
+            localStorage.setItem(COOKIE_KEY, 'accepted');
+            sluitBanner(banner);
+        });
+        document.getElementById('kcf-cookie-functional').addEventListener('click', function() {
+            localStorage.setItem(COOKIE_KEY, 'functional');
+            sluitBanner(banner);
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', toonCookieBanner);
+    } else {
+        toonCookieBanner();
+    }
+})();

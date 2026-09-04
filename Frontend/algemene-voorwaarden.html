@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algemene Voorwaarden – RaceCoachFinder</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; }
+
+        .doc-header {
+            background: linear-gradient(135deg, var(--kleur-donker), #1a1a2e);
+            color: #fff;
+            padding: 3rem 0 2.5rem;
+        }
+        .doc-header .eyebrow {
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--kleur-primair);
+            margin-bottom: 0.6rem;
+        }
+        .doc-header h1 { font-size: 2rem; font-weight: 800; margin: 0 0 0.5rem; }
+        .doc-header .meta { color: #888; font-size: 0.85rem; }
+
+        .doc-layout {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            gap: 3rem;
+            max-width: 900px;
+            margin: 3rem auto;
+            align-items: start;
+        }
+
+        .doc-toc { position: sticky; top: 1.5rem; }
+        .toc-titel {
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--kleur-subtekst);
+            margin-bottom: 0.75rem;
+        }
+        .toc-lijst { list-style: none; padding: 0; margin: 0; }
+        .toc-lijst li { margin-bottom: 0.1rem; }
+        .toc-lijst a {
+            display: block;
+            padding: 0.3rem 0.6rem;
+            font-size: 0.82rem;
+            color: var(--kleur-subtekst);
+            text-decoration: none;
+            border-left: 2px solid #e8e8e8;
+            transition: color 0.15s, border-color 0.15s;
+        }
+        .toc-lijst a:hover { color: var(--kleur-tekst); border-left-color: var(--kleur-primair); }
+
+        .doc-inhoud { min-width: 0; }
+
+        .doc-sectie {
+            padding-bottom: 2.5rem;
+            margin-bottom: 2.5rem;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .doc-sectie:last-child { border-bottom: none; padding-bottom: 0; }
+
+        .sectie-nr {
+            display: inline-block;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--kleur-primair);
+            margin-bottom: 0.4rem;
+        }
+        .doc-inhoud h2 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin: 0 0 1rem;
+            color: var(--kleur-donker);
+            text-wrap: balance;
+        }
+        .doc-inhoud h3 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin: 1.25rem 0 0.5rem;
+            color: var(--kleur-donker);
+        }
+        .doc-inhoud p {
+            font-size: 0.9rem;
+            line-height: 1.75;
+            color: #444;
+            margin: 0 0 0.9rem;
+        }
+        .doc-inhoud p:last-child { margin-bottom: 0; }
+
+        .doc-lijst {
+            margin: 0 0 0.9rem 0;
+            padding-left: 1.25rem;
+        }
+        .doc-lijst li {
+            font-size: 0.9rem;
+            line-height: 1.75;
+            color: #444;
+            margin-bottom: 0.25rem;
+        }
+
+        .definitie-tabel {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            margin: 0.5rem 0 0.9rem;
+        }
+        .definitie-tabel td {
+            padding: 0.65rem 0.75rem;
+            border-bottom: 1px solid #f4f4f4;
+            vertical-align: top;
+        }
+        .definitie-tabel td:first-child {
+            font-weight: 700;
+            color: var(--kleur-donker);
+            white-space: nowrap;
+            padding-right: 1.5rem;
+            width: 140px;
+        }
+        .definitie-tabel td:last-child { color: #555; }
+        .definitie-tabel tr:last-child td { border-bottom: none; }
+
+        .waarschuwing {
+            background: #fffbe8;
+            border-left: 3px solid var(--kleur-primair);
+            padding: 1rem 1.25rem;
+            border-radius: 0 6px 6px 0;
+            margin: 0.75rem 0 0.9rem;
+        }
+        .waarschuwing p { margin: 0; font-size: 0.88rem; color: #5a4800; }
+
+        .contact-blok {
+            background: linear-gradient(135deg, #fffbe8, #fff8d6);
+            border: 1.5px solid #f5c200;
+            border-radius: 10px;
+            padding: 1.25rem 1.5rem;
+        }
+        .contact-blok p { color: #5a4800; margin-bottom: 0.3rem; }
+        .contact-blok a { color: #8a6a00; font-weight: 600; }
+
+        @media (max-width: 680px) {
+            .doc-layout { grid-template-columns: 1fr; gap: 2rem; }
+            .doc-toc { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="nav-container">
+        <a href="index.html" class="nav-logo">Race<span>Coach</span>Finder</a>
+        <ul class="nav-links" id="nav-links"></ul>
+    </div>
+</nav>
+
+<div class="doc-header">
+    <div class="container">
+        <div class="eyebrow">Juridisch</div>
+        <h1>Algemene Voorwaarden</h1>
+        <p class="meta">Versie 1.0 &nbsp;·&nbsp; September 2026 &nbsp;·&nbsp; Van toepassing op alle gebruikers van RaceCoachFinder</p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="doc-layout">
+
+        <nav class="doc-toc" aria-label="Inhoudsopgave">
+            <div class="toc-titel">Inhoud</div>
+            <ol class="toc-lijst">
+                <li><a href="#s1">Definities</a></li>
+                <li><a href="#s2">Toepasselijkheid</a></li>
+                <li><a href="#s3">Registratie</a></li>
+                <li><a href="#s4">Coach-profiel</a></li>
+                <li><a href="#s5">Boekingen</a></li>
+                <li><a href="#s6">Betalingen</a></li>
+                <li><a href="#s7">Gedragsregels</a></li>
+                <li><a href="#s8">Aansprakelijkheid</a></li>
+                <li><a href="#s9">Intellectueel eigendom</a></li>
+                <li><a href="#s10">Beëindiging</a></li>
+                <li><a href="#s11">Wijzigingen</a></li>
+                <li><a href="#s12">Toepasselijk recht</a></li>
+                <li><a href="#s13">Contact</a></li>
+            </ol>
+        </nav>
+
+        <div class="doc-inhoud">
+
+            <div class="doc-sectie" id="s1">
+                <span class="sectie-nr">Artikel 1</span>
+                <h2>Definities</h2>
+                <table class="definitie-tabel">
+                    <tr>
+                        <td>Platform</td>
+                        <td>De website en bijbehorende diensten van RaceCoachFinder, bereikbaar via race-coach-finder.vercel.app</td>
+                    </tr>
+                    <tr>
+                        <td>RaceCoachFinder</td>
+                        <td>De exploitant van het Platform</td>
+                    </tr>
+                    <tr>
+                        <td>Gebruiker</td>
+                        <td>Iedere persoon die een account aanmaakt op het Platform</td>
+                    </tr>
+                    <tr>
+                        <td>Coach</td>
+                        <td>Een Gebruiker die via het Platform kartcoachingdiensten aanbiedt</td>
+                    </tr>
+                    <tr>
+                        <td>Rijder</td>
+                        <td>Een Gebruiker die via het Platform coaching zoekt</td>
+                    </tr>
+                    <tr>
+                        <td>Boeking</td>
+                        <td>Een overeenkomst tussen Coach en Rijder die via het Platform tot stand komt</td>
+                    </tr>
+                    <tr>
+                        <td>AVG</td>
+                        <td>Algemene Verordening Gegevensbescherming (EU 2016/679)</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="doc-sectie" id="s2">
+                <span class="sectie-nr">Artikel 2</span>
+                <h2>Toepasselijkheid</h2>
+                <p>Deze algemene voorwaarden zijn van toepassing op elk gebruik van het Platform en op alle Boekingen die via het Platform tot stand komen. Door een account aan te maken ga je akkoord met deze voorwaarden.</p>
+                <p>RaceCoachFinder is een <strong>intermediair platform</strong>. Wij verbinden coaches en rijders, maar zijn geen partij in de coachingovereenkomst zelf. De coachingdienst wordt uitsluitend verleend door en onder verantwoordelijkheid van de Coach.</p>
+            </div>
+
+            <div class="doc-sectie" id="s3">
+                <span class="sectie-nr">Artikel 3</span>
+                <h2>Registratie en account</h2>
+                <p>Om het Platform te gebruiken dien je een account aan te maken. Daarvoor gelden de volgende eisen:</p>
+                <ul class="doc-lijst">
+                    <li>Je bent minimaal 18 jaar oud, of je hebt aantoonbare toestemming van een ouder of wettelijk vertegenwoordiger</li>
+                    <li>Je verstrekt waarheidsgetrouwe en actuele informatie bij registratie</li>
+                    <li>Je mag slechts één account per persoon hebben (je kunt beide rollen op één account combineren)</li>
+                    <li>Je houdt je inloggegevens geheim en bent verantwoordelijk voor alle activiteit op je account</li>
+                </ul>
+                <p>Meld misbruik of ongeautoriseerde toegang tot je account direct via <a href="mailto:info@racecoachfinder.nl">info@racecoachfinder.nl</a>.</p>
+            </div>
+
+            <div class="doc-sectie" id="s4">
+                <span class="sectie-nr">Artikel 4</span>
+                <h2>Coach-profiel en publicatie</h2>
+                <p>Coaches zijn zelf verantwoordelijk voor de juistheid en volledigheid van hun profielinformatie, inclusief:</p>
+                <ul class="doc-lijst">
+                    <li>Ervaring, kwalificaties en disciplines</li>
+                    <li>Tarieven (inclusief of exclusief BTW)</li>
+                    <li>Beschikbaarheid en locatie</li>
+                    <li>Foto's en overige media</li>
+                </ul>
+                <div class="waarschuwing">
+                    <p><strong>Let op:</strong> Het is niet toegestaan onjuiste of misleidende informatie te vermelden. RaceCoachFinder behoudt het recht profielen die onjuiste informatie bevatten te verbergen of te verwijderen.</p>
+                </div>
+                <p>Door je profiel te publiceren geef je RaceCoachFinder toestemming je profielgegevens (inclusief naam en foto) te tonen aan andere gebruikers van het Platform.</p>
+            </div>
+
+            <div class="doc-sectie" id="s5">
+                <span class="sectie-nr">Artikel 5</span>
+                <h2>Boekingen</h2>
+                <h3>Totstandkoming</h3>
+                <p>Een Boeking komt tot stand door wederzijdse acceptatie via het Platform. De Coach en Rijder zijn zelf verantwoordelijk voor het vastleggen van de inhoud, datum, locatie en overige voorwaarden van de coachingsessie.</p>
+                <h3>Annulering</h3>
+                <p>Er gelden geen wettelijke bedenktijden voor diensten die met uitdrukkelijke instemming van de consument vóór het einde van de bedenktijd worden uitgevoerd. Coach en Rijder dienen onderling annuleringsafspraken te maken.</p>
+                <h3>Klachten</h3>
+                <p>Klachten over de inhoud of uitvoering van een coachingsessie dienen primair te worden opgelost tussen Coach en Rijder. RaceCoachFinder kan op verzoek bemiddelend optreden, maar is daartoe niet verplicht.</p>
+            </div>
+
+            <div class="doc-sectie" id="s6">
+                <span class="sectie-nr">Artikel 6</span>
+                <h2>Betalingen en tarieven</h2>
+                <h3>Betalingsverwerking</h3>
+                <p>Betalingen via het Platform worden verwerkt door Mollie B.V., een door De Nederlandsche Bank gereguleerde betaalinstelling. De <a href="https://www.mollie.com/nl/user-agreement-nl" target="_blank">gebruikersvoorwaarden van Mollie</a> zijn aanvullend van toepassing op betalingstransacties.</p>
+                <h3>Servicetoeslag</h3>
+                <p>RaceCoachFinder brengt een servicekosten van <strong>2%</strong> in rekening over het betaalde bedrag. Deze kosten worden automatisch verwerkt bij het afrekenen. Coaches ontvangen het overeengekomen bedrag minus de servicekosten.</p>
+                <h3>BTW</h3>
+                <p>Coaches zijn zelf verantwoordelijk voor correcte BTW-aangifte en -afdracht. RaceCoachFinder is niet aansprakelijk voor fiscale gevolgen van transacties via het Platform.</p>
+                <h3>Terugbetalingen</h3>
+                <p>Terugbetalingen worden uitsluitend verwerkt indien de Coach en Rijder dit schriftelijk zijn overeengekomen, of indien RaceCoachFinder hiertoe beslist na een klachtenprocedure. Servicetoeslag wordt bij terugbetaling niet vergoed.</p>
+            </div>
+
+            <div class="doc-sectie" id="s7">
+                <span class="sectie-nr">Artikel 7</span>
+                <h2>Gedragsregels</h2>
+                <p>Het is niet toegestaan om via het Platform:</p>
+                <ul class="doc-lijst">
+                    <li>Valse, misleidende of beledigende informatie te verspreiden</li>
+                    <li>Andere gebruikers lastig te vallen of te bedreigen</li>
+                    <li>Betalingen buiten het Platform om te regelen om servicekosten te ontwijken</li>
+                    <li>Nep-reviews of nep-profielen aan te maken</li>
+                    <li>Automatisch gegenereerde verzoeken of spam te versturen</li>
+                    <li>Inbreuk te maken op rechten van derden (auteursrecht, privacy)</li>
+                </ul>
+                <p>Bij overtreding van deze regels kan RaceCoachFinder het account direct opschorten of verwijderen.</p>
+            </div>
+
+            <div class="doc-sectie" id="s8">
+                <span class="sectie-nr">Artikel 8</span>
+                <h2>Aansprakelijkheid</h2>
+                <h3>Aansprakelijkheid RaceCoachFinder</h3>
+                <p>RaceCoachFinder is een intermediair en biedt zelf geen coachingdiensten aan. Wij zijn <strong>niet aansprakelijk</strong> voor:</p>
+                <ul class="doc-lijst">
+                    <li>Letsel, schade of verlies dat ontstaat tijdens of als gevolg van een coachingsessie</li>
+                    <li>Niet-nakoming van afspraken door coaches of rijders</li>
+                    <li>Onjuistheden in coach-profielen</li>
+                    <li>Tijdelijke onbeschikbaarheid van het Platform</li>
+                    <li>Indirecte schade, gevolgschade of gederfde winst</li>
+                </ul>
+                <p>De maximale aansprakelijkheid van RaceCoachFinder is beperkt tot het bedrag dat in de betreffende transactie is betaald, of — bij ontbreken van een transactie — tot € 100,00.</p>
+                <h3>Aansprakelijkheid Coaches</h3>
+                <p>Coaches zijn zelf aansprakelijk voor de veiligheid en kwaliteit van hun diensten. Het is sterk aan te raden een passende aansprakelijkheidsverzekering af te sluiten.</p>
+            </div>
+
+            <div class="doc-sectie" id="s9">
+                <span class="sectie-nr">Artikel 9</span>
+                <h2>Intellectueel eigendom</h2>
+                <p>De software, vormgeving en inhoud van het Platform zijn eigendom van RaceCoachFinder of haar licentiegevers en worden beschermd door het auteursrecht.</p>
+                <p>Door content (profielteksten, foto's, reviews) op het Platform te plaatsen verleen je RaceCoachFinder een niet-exclusieve, wereldwijde licentie om deze content te gebruiken voor de werking en promotie van het Platform. Je behoudt het eigendom van je eigen content.</p>
+            </div>
+
+            <div class="doc-sectie" id="s10">
+                <span class="sectie-nr">Artikel 10</span>
+                <h2>Beëindiging van account</h2>
+                <p>Je kunt je account op elk moment laten verwijderen door contact op te nemen via <a href="mailto:info@racecoachfinder.nl">info@racecoachfinder.nl</a>. Bij verwijdering worden je persoonsgegevens conform ons <a href="privacybeleid.html">privacybeleid</a> verwijderd.</p>
+                <p>RaceCoachFinder behoudt het recht een account te schorsen of te verwijderen bij:</p>
+                <ul class="doc-lijst">
+                    <li>Overtreding van deze algemene voorwaarden</li>
+                    <li>Frauduleus of onethisch gedrag</li>
+                    <li>Herhaaldelijk negatieve beoordelingen na onderzoek</li>
+                </ul>
+            </div>
+
+            <div class="doc-sectie" id="s11">
+                <span class="sectie-nr">Artikel 11</span>
+                <h2>Wijzigingen</h2>
+                <p>RaceCoachFinder behoudt het recht deze voorwaarden te wijzigen. Gebruikers worden <strong>minimaal 14 dagen</strong> van tevoren per e-mail geïnformeerd over wezenlijke wijzigingen. Voortgezet gebruik na de ingangsdatum wordt beschouwd als aanvaarding van de nieuwe voorwaarden.</p>
+            </div>
+
+            <div class="doc-sectie" id="s12">
+                <span class="sectie-nr">Artikel 12</span>
+                <h2>Toepasselijk recht en geschillen</h2>
+                <p>Op deze voorwaarden en op alle gebruik van het Platform is <strong>Nederlands recht</strong> van toepassing, met uitsluiting van conflictenrecht.</p>
+                <p>Geschillen worden bij voorkeur in onderling overleg opgelost. Indien dit niet lukt, worden geschillen voorgelegd aan de bevoegde rechter in Nederland. Consumenten hebben ook het recht een klacht in te dienen bij de <a href="https://www.geschillencommissie.nl" target="_blank">Geschillencommissie</a> of gebruik te maken van het <a href="https://ec.europa.eu/consumers/odr" target="_blank">ODR-platform</a> van de Europese Commissie.</p>
+            </div>
+
+            <div class="doc-sectie" id="s13">
+                <span class="sectie-nr">Artikel 13</span>
+                <h2>Contact</h2>
+                <div class="contact-blok">
+                    <p>Vragen over deze voorwaarden?</p>
+                    <p>Stuur een e-mail naar <a href="mailto:info@racecoachfinder.nl">info@racecoachfinder.nl</a>.</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<footer>
+    <div class="footer-inhoud">
+        <div class="footer-links">
+            <a href="hoe-werkt-het.html">Hoe werkt het</a>
+            <a href="contact.html">Contact</a>
+            <a href="privacybeleid.html">Privacybeleid</a>
+            <a href="algemene-voorwaarden.html">Algemene voorwaarden</a>
+            <a href="disclaimer.html">Disclaimer</a>
+        </div>
+        <p>&copy; 2026 RaceCoachFinder</p>
+    </div>
+</footer>
+
+<script src="js/auth.js"></script>
+<script>updateNav();</script>
+</body>
+</html>

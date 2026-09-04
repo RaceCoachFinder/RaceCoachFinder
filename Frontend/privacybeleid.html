@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacybeleid – RaceCoachFinder</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; }
+
+        .doc-header {
+            background: linear-gradient(135deg, var(--kleur-donker), #1a1a2e);
+            color: #fff;
+            padding: 3rem 0 2.5rem;
+            margin-bottom: 0;
+        }
+        .doc-header .eyebrow {
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--kleur-primair);
+            margin-bottom: 0.6rem;
+        }
+        .doc-header h1 { font-size: 2rem; font-weight: 800; margin: 0 0 0.5rem; }
+        .doc-header .meta { color: #888; font-size: 0.85rem; }
+
+        .doc-layout {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            gap: 3rem;
+            max-width: 900px;
+            margin: 3rem auto;
+            align-items: start;
+        }
+
+        /* TOC sidebar */
+        .doc-toc {
+            position: sticky;
+            top: 1.5rem;
+        }
+        .toc-titel {
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--kleur-subtekst);
+            margin-bottom: 0.75rem;
+        }
+        .toc-lijst {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .toc-lijst li { margin-bottom: 0.1rem; }
+        .toc-lijst a {
+            display: block;
+            padding: 0.3rem 0.6rem;
+            font-size: 0.82rem;
+            color: var(--kleur-subtekst);
+            text-decoration: none;
+            border-left: 2px solid #e8e8e8;
+            transition: color 0.15s, border-color 0.15s;
+        }
+        .toc-lijst a:hover {
+            color: var(--kleur-tekst);
+            border-left-color: var(--kleur-primair);
+        }
+        .toc-lijst a.actief {
+            color: var(--kleur-donker);
+            font-weight: 600;
+            border-left-color: var(--kleur-primair);
+        }
+
+        /* Document content */
+        .doc-inhoud { min-width: 0; }
+
+        .doc-sectie {
+            padding-bottom: 2.5rem;
+            margin-bottom: 2.5rem;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .doc-sectie:last-child { border-bottom: none; padding-bottom: 0; }
+
+        .sectie-nr {
+            display: inline-block;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--kleur-primair);
+            margin-bottom: 0.4rem;
+        }
+        .doc-inhoud h2 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin: 0 0 1rem;
+            color: var(--kleur-donker);
+            text-wrap: balance;
+        }
+        .doc-inhoud p {
+            font-size: 0.9rem;
+            line-height: 1.75;
+            color: #444;
+            margin: 0 0 0.9rem;
+        }
+        .doc-inhoud p:last-child { margin-bottom: 0; }
+
+        .doc-lijst {
+            margin: 0 0 0.9rem 0;
+            padding-left: 1.25rem;
+        }
+        .doc-lijst li {
+            font-size: 0.9rem;
+            line-height: 1.75;
+            color: #444;
+            margin-bottom: 0.2rem;
+        }
+
+        .partij-tabel {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            margin: 0.5rem 0 0.9rem;
+        }
+        .partij-tabel th {
+            text-align: left;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            color: var(--kleur-subtekst);
+            padding: 0.5rem 0.75rem;
+            background: #f8f8f8;
+            border-bottom: 1px solid #eee;
+        }
+        .partij-tabel td {
+            padding: 0.65rem 0.75rem;
+            border-bottom: 1px solid #f4f4f4;
+            color: #444;
+            vertical-align: top;
+        }
+        .partij-tabel tr:last-child td { border-bottom: none; }
+        .partij-tabel a { color: var(--kleur-primair); }
+
+        .recht-kaart {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin: 0.5rem 0 0.9rem;
+        }
+        .recht-item {
+            background: #f8f8f6;
+            border-radius: 8px;
+            padding: 0.9rem 1rem;
+        }
+        .recht-item strong {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--kleur-donker);
+            margin-bottom: 0.25rem;
+        }
+        .recht-item span {
+            font-size: 0.8rem;
+            color: var(--kleur-subtekst);
+            line-height: 1.5;
+        }
+
+        .contact-blok {
+            background: linear-gradient(135deg, #fffbe8, #fff8d6);
+            border: 1.5px solid #f5c200;
+            border-radius: 10px;
+            padding: 1.25rem 1.5rem;
+        }
+        .contact-blok p { color: #5a4800; margin-bottom: 0.3rem; }
+        .contact-blok a { color: #8a6a00; font-weight: 600; }
+
+        @media (max-width: 680px) {
+            .doc-layout { grid-template-columns: 1fr; gap: 2rem; }
+            .doc-toc { display: none; }
+            .recht-kaart { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="nav-container">
+        <a href="index.html" class="nav-logo">Race<span>Coach</span>Finder</a>
+        <ul class="nav-links" id="nav-links"></ul>
+    </div>
+</nav>
+
+<div class="doc-header">
+    <div class="container">
+        <div class="eyebrow">Juridisch</div>
+        <h1>Privacybeleid</h1>
+        <p class="meta">Laatste update: september 2026 &nbsp;·&nbsp; Van toepassing op race-coach-finder.vercel.app</p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="doc-layout">
+
+        <!-- Inhoudsopgave -->
+        <nav class="doc-toc" aria-label="Inhoudsopgave">
+            <div class="toc-titel">Inhoud</div>
+            <ol class="toc-lijst">
+                <li><a href="#s1">Wie zijn wij</a></li>
+                <li><a href="#s2">Welke gegevens</a></li>
+                <li><a href="#s3">Waarvoor</a></li>
+                <li><a href="#s4">Rechtsgrond</a></li>
+                <li><a href="#s5">Derde partijen</a></li>
+                <li><a href="#s6">Bewaartermijn</a></li>
+                <li><a href="#s7">Jouw rechten</a></li>
+                <li><a href="#s8">Cookies</a></li>
+                <li><a href="#s9">Contact &amp; klachten</a></li>
+            </ol>
+        </nav>
+
+        <!-- Inhoud -->
+        <div class="doc-inhoud">
+
+            <div class="doc-sectie" id="s1">
+                <span class="sectie-nr">Artikel 1</span>
+                <h2>Wie zijn wij?</h2>
+                <p>RaceCoachFinder is een online platform dat kartcoaches en rijders met elkaar verbindt. Via het platform kunnen coaches hun diensten aanbieden en kunnen rijders coaches vinden, contacteren en boeken.</p>
+                <p>De verwerkingsverantwoordelijke in de zin van de Algemene Verordening Gegevensbescherming (AVG) is RaceCoachFinder, bereikbaar via <strong>info@racecoachfinder.nl</strong>.</p>
+            </div>
+
+            <div class="doc-sectie" id="s2">
+                <span class="sectie-nr">Artikel 2</span>
+                <h2>Welke persoonsgegevens verwerken wij?</h2>
+                <p>Wij verwerken de volgende categorieën persoonsgegevens:</p>
+                <ul class="doc-lijst">
+                    <li><strong>Accountgegevens:</strong> naam, e-mailadres en wachtwoord (versleuteld opgeslagen)</li>
+                    <li><strong>Profielgegevens:</strong> woonplaats, nationaliteit, leeftijd, disciplines, biografie en profielfoto</li>
+                    <li><strong>Factuurgegevens:</strong> adres, KVK-nummer en BTW-nummer (alleen voor coaches die factureren)</li>
+                    <li><strong>Boekingsgegevens:</strong> omschrijving, bedrag, betalingsstatus en datum</li>
+                    <li><strong>Communicatie:</strong> berichten die via het platform worden uitgewisseld</li>
+                    <li><strong>Agendagegevens:</strong> afspraken die coaches in hun agenda opslaan</li>
+                    <li><strong>Technische gegevens:</strong> sessietoken, tijdstip van inloggen en IP-adres (in serverlogboeken)</li>
+                </ul>
+                <p>Betalingsgegevens zoals bankrekening- of kaartnummers worden nooit door ons opgeslagen. Deze worden uitsluitend verwerkt door Mollie B.V. (zie artikel 5).</p>
+            </div>
+
+            <div class="doc-sectie" id="s3">
+                <span class="sectie-nr">Artikel 3</span>
+                <h2>Waarvoor gebruiken wij je gegevens?</h2>
+                <ul class="doc-lijst">
+                    <li>Het aanmaken en beheren van je account</li>
+                    <li>Het tonen van coachprofielen aan rijders en vice versa</li>
+                    <li>Het verwerken van boekingen en betalingen</li>
+                    <li>Het versturen van berichten en e-mailnotificaties (alleen indien door jou ingeschakeld)</li>
+                    <li>Het versturen van agenda-herinneringen per e-mail (alleen indien door jou ingeschakeld)</li>
+                    <li>Het opstellen en versturen van facturen (PDF)</li>
+                    <li>Het verbeteren en beveiligen van ons platform</li>
+                </ul>
+            </div>
+
+            <div class="doc-sectie" id="s4">
+                <span class="sectie-nr">Artikel 4</span>
+                <h2>Rechtsgrond voor verwerking</h2>
+                <p>Wij verwerken jouw gegevens op basis van de volgende rechtsgrondslagen:</p>
+                <ul class="doc-lijst">
+                    <li><strong>Uitvoering van een overeenkomst</strong> — voor het verlenen van onze platformdiensten (account, boekingen, betalingen, berichten)</li>
+                    <li><strong>Gerechtvaardigd belang</strong> — voor beveiliging en fraudepreventie, en voor verbetering van het platform</li>
+                    <li><strong>Toestemming</strong> — voor het versturen van e-mailnotificaties en agenda-herinneringen; je kunt dit op elk moment intrekken via Instellingen</li>
+                </ul>
+            </div>
+
+            <div class="doc-sectie" id="s5">
+                <span class="sectie-nr">Artikel 5</span>
+                <h2>Derde partijen</h2>
+                <p>Wij delen je gegevens alleen met derde partijen voor zover noodzakelijk voor onze dienstverlening:</p>
+                <div style="overflow-x:auto">
+                    <table class="partij-tabel">
+                        <thead>
+                            <tr>
+                                <th>Partij</th>
+                                <th>Doel</th>
+                                <th>Privacybeleid</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Mollie B.V.</strong></td>
+                                <td>Betalingsverwerking; Mollie is zelfstandig verwerkingsverantwoordelijke</td>
+                                <td><a href="https://www.mollie.com/nl/privacy" target="_blank">mollie.com/privacy</a></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Brevo (Sendinblue)</strong></td>
+                                <td>Versturen van transactionele e-mails</td>
+                                <td><a href="https://www.brevo.com/legal/privacypolicy" target="_blank">brevo.com/legal</a></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Railway</strong></td>
+                                <td>Hosting van de backend-server en database</td>
+                                <td><a href="https://railway.app/legal/privacy" target="_blank">railway.app/legal</a></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Vercel Inc.</strong></td>
+                                <td>Hosting van de website</td>
+                                <td><a href="https://vercel.com/legal/privacy-policy" target="_blank">vercel.com/legal</a></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p>Wij verkopen jouw gegevens nooit aan derden en delen ze niet voor marketingdoeleinden.</p>
+            </div>
+
+            <div class="doc-sectie" id="s6">
+                <span class="sectie-nr">Artikel 6</span>
+                <h2>Bewaartermijn</h2>
+                <p>Wij bewaren jouw gegevens zolang je account actief is. Na verwijdering van je account worden je persoonsgegevens binnen <strong>30 dagen</strong> definitief verwijderd, tenzij een wettelijke bewaarplicht van toepassing is (bijv. fiscale bewaartermijn van 7 jaar voor factuurgegevens).</p>
+                <p>Berichten worden bewaard zolang beide partijen een actief account hebben. Serverlogboeken worden automatisch na 30 dagen verwijderd.</p>
+            </div>
+
+            <div class="doc-sectie" id="s7">
+                <span class="sectie-nr">Artikel 7</span>
+                <h2>Jouw rechten</h2>
+                <p>Als betrokkene heb je de volgende rechten onder de AVG:</p>
+                <div class="recht-kaart">
+                    <div class="recht-item">
+                        <strong>Recht op inzage</strong>
+                        <span>Opvragen welke gegevens wij van jou verwerken</span>
+                    </div>
+                    <div class="recht-item">
+                        <strong>Recht op rectificatie</strong>
+                        <span>Onjuiste of onvolledige gegevens laten corrigeren</span>
+                    </div>
+                    <div class="recht-item">
+                        <strong>Recht op wissing</strong>
+                        <span>Verzoeken je gegevens te verwijderen ("recht op vergetelheid")</span>
+                    </div>
+                    <div class="recht-item">
+                        <strong>Recht op bezwaar</strong>
+                        <span>Bezwaar maken tegen verwerking op basis van gerechtvaardigd belang</span>
+                    </div>
+                    <div class="recht-item">
+                        <strong>Recht op beperking</strong>
+                        <span>Verwerking van je gegevens (tijdelijk) laten beperken</span>
+                    </div>
+                    <div class="recht-item">
+                        <strong>Recht op portabiliteit</strong>
+                        <span>Je gegevens opvragen in een gestructureerd, leesbaar formaat</span>
+                    </div>
+                </div>
+                <p>Stuur je verzoek naar <strong>info@racecoachfinder.nl</strong>. Wij reageren binnen 4 weken. Wij kunnen je identiteit verifiëren alvorens te reageren.</p>
+            </div>
+
+            <div class="doc-sectie" id="s8">
+                <span class="sectie-nr">Artikel 8</span>
+                <h2>Cookies en lokale opslag</h2>
+                <p>Wij plaatsen <strong>geen tracking- of advertentiecookies</strong>. Voor de werking van het platform slaan wij de volgende gegevens op in de lokale opslag (<em>localStorage</em>) van jouw browser:</p>
+                <ul class="doc-lijst">
+                    <li><strong>Sessietoken</strong> — om je ingelogd te houden (wordt verwijderd bij uitloggen)</li>
+                    <li><strong>Accountgegevens</strong> — naam, e-mailadres en rol voor snelle toegang (wordt verwijderd bij uitloggen)</li>
+                    <li><strong>Rolvoorkeur</strong> — bij meerdere rollen (coach én rijder) jouw laatste keuze onthouden</li>
+                </ul>
+                <p>Deze gegevens verlaten je browser niet en worden niet gedeeld met derden. Onze hostingpartner Vercel kan functionele cookies plaatsen voor verkeersoptimalisatie; zie het privacybeleid van Vercel.</p>
+            </div>
+
+            <div class="doc-sectie" id="s9">
+                <span class="sectie-nr">Artikel 9</span>
+                <h2>Contact en klachten</h2>
+                <div class="contact-blok">
+                    <p>Vragen over dit privacybeleid of een verzoek indienen?<br>Stuur een e-mail naar <a href="mailto:info@racecoachfinder.nl">info@racecoachfinder.nl</a>.</p>
+                    <p style="margin-top:0.75rem;margin-bottom:0">Ben je niet tevreden met onze reactie? Je hebt altijd het recht een klacht in te dienen bij de <strong>Autoriteit Persoonsgegevens</strong> via <a href="https://www.autoriteitpersoonsgegevens.nl" target="_blank">autoriteitpersoonsgegevens.nl</a>.</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<footer>
+    <div class="footer-inhoud">
+        <div class="footer-links">
+            <a href="hoe-werkt-het.html">Hoe werkt het</a>
+            <a href="contact.html">Contact</a>
+            <a href="privacybeleid.html">Privacybeleid</a>
+            <a href="algemene-voorwaarden.html">Algemene voorwaarden</a>
+            <a href="disclaimer.html">Disclaimer</a>
+        </div>
+        <p>&copy; 2026 RaceCoachFinder</p>
+    </div>
+</footer>
+
+<script src="js/auth.js"></script>
+<script>updateNav();</script>
+</body>
+</html>
