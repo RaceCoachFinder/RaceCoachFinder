@@ -135,7 +135,7 @@
             </div>
             <label class="vinkje-rij">
                 <input type="checkbox" id="leeftijd-vinkje">
-                <span>Ik ben 16 jaar of ouder, of heb toestemming van een ouder of voogd. Ik ga akkoord met de <a href="disclaimer.html" target="_blank">disclaimer</a>.</span>
+                <span>Ik ben 18 jaar of ouder. Ik ga akkoord met de <a href="algemene-voorwaarden.html" target="_blank">algemene voorwaarden</a> en <a href="disclaimer.html" target="_blank">disclaimer</a>.</span>
             </label>
         </div>
 
@@ -268,7 +268,7 @@ function volgendeStap() {
         if (!naam)              { toonMelding('Vul je naam in.', 'fout'); return; }
         if (!email)             { toonMelding('Vul je e-mailadres in.', 'fout'); return; }
         if (wachtwoord.length < 4) { toonMelding('Wachtwoord moet minimaal 4 tekens zijn.', 'fout'); return; }
-        if (!document.getElementById('leeftijd-vinkje').checked) { toonMelding('Bevestig dat je 16+ bent of toestemming hebt.', 'fout'); return; }
+        if (!document.getElementById('leeftijd-vinkje').checked) { toonMelding('Bevestig dat je 18 jaar of ouder bent.', 'fout'); return; }
 
         if (gekozenRol === 'Coach') { naarStap(3); return; }
         submitRegistreren();

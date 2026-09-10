@@ -367,7 +367,12 @@ function renderCoaches() {
     const gekozenSpecs = specsDropdown.getGekozen();
     const gekozenKwals = kwalsDropdown.getGekozen();
 
+    const naamFilter     = document.getElementById('f-naam').value.trim().toLowerCase();
+    const locatieFilter  = document.getElementById('f-locatie').value.trim().toLowerCase();
+
     let lijst = alleCoaches.filter(c => {
+        if (naamFilter     && !c.naam.toLowerCase().includes(naamFilter)) return false;
+        if (locatieFilter  && !(c.woonplaats || '').toLowerCase().includes(locatieFilter)) return false;
         if (taalFilter && !(c.talen || '').toLowerCase().includes(taalFilter)) return false;
         if (minErvaring > 0 && (c.jarenErvaring || 0) < minErvaring) return false;
         if (maxPrijs > 0 && minPrijs(c) > maxPrijs) return false;
@@ -519,9 +524,10 @@ if (heeftRol('Rijder')) {
 }
 laadFavorieten().then(() => zoekCoaches());
 
-// Enter in tekstvelden → zoeken via backend
+// Enter in tekstvelden → zoeken via backend; typen → client-side filter
 ['f-naam', 'f-locatie'].forEach(id => {
     document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') zoekCoaches(); });
+    document.getElementById(id).addEventListener('input', renderCoaches);
 });
 
 // Client-side filters → direct herrenderen zonder backend-aanroep
