@@ -45,9 +45,14 @@
                 <input type="text" id="login-invoer" required autofocus
                        placeholder="jouw@email.com" autocomplete="username">
             </div>
-            <div class="formulier-groep">
+            <div class="formulier-groep" id="wachtwoord-veld">
                 <label for="wachtwoord">Wachtwoord</label>
-                <input type="password" id="wachtwoord" required placeholder="••••••••">
+                <div style="position:relative">
+                    <input type="password" id="wachtwoord" required placeholder="••••••••" style="padding-right:2.75rem;width:100%;box-sizing:border-box">
+                    <button type="button" id="toon-ww" onclick="toggleWachtwoord()"
+                        style="position:absolute;right:0.6rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1rem;color:var(--kleur-subtekst);line-height:1;padding:0.25rem"
+                        title="Wachtwoord tonen/verbergen">👁</button>
+                </div>
             </div>
             <div id="vergeten-link" style="text-align:right;margin-top:0.25rem;margin-bottom:0.75rem">
                 <a href="wachtwoord-vergeten.html" style="font-size:0.85rem;color:var(--kleur-subtekst)">Wachtwoord vergeten?</a>
@@ -98,6 +103,13 @@ if (isIngelogd()) {
 
 let codeModus = false;
 
+function toggleWachtwoord() {
+    const inp = document.getElementById('wachtwoord');
+    const btn = document.getElementById('toon-ww');
+    if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
+    else { inp.type = 'password'; btn.textContent = '👁'; }
+}
+
 function toggleModus() {
     codeModus = !codeModus;
     const invoer = document.getElementById('login-invoer');
@@ -106,12 +118,15 @@ function toggleModus() {
     const vergeten = document.getElementById('vergeten-link');
     const knop = document.getElementById('toggle-knop');
 
+    const wwVeld = document.getElementById('wachtwoord-veld');
     if (codeModus) {
         invoer.placeholder = '12345678';
         invoer.inputMode = 'numeric';
         label.textContent = 'Uitnodigingscode (8 cijfers)';
         titel.textContent = 'Inloggen met code';
         vergeten.style.display = 'none';
+        wwVeld.style.display = 'none';
+        document.getElementById('wachtwoord').required = false;
         knop.textContent = 'Inloggen met e-mailadres';
     } else {
         invoer.placeholder = 'jouw@email.com';
@@ -119,6 +134,8 @@ function toggleModus() {
         label.textContent = 'E-mailadres';
         titel.textContent = 'Inloggen';
         vergeten.style.display = '';
+        wwVeld.style.display = '';
+        document.getElementById('wachtwoord').required = true;
         knop.textContent = 'Inloggen met uitnodigingscode';
     }
 
