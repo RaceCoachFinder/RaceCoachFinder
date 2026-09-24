@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tips – RaceCoachFinder</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .pagina-hero {
+            background: linear-gradient(135deg, var(--kleur-donker), #1a1a2e);
+            color: var(--kleur-wit);
+            padding: 3.5rem 0 3rem;
+            text-align: center;
+        }
+        .pagina-hero h1 { font-size: 2.2rem; font-weight: 900; margin-bottom: 0.75rem; }
+        .pagina-hero p { color: #bbb; font-size: 1.05rem; max-width: 560px; margin: 0 auto; }
+
+        .tips-sectie { padding: 4rem 0; }
+        .tips-sectie:nth-child(even) { background: var(--kleur-achtergrond); }
+
+        .sectie-kop {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+        .sectie-icoon {
+            width: 46px; height: 46px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem;
+            flex-shrink: 0;
+        }
+        .sectie-icoon.coach { background: #e3f0ff; }
+        .sectie-icoon.rijder { background: #e8f5e9; }
+
+        .sectie-titel { font-size: 1.6rem; font-weight: 800; margin: 0; }
+        .sectie-subtitel { color: var(--kleur-subtekst); font-size: 0.95rem; margin: 0.35rem 0 2.5rem; }
+
+        .tips-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .tip-kaart {
+            background: var(--kleur-wit);
+            border-radius: var(--rand);
+            box-shadow: var(--schaduw);
+            padding: 1.5rem 1.6rem;
+            display: flex;
+            gap: 1.1rem;
+            align-items: flex-start;
+        }
+        .tip-nr {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            font-size: 0.8rem; font-weight: 800;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            margin-top: 0.1rem;
+        }
+        .tip-nr.coach { background: #e3f0ff; color: #1565c0; }
+        .tip-nr.rijder { background: #e8f5e9; color: #2e7d32; }
+
+        .tip-inhoud h3 { font-size: 0.97rem; font-weight: 700; margin: 0 0 0.35rem; }
+        .tip-inhoud p { font-size: 0.86rem; color: var(--kleur-subtekst); line-height: 1.65; margin: 0; }
+
+        .coming-soon-badge {
+            display: inline-block;
+            background: #fff3cd;
+            color: #856404;
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 0.1rem 0.45rem;
+            border-radius: 20px;
+            margin-left: 0.4rem;
+            vertical-align: middle;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="nav-container">
+        <a href="index.html" class="nav-logo">Race<span>Coach</span>Finder</a>
+        <ul class="nav-links" id="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="coaches.html">Coaches zoeken</a></li>
+        </ul>
+    </div>
+</nav>
+
+<div class="pagina-hero">
+    <div class="container">
+        <h1>Tips &amp; tricks</h1>
+        <p>Haal het meeste uit RaceCoachFinder — of je nu rijder of coach bent.</p>
+    </div>
+</div>
+
+<!-- Coach tips -->
+<div class="tips-sectie">
+    <div class="container">
+        <div class="sectie-kop">
+            <div class="sectie-icoon coach">🏁</div>
+            <h2 class="sectie-titel">Tips voor coaches</h2>
+        </div>
+        <p class="sectie-subtitel">Zo word je beter gevonden en haal je meer uit het platform.</p>
+
+        <div class="tips-grid">
+            <div class="tip-kaart">
+                <div class="tip-nr coach">1</div>
+                <div class="tip-inhoud">
+                    <h3>Tag @RaceCoachFinder op Instagram</h3>
+                    <p>Geef je trainingen via ons platform? Tag ons op Instagram. Zo krijg jij extra zichtbaarheid via onze kanalen, en helpt het mee om meer rijders naar het platform te trekken — meer rijders betekent meer potentiële klanten voor jou.</p>
+                </div>
+            </div>
+            <div class="tip-kaart">
+                <div class="tip-nr coach">2</div>
+                <div class="tip-inhoud">
+                    <h3>Wees gedetailleerd op je profiel</h3>
+                    <p>Beschrijf precies wie je bent: je achtergrond, welke disciplines je coacht, op welke banen je actief bent en wat een rijder van jou kan verwachten. Een uitgebreid profiel wekt meer vertrouwen en trekt de juiste rijders aan.</p>
+                </div>
+            </div>
+            <div class="tip-kaart">
+                <div class="tip-nr coach">3</div>
+                <div class="tip-inhoud">
+                    <h3>Vraag rijders om een recensie</h3>
+                    <p>Na elke sessie is dit het moment. Coaches met meer positieve reviews worden beter zichtbaar in de zoekresultaten. Een simpel verzoek aan het einde van een training kan het verschil maken.</p>
+                </div>
+            </div>
+            <div class="tip-kaart">
+                <div class="tip-nr coach">4</div>
+                <div class="tip-inhoud">
+                    <h3>Doe elke coaching via het platform</h3>
+                    <p>Hoe meer sessies via RaceCoachFinder lopen, hoe meer reviews je opbouwt. Dat maakt je betrouwbaarder voor nieuwe rijders die je nog niet kennen — vertrouwen bouw je op door zichtbare resultaten.</p>
+                </div>
+            </div>
+            <div class="tip-kaart">
+                <div class="tip-nr coach">5</div>
+                <div class="tip-inhoud">
+                    <h3>Zet jezelf beschikbaar voor evenementen <span class="coming-soon-badge">Binnenkort</span></h3>
+                    <p>Via de "Rijders nodig"-pagina kun je aangeven dat je beschikbaar bent op een specifieke datum of bij een bepaald evenement. Ben je sowieso bij een wedstrijd? Dan kun je meerdere rijders tegelijk coachen — ook voor een scherpere prijs. Meer info volgt.</p>
+                </div>
+            </div>
+            <div class="tip-kaart">
+                <div class="tip-nr coach">6</div>
+                <div class="tip-inhoud">
+                    <h3>Deel je profielpagina</h3>
+                    <p>Kopieer de link naar jouw coachprofiel en deel hem op WhatsApp, Instagram of je eigen website. Rijders die jou al kennen kunnen dan direct boeken — en nieuwe rijders komen zo gemakkelijk bij je terecht.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Rijder tips -->
+<div class="tips-sectie">
+    <div class="container">
+        <div class="sectie-kop">
+            <div class="sectie-icoon rijder">🪖</div>
+            <h2 class="sectie-titel">Tips voor rijders</h2>
+        </div>
+        <p class="sectie-subtitel">Vind de juiste coach en haal het maximale uit elke sessie.</p>
+
+        <div class="tips-grid">
+            <div class="tip-kaart">
+                <div class="tip-nr rijder">1</div>
+                <div class="tip-inhoud">
+                    <h3>Schrijf een recensie na elke sessie</h3>
+                    <p>Laat een eerlijke review achter. Het helpt andere rijders de juiste coach te vinden, en coaches die goed werk leveren verdienen die erkenning. Bovendien maakt het het platform beter voor iedereen.</p>
+                </div>
+            </div>
+            <div class="tip-kaart">
+                <div class="tip-nr rijder">2</div>
+                <div class="tip-inhoud">
+                    <h3>Vul je profiel volledig in</h3>
+                    <p>Vermeld je niveau, welke disciplines je rijdt, je doelen en de banen waar je actief bent. Hoe meer een coach van je weet, hoe beter ze zich kunnen voorbereiden op jouw sessie.</p>
+                </div>
+            </div>
+            <div class="tip-kaart">
+                <div class="tip-nr rijder">3</div>
+                <div class="tip-inhoud">
+                    <h3>Lees reviews van andere rijders</h3>
+                    <p>Reviews van rijders op jouw niveau geven de meeste waarde. Kijk niet alleen naar het gemiddelde, maar lees ook wat er concreet wordt gezegd over de stijl van coachen.</p>
+                </div>
+            </div>
+            <div class="tip-kaart">
+                <div class="tip-nr rijder">4</div>
+                <div class="tip-inhoud">
+                    <h3>Wees specifiek over je leerdoelen</h3>
+                    <p>"Ik wil mijn remtechniek in sector 2 verbeteren" is veel bruikbaarder voor een coach dan "ik wil sneller worden". Hoe concreter jij bent, hoe gerichter de sessie wordt.</p>
+                </div>
+            </div>
+            <div class="tip-kaart">
+                <div class="tip-nr rijder">5</div>
+                <div class="tip-inhoud">
+                    <h3>Boek op tijd bij drukke weekenden</h3>
+                    <p>Goede coaches zijn snel volgeboekt rondom grote wedstrijden. Plan je sessie ruim van tevoren in, zodat je de coach krijgt die echt bij jou past.</p>
+                </div>
+            </div>
+            <div class="tip-kaart">
+                <div class="tip-nr rijder">6</div>
+                <div class="tip-inhoud">
+                    <h3>Probeer meerdere coaches uit</h3>
+                    <p>Iedere coach heeft een eigen stijl. Het kan lonen om een keer met iemand anders te rijden — soms geeft een frisse blik precies de doorbraak die je zocht.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer>
+    <div class="footer-inhoud">
+        <div class="footer-links">
+            <a href="hoe-werkt-het.html">Hoe werkt het</a>
+            <a href="tips.html">Tips</a>
+            <a href="contact.html">Contact</a>
+            <a href="privacybeleid.html">Privacybeleid</a>
+            <a href="algemene-voorwaarden.html">Voorwaarden</a>
+            <a href="disclaimer.html">Disclaimer</a>
+        </div>
+        <p>&copy; 2026 RaceCoachFinder</p>
+    </div>
+</footer>
+
+<script src="js/auth.js"></script>
+<script>
+updateNav();
+</script>
+</body>
+</html>
