@@ -76,6 +76,9 @@ namespace Backend.Migrations
                     b.Property<bool>("HeeftAccountIngericht")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("MarketingToestemming")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("MollieKlantId")
                         .HasColumnType("TEXT");
 
