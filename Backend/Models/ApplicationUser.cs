@@ -12,4 +12,5 @@ public class ApplicationUser : IdentityUser
     public bool AbonnementActief { get; set; } = false;
     public DateTime? AbonnementVerlooptOp { get; set; }
     public bool MarketingToestemming { get; set; } = false;
+    public DateTime AangemaaktOp { get; set; } = DateTime.UtcNow;
 }

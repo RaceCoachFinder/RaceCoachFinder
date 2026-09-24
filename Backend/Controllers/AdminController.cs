@@ -25,7 +25,7 @@ public class AdminController : ControllerBase
     public async Task<IActionResult> GetGebruikers()
     {
         var gebruikers = await _userManager.Users
-            .Select(u => new { u.Id, u.Naam, u.Email, u.Rol, u.MarketingToestemming })
+            .Select(u => new { u.Id, u.Naam, u.Email, u.Rol, u.MarketingToestemming, u.AangemaaktOp, u.AbonnementActief, u.AbonnementVerlooptOp, u.GratisVerlooptOp })
             .ToListAsync();
         return Ok(gebruikers);
     }
@@ -101,7 +101,8 @@ public class AdminController : ControllerBase
             Rol = "Coach",
             EmailConfirmed = true,
             HeeftAccountIngericht = false,
-            GratisVerlooptOp = DateTime.UtcNow.AddMonths(verzoek.GratisMananden)
+            GratisVerlooptOp = DateTime.UtcNow.AddMonths(verzoek.GratisMananden),
+            AangemaaktOp = DateTime.UtcNow
         };
 
         var resultaat = await _userManager.CreateAsync(gebruiker, wachtwoord);

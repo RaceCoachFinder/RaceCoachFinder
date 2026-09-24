@@ -59,6 +59,9 @@ namespace Backend.Migrations
                     b.Property<DateTime?>("AbonnementVerlooptOp")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime>("AangemaaktOp")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
                         .HasColumnType("TEXT");

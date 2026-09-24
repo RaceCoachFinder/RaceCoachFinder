@@ -208,6 +208,8 @@ async function laadGebruikers() {
                         <th>Naam</th>
                         <th>E-mail</th>
                         <th>Rol</th>
+                        <th>Lid sinds</th>
+                        <th>Volgende betaling</th>
                         <th>📣 Marketing</th>
                         <th></th>
                     </tr>
@@ -218,6 +220,8 @@ async function laadGebruikers() {
                             <td>${esc(g.naam)}</td>
                             <td>${esc(g.email)}</td>
                             <td><span class="badge-rol badge-${g.rol.toLowerCase()}">${esc(g.rol)}</span></td>
+                            <td style="font-size:0.82rem;color:var(--kleur-subtekst)">${lidSinds(g.aangemaaktOp)}</td>
+                            <td style="font-size:0.82rem">${volgendeBetaling(g)}</td>
                             <td style="font-size:0.82rem">
                                 ${g.rol.includes('Coach')
                                     ? (g.marketingToestemming
@@ -398,6 +402,32 @@ function kopieerUitnodiging() {
     const btn = event.currentTarget;
     btn.textContent = 'Gekopieerd!';
     setTimeout(() => btn.textContent = 'Kopieer naar klembord', 2000);
+}
+
+function lidSinds(datumStr) {
+    if (!datumStr) return '–';
+    const d = new Date(datumStr);
+    const nu = new Date();
+    const dagen = Math.floor((nu - d) / 86400000);
+    if (dagen === 0) return 'vandaag';
+    if (dagen === 1) return 'gisteren';
+    if (dagen < 30) return dagen + ' dagen geleden';
+    if (dagen < 365) return Math.floor(dagen / 30) + ' mnd geleden';
+    return d.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function volgendeBetaling(g) {
+    if (!g.rol.includes('Coach')) return '<span style="color:#ddd">—</span>';
+    const nu = new Date();
+    if (g.abonnementVerlooptOp && new Date(g.abonnementVerlooptOp) > nu) {
+        const d = new Date(g.abonnementVerlooptOp);
+        return d.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+    if (g.gratisVerlooptOp && new Date(g.gratisVerlooptOp) > nu) {
+        const d = new Date(g.gratisVerlooptOp);
+        return '<span style="color:#2e7d32">Gratis t/m ' + d.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' }) + '</span>';
+    }
+    return '<span style="color:#c62828">Geen actief abonnement</span>';
 }
 
 updateNav();
