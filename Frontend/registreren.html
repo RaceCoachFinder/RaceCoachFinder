@@ -194,8 +194,7 @@
             </div>
 
             <p style="color:var(--kleur-subtekst);font-size:0.88rem;line-height:1.6;margin-bottom:0.75rem">
-                Na het klikken op de knop wordt je account aangemaakt en doorgestuurd naar Mollie voor veilige betaling.
-                Je kunt betalen via <strong>iDEAL</strong>, creditcard, Bancontact en meer.
+                Na het aanmaken van je account bevestig je eerst je e-mailadres. Daarna word je automatisch doorgestuurd naar Mollie voor veilige betaling via <strong>iDEAL</strong>, creditcard, Bancontact en meer.
             </p>
             <div class="betaal-veilig">
                 🔒 Beveiligde betaling via Mollie
@@ -288,7 +287,7 @@ function naarStap(stap) {
     const isLaatste = huidigeStap === totaalStappen();
     const btnVolgende = document.getElementById('btn-volgende');
     if (isLaatste && gekozenRol === 'Coach') {
-        btnVolgende.textContent = 'Registreren & betalen via Mollie';
+        btnVolgende.textContent = 'Account aanmaken';
     } else if (isLaatste) {
         btnVolgende.textContent = 'Account aanmaken';
     } else {
@@ -357,7 +356,8 @@ async function submitRegistreren() {
         } else if (regData.wachtOpBevestiging) {
             toonMelding('Account aangemaakt! Controleer je e-mail voor de bevestigingscode.', 'succes');
             const email = encodeURIComponent(regData.email || document.getElementById('email').value.trim());
-            setTimeout(() => location.href = 'bevestig-email.html?email=' + email + '&rol=' + gekozenRol, 1500);
+            const nieuw = gekozenRol === 'Coach' ? '&nieuw=true' : '';
+            setTimeout(() => location.href = 'bevestig-email.html?email=' + email + '&rol=' + gekozenRol + nieuw, 1500);
         }
     } catch (e) {
         const msg = e.message === 'Failed to fetch' ? 'Server niet bereikbaar. Wacht even en probeer het opnieuw.' : e.message;

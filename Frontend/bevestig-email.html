@@ -58,6 +58,7 @@ const API = 'https://racecoachfinder-production.up.railway.app/api';
 const params = new URLSearchParams(location.search);
 const emailParam = params.get('email') || '';
 const rolParam = params.get('rol') || '';
+const nieuwParam = params.get('nieuw') === 'true';
 
 document.getElementById('email-tonen').textContent = emailParam;
 updateNav();
@@ -90,8 +91,8 @@ async function bevestig(event) {
 
         toonMelding('E-mail bevestigd! Je wordt doorgestuurd...', 'succes');
 
-        // Coach: eerst betalen
-        if (rolParam === 'Coach' && !data.heeftAccountIngericht) {
+        // Coach: doorsturen naar betaling (nieuw account of code-account)
+        if (rolParam === 'Coach' && (nieuwParam || !data.heeftAccountIngericht)) {
             btn.textContent = 'Doorsturen naar betaling...';
             const betalingAntwoord = await fetch(API + '/betaling/start-abonnement', {
                 method: 'POST',
