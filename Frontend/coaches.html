@@ -347,6 +347,10 @@ async function zoekCoaches() {
 
     try {
         alleCoaches = await CoachAPI.haalAlleOp(filters);
+        for (let i = alleCoaches.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [alleCoaches[i], alleCoaches[j]] = [alleCoaches[j], alleCoaches[i]];
+        }
         renderCoaches();
     } catch (e) {
         grid.innerHTML = `<div class="melding melding-fout">
