@@ -17,6 +17,26 @@ namespace Backend.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
 
+            modelBuilder.Entity("Backend.Models.CoachAanbod", b =>
+                {
+                    b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("INTEGER");
+                    b.Property<DateTime>("AangemaaktOp").HasColumnType("TEXT");
+                    b.Property<string>("Beschrijving").IsRequired().HasColumnType("TEXT");
+                    b.Property<string>("Categorieen").IsRequired().HasColumnType("TEXT");
+                    b.Property<string>("CoachGebruikerId").IsRequired().HasColumnType("TEXT");
+                    b.Property<string>("CoachNaam").IsRequired().HasColumnType("TEXT");
+                    b.Property<DateTime>("Datum").HasColumnType("TEXT");
+                    b.Property<string>("Disciplines").IsRequired().HasColumnType("TEXT");
+                    b.Property<bool>("IsActief").HasColumnType("INTEGER");
+                    b.Property<bool>("IsGratis").HasColumnType("INTEGER");
+                    b.Property<string>("Locatie").IsRequired().HasColumnType("TEXT");
+                    b.Property<int?>("MaxRijders").HasColumnType("INTEGER");
+                    b.Property<decimal?>("PrijsPerRijder").HasColumnType("TEXT");
+                    b.Property<string>("Titel").IsRequired().HasColumnType("TEXT");
+                    b.HasKey("Id");
+                    b.ToTable("CoachAanboden");
+                });
+
             modelBuilder.Entity("Backend.Models.AgendaItem", b =>
                 {
                     b.Property<int>("Id")
