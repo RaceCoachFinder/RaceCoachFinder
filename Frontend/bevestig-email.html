@@ -110,6 +110,7 @@ async function bevestig(event) {
             const rollen = (data.rol || '').split(',').map(function(r) { return r.trim(); });
             if (rollen.indexOf('Coach') !== -1 && rollen.indexOf('Rijder') !== -1) location.href = 'kies-rol.html';
             else if (rollen.indexOf('Coach') !== -1) location.href = 'dashboard-coach.html';
+            else if (nieuwParam) location.href = 'tips.html?nieuw=true&rol=Rijder';
             else location.href = 'dashboard-rijder.html';
         }, 1000);
 

@@ -357,8 +357,7 @@ async function submitRegistreren() {
         } else if (regData.wachtOpBevestiging) {
             toonMelding('Account aangemaakt! Controleer je e-mail voor de bevestigingscode.', 'succes');
             const email = encodeURIComponent(regData.email || document.getElementById('email').value.trim());
-            const nieuw = gekozenRol === 'Coach' ? '&nieuw=true' : '';
-            setTimeout(() => location.href = 'bevestig-email.html?email=' + email + '&rol=' + gekozenRol + nieuw, 1500);
+            setTimeout(() => location.href = 'bevestig-email.html?email=' + email + '&rol=' + gekozenRol + '&nieuw=true', 1500);
         }
     } catch (e) {
         const msg = e.message === 'Failed to fetch' ? 'Server niet bereikbaar. Wacht even en probeer het opnieuw.' : e.message;
