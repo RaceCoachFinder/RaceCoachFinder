@@ -25,7 +25,7 @@ public class AdminController : ControllerBase
     public async Task<IActionResult> GetGebruikers()
     {
         var gebruikers = await _userManager.Users
-            .Select(u => new { u.Id, u.Naam, u.Email, u.Rol })
+            .Select(u => new { u.Id, u.Naam, u.Email, u.Rol, u.MarketingToestemming })
             .ToListAsync();
         return Ok(gebruikers);
     }

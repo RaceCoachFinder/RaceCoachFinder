@@ -54,7 +54,8 @@ public class AuthController : ControllerBase
             Email = verzoek.Email,
             Naam = verzoek.Naam,
             Rol = verzoek.Rol,
-            EmailConfirmed = false
+            EmailConfirmed = false,
+            MarketingToestemming = verzoek.MarketingToestemming
         };
 
         var resultaat = await _userManager.CreateAsync(gebruiker, verzoek.Wachtwoord);

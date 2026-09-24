@@ -74,6 +74,46 @@
         .stap-inhoud { display: none; }
         .stap-inhoud.actief { display: block; }
 
+        .marketing-info-wrap {
+            position: relative;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 0.25rem;
+        }
+        .marketing-info-icoon {
+            font-size: 0.85rem;
+            color: var(--kleur-subtekst);
+            cursor: help;
+            user-select: none;
+        }
+        .marketing-info-tooltip {
+            display: none;
+            position: absolute;
+            bottom: calc(100% + 6px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1a1a1a;
+            color: #f0f0f0;
+            font-size: 0.78rem;
+            line-height: 1.5;
+            padding: 0.6rem 0.8rem;
+            border-radius: 6px;
+            width: 260px;
+            z-index: 10;
+            pointer-events: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        .marketing-info-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: #1a1a1a;
+        }
+        .marketing-info-wrap:hover .marketing-info-tooltip { display: block; }
+
         .vinkje-rij {
             display: flex; align-items: flex-start; gap: 0.6rem;
             margin-top: 1rem; cursor: pointer; font-size: 0.85rem;
@@ -160,6 +200,17 @@
             <div class="betaal-veilig">
                 🔒 Beveiligde betaling via Mollie
             </div>
+
+            <label class="vinkje-rij" style="margin-top:1.25rem">
+                <input type="checkbox" id="marketing-vinkje">
+                <span>
+                    Ik geef RaceCoachFinder toestemming mijn naam en openbaar beschikbare foto's te gebruiken voor promotie op social media.
+                    <span class="marketing-info-wrap">
+                        <span class="marketing-info-icoon">ⓘ</span>
+                        <span class="marketing-info-tooltip">Wij mogen je bijvoorbeeld verwelkomen op ons Instagram-account als nieuwe coach — denk aan een bericht als "We hebben een nieuwe coach erbij!" met je naam en een openbare foto. Je kunt dit later altijd intrekken via je accountinstellingen.</span>
+                    </span>
+                </span>
+            </label>
         </div>
 
         <!-- Navigatie -->
@@ -293,7 +344,8 @@ async function submitRegistreren() {
                 naam: document.getElementById('naam').value.trim(),
                 email: document.getElementById('email').value.trim(),
                 wachtwoord: document.getElementById('wachtwoord').value,
-                rol: gekozenRol
+                rol: gekozenRol,
+                marketingToestemming: gekozenRol === 'Coach' && document.getElementById('marketing-vinkje').checked
             })
         });
         if (!regAntwoord.ok) throw new Error(await regAntwoord.text());

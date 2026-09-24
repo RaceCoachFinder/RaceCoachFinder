@@ -11,4 +11,5 @@ public class ApplicationUser : IdentityUser
     public string? MollieKlantId { get; set; }
     public bool AbonnementActief { get; set; } = false;
     public DateTime? AbonnementVerlooptOp { get; set; }
+    public bool MarketingToestemming { get; set; } = false;
 }

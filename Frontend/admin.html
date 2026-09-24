@@ -208,6 +208,7 @@ async function laadGebruikers() {
                         <th>Naam</th>
                         <th>E-mail</th>
                         <th>Rol</th>
+                        <th>📣 Marketing</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -217,6 +218,13 @@ async function laadGebruikers() {
                             <td>${esc(g.naam)}</td>
                             <td>${esc(g.email)}</td>
                             <td><span class="badge-rol badge-${g.rol.toLowerCase()}">${esc(g.rol)}</span></td>
+                            <td style="font-size:0.82rem">
+                                ${g.rol.includes('Coach')
+                                    ? (g.marketingToestemming
+                                        ? '<span style="color:#2e7d32;font-weight:600">✓ Ja</span>'
+                                        : '<span style="color:#aaa">✗ Nee</span>')
+                                    : '<span style="color:#ddd">—</span>'}
+                            </td>
                             <td>
                                 ${g.email !== 'admin@mail' ? `<button class="btn btn-gevaar btn-sm" onclick="verwijderGebruiker('${esc(g.id)}', '${esc(g.naam)}')">Verwijderen</button>` : '<span style="color:#aaa;font-size:0.8rem">Beveiligd</span>'}
                             </td>
