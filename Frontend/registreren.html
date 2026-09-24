@@ -202,9 +202,9 @@
             </div>
 
             <label class="vinkje-rij" style="margin-top:1.25rem">
-                <input type="checkbox" id="marketing-vinkje">
+                <input type="checkbox" id="marketing-vinkje" checked>
                 <span>
-                    Ik geef RaceCoachFinder toestemming mijn naam en openbaar beschikbare foto's te gebruiken voor promotie op social media.
+                    Ik geef RaceCoachFinder toestemming mijn naam en openbaar beschikbare foto's te gebruiken voor promotie op social media. <em>Dit doen we ook om jou te helpen, zodat er meer rijders op het platform voor jou komen.</em>
                     <span class="marketing-info-wrap">
                         <span class="marketing-info-icoon">ⓘ</span>
                         <span class="marketing-info-tooltip">Wij mogen je bijvoorbeeld verwelkomen op ons Instagram-account als nieuwe coach — denk aan een bericht als "We hebben een nieuwe coach erbij!" met je naam en een openbare foto. Je kunt dit later altijd intrekken via je accountinstellingen.</span>
@@ -360,7 +360,8 @@ async function submitRegistreren() {
             setTimeout(() => location.href = 'bevestig-email.html?email=' + email + '&rol=' + gekozenRol, 1500);
         }
     } catch (e) {
-        toonMelding(e.message, 'fout');
+        const msg = e.message === 'Failed to fetch' ? 'Server niet bereikbaar. Wacht even en probeer het opnieuw.' : e.message;
+        toonMelding(msg, 'fout');
         btn.disabled = false;
         btn.textContent = origTekst;
     }

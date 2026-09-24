@@ -113,7 +113,8 @@ async function bevestig(event) {
         }, 1000);
 
     } catch (e) {
-        toonMelding(e.message, 'fout');
+        const msg = e.message === 'Failed to fetch' ? 'Server niet bereikbaar. Wacht even en probeer het opnieuw.' : e.message;
+        toonMelding(msg, 'fout');
         btn.disabled = false;
         btn.textContent = 'Account activeren';
     }
