@@ -147,15 +147,12 @@
 </head>
 <body>
 
-<nav class="navbar">
-    <div class="nav-container">
-        <a href="index.html" class="nav-logo">Race<span>Coach</span>Finder</a>
-        <ul class="nav-links" id="nav-links">
-            <li><a href="index.html">Home</a></li>
-            <li><a href="coaches.html">Coaches zoeken</a></li>
-            <li><a href="rijders-nodig.html">Rijder(s) nodig</a></li>
-        </ul>
-    </div>
+<nav>
+    <span class="nav-logo">Race<span>Coach</span>Finder</span>
+    <ul class="nav-links" id="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="coaches.html">Coaches</a></li>
+    </ul>
 </nav>
 
 <div class="pagina-hero">
@@ -445,7 +442,7 @@ function aanbodKaartHTML(a) {
             </div>
         </div>
         <div class="aanbod-acties">
-            <a href="coach-detail.html?id=${a.coachGebruikerId}" class="btn btn-primair btn-sm" style="white-space:nowrap;font-size:0.82rem">
+            <a href="${a.coachProfielId ? 'coach-detail.html?id=' + a.coachProfielId : '#'}" class="btn btn-primair btn-sm" style="white-space:nowrap;font-size:0.82rem">
                 Coach bekijken
             </a>
         </div>

@@ -49,7 +49,32 @@ public class CoachAanbodController : ControllerBase
         if (gratis.HasValue)
             query = query.Where(a => a.IsGratis == gratis.Value);
 
-        var resultaat = await query.OrderBy(a => a.Datum).ToListAsync();
+        var lijst = await query.OrderBy(a => a.Datum).ToListAsync();
+
+        // Voeg CoachProfielId toe via join op GebruikerId
+        var gebruikerIds = lijst.Select(a => a.CoachGebruikerId).Distinct().ToList();
+        var profielIds = await _context.Coaches
+            .Where(c => c.GebruikerId != null && gebruikerIds.Contains(c.GebruikerId))
+            .ToDictionaryAsync(c => c.GebruikerId!, c => c.Id);
+
+        var resultaat = lijst.Select(a => new {
+            a.Id,
+            a.CoachGebruikerId,
+            CoachProfielId = profielIds.TryGetValue(a.CoachGebruikerId, out var pid) ? pid : (int?)null,
+            a.CoachNaam,
+            a.Titel,
+            a.Beschrijving,
+            a.Datum,
+            a.Locatie,
+            a.Categorieen,
+            a.Disciplines,
+            a.MaxRijders,
+            a.PrijsPerRijder,
+            a.IsGratis,
+            a.AangemaaktOp,
+            a.IsActief
+        });
+
         return Ok(resultaat);
     }
 
