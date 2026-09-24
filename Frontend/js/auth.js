@@ -121,6 +121,19 @@ function updateNav() {
     if (!navLinks) return;
     navLinks.querySelectorAll('.nav-auth').forEach(function(el) { el.remove(); });
 
+    // Voeg vaste nav-items toe als ze er nog niet zijn
+    if (!navLinks.querySelector('a[href="coaches.html"]')) {
+        var vaste = '<li><a href="index.html">Home</a></li>' +
+                    '<li><a href="coaches.html">Coaches</a></li>' +
+                    '<li><a href="rijders-nodig.html">Rijder(s) nodig</a></li>';
+        navLinks.innerHTML = vaste + navLinks.innerHTML;
+    } else if (!navLinks.querySelector('a[href="rijders-nodig.html"]')) {
+        var li = document.createElement('li');
+        li.innerHTML = '<a href="rijders-nodig.html">Rijder(s) nodig</a>';
+        var coachLink = navLinks.querySelector('a[href="coaches.html"]');
+        if (coachLink) coachLink.closest('li').after(li);
+    }
+
     if (gebruiker) {
         const rollen = (gebruiker.rol || '').split(',').map(function(r) { return r.trim(); });
         const heeftBeide = rollen.indexOf('Coach') !== -1 && rollen.indexOf('Rijder') !== -1;
