@@ -23,6 +23,7 @@ namespace Backend.Migrations
                     b.Property<DateTime>("AangemaaktOp").HasColumnType("TEXT");
                     b.Property<string>("Beschrijving").IsRequired().HasColumnType("TEXT");
                     b.Property<string>("Categorieen").IsRequired().HasColumnType("TEXT");
+                    b.Property<string>("KorteOmschrijving").IsRequired().HasColumnType("TEXT");
                     b.Property<string>("CoachGebruikerId").IsRequired().HasColumnType("TEXT");
                     b.Property<string>("CoachNaam").IsRequired().HasColumnType("TEXT");
                     b.Property<DateTime>("Datum").HasColumnType("TEXT");

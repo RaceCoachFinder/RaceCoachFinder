@@ -112,6 +112,7 @@ public class CoachAanbodController : ControllerBase
             CoachGebruikerId = userId!,
             CoachNaam = gebruiker.Naam,
             Titel = verzoek.Titel.Trim(),
+            KorteOmschrijving = verzoek.KorteOmschrijving?.Trim() ?? string.Empty,
             Beschrijving = verzoek.Beschrijving?.Trim() ?? string.Empty,
             Datum = verzoek.Datum,
             Locatie = verzoek.Locatie.Trim(),
@@ -146,6 +147,7 @@ public class CoachAanbodController : ControllerBase
 
 public record CoachAanbodVerzoek(
     string Titel,
+    string? KorteOmschrijving,
     string? Beschrijving,
     DateTime Datum,
     string Locatie,

@@ -214,8 +214,13 @@
                         </div>
                     </div>
                     <div class="formulier-groep">
-                        <label for="beschrijving">Beschrijving</label>
-                        <textarea id="beschrijving" rows="3" placeholder="Beschrijf wat je biedt, wat je verwacht van de rijder, hoe laat je aanwezig bent, etc."></textarea>
+                        <label for="korte-omschrijving">Korte omschrijving * <span style="font-weight:400;color:var(--kleur-subtekst)">– zichtbaar op de kaart (max 200 tekens)</span></label>
+                        <textarea id="korte-omschrijving" rows="2" maxlength="200" placeholder="bijv. Coach beschikbaar voor begeleiding op wedstrijddag in Genk..." required oninput="document.getElementById('kort-teller').textContent=this.value.length"></textarea>
+                        <div style="text-align:right;font-size:0.78rem;color:var(--kleur-subtekst);margin-top:0.2rem"><span id="kort-teller">0</span>/200</div>
+                    </div>
+                    <div class="formulier-groep">
+                        <label for="beschrijving">Gedetailleerde beschrijving <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel) – zichtbaar via popup</span></label>
+                        <textarea id="beschrijving" rows="4" placeholder="Beschrijf uitgebreid wat je biedt, wat je verwacht van de rijder, programma van de dag, wat inbegrepen is, etc."></textarea>
                     </div>
                     <div style="display:flex;gap:0.75rem;justify-content:flex-end;margin-top:0.5rem">
                         <button type="button" onclick="toggleFormulier()" class="btn btn-secundair" style="color:#555;border-color:#ccc">Annuleren</button>
@@ -282,6 +287,23 @@
             </div>
             <div id="melding"></div>
             <div id="aanbod-lijst"><div class="laden"><div class="spinner"></div><p>Laden...</p></div></div>
+        </div>
+    </div>
+</div>
+
+<!-- Popup modal -->
+<div id="aanbod-modal" style="display:none;position:fixed;inset:0;z-index:9000;display:none;align-items:center;justify-content:center">
+    <div id="modal-overlay" onclick="sluitPopup()" style="position:absolute;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px)"></div>
+    <div id="modal-inhoud" style="position:relative;z-index:1;background:#fff;border-radius:14px;box-shadow:0 8px 40px rgba(0,0,0,0.25);max-width:560px;width:90%;max-height:80vh;overflow-y:auto;padding:2rem 2rem 1.5rem">
+        <button onclick="sluitPopup()" style="position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.4rem;cursor:pointer;color:#888;line-height:1">✕</button>
+        <div id="modal-coach" style="font-size:0.85rem;color:var(--kleur-subtekst);margin-bottom:0.3rem"></div>
+        <h2 id="modal-titel" style="font-size:1.2rem;font-weight:800;margin:0 0 0.75rem"></h2>
+        <div id="modal-meta" style="display:flex;gap:1rem;flex-wrap:wrap;font-size:0.85rem;color:var(--kleur-subtekst);margin-bottom:1.25rem"></div>
+        <div id="modal-kort" style="font-size:0.93rem;color:var(--kleur-tekst);margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid #eee"></div>
+        <div id="modal-beschrijving" style="font-size:0.9rem;color:var(--kleur-subtekst);line-height:1.7;white-space:pre-line"></div>
+        <div id="modal-chips" style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:1.25rem"></div>
+        <div style="margin-top:1.5rem;text-align:right">
+            <a id="modal-coach-link" href="#" class="btn btn-primair" style="font-size:0.88rem">Coach bekijken</a>
         </div>
     </div>
 </div>
@@ -434,7 +456,7 @@ function aanbodKaartHTML(a) {
                 <span>📅 ${volledigeDatum}</span>
                 ${maxRijdersTag}
             </div>
-            ${a.beschrijving ? `<div class="aanbod-beschrijving">${esc(a.beschrijving)}</div>` : ''}
+            ${a.korteOmschrijving ? `<div class="aanbod-beschrijving">${esc(a.korteOmschrijving)}</div>` : ''}
             <div class="chips">
                 ${cats.map(c => `<span class="chip chip-categorie">${esc(c)}</span>`).join('')}
                 ${discs.map(d => `<span class="chip chip-discipline">${esc(d)}</span>`).join('')}
@@ -442,6 +464,7 @@ function aanbodKaartHTML(a) {
             </div>
         </div>
         <div class="aanbod-acties">
+            ${a.beschrijving ? `<button onclick='toonPopup(${JSON.stringify(a)})' class="btn btn-secundair btn-sm" style="white-space:nowrap;font-size:0.82rem;color:#555;border-color:#ccc;margin-bottom:0.4rem">Meer info</button>` : ''}
             <a href="${a.coachProfielId ? 'coach-detail.html?id=' + a.coachProfielId : '#'}" class="btn btn-primair btn-sm" style="white-space:nowrap;font-size:0.82rem">
                 Coach bekijken
             </a>
@@ -532,6 +555,7 @@ async function submitAanbod(event) {
 
     const body = {
         titel: document.getElementById('titel').value.trim(),
+        korteOmschrijving: document.getElementById('korte-omschrijving').value.trim(),
         beschrijving: document.getElementById('beschrijving').value.trim(),
         datum: new Date(document.getElementById('datum').value).toISOString(),
         locatie: document.getElementById('locatie').value.trim(),
@@ -565,6 +589,41 @@ async function submitAanbod(event) {
         btn.disabled = false; btn.textContent = 'Aanbieding plaatsen';
     }
 }
+
+function toonPopup(a) {
+    const modal = document.getElementById('aanbod-modal');
+    const d = new Date(a.datum);
+    const datum = d.toLocaleDateString('nl-NL', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    const prijsStr = a.isGratis ? 'Gratis' : a.prijsPerRijder ? `€${a.prijsPerRijder} p.p.` : '';
+    const maxStr = a.maxRijders ? `Max ${a.maxRijders} rijders` : '';
+
+    document.getElementById('modal-coach').textContent = 'Coach: ' + a.coachNaam;
+    document.getElementById('modal-titel').textContent = a.titel;
+    document.getElementById('modal-meta').innerHTML =
+        `<span>📍 ${esc(a.locatie)}</span><span>📅 ${datum}</span>${maxStr ? `<span>👥 ${maxStr}</span>` : ''}${prijsStr ? `<span>${prijsStr}</span>` : ''}`;
+    document.getElementById('modal-kort').textContent = a.korteOmschrijving || '';
+    document.getElementById('modal-beschrijving').textContent = a.beschrijving || '';
+
+    const cats = (a.categorieen || '').split(',').filter(Boolean);
+    const discs = (a.disciplines || '').split(',').filter(Boolean);
+    document.getElementById('modal-chips').innerHTML =
+        cats.map(c => `<span class="chip chip-categorie">${esc(c)}</span>`).join('') +
+        discs.map(d => `<span class="chip chip-discipline">${esc(d)}</span>`).join('') +
+        (a.isGratis ? '<span class="chip chip-gratis">Gratis</span>' : a.prijsPerRijder ? `<span class="chip chip-prijs">€${a.prijsPerRijder} p.p.</span>` : '');
+
+    const link = document.getElementById('modal-coach-link');
+    link.href = a.coachProfielId ? `coach-detail.html?id=${a.coachProfielId}` : '#';
+
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function sluitPopup() {
+    document.getElementById('aanbod-modal').style.display = 'none';
+    document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') sluitPopup(); });
 
 function esc(str) {
     const d = document.createElement('div');

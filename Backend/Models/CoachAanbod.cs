@@ -6,6 +6,7 @@ public class CoachAanbod
     public string CoachGebruikerId { get; set; } = string.Empty;
     public string CoachNaam { get; set; } = string.Empty;
     public string Titel { get; set; } = string.Empty;
+    public string KorteOmschrijving { get; set; } = string.Empty;
     public string Beschrijving { get; set; } = string.Empty;
     public DateTime Datum { get; set; }
     public string Locatie { get; set; } = string.Empty;
