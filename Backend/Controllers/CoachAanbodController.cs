@@ -51,11 +51,18 @@ public class CoachAanbodController : ControllerBase
 
         var lijst = await query.OrderBy(a => a.Datum).ToListAsync();
 
-        // Voeg CoachProfielId toe via join op GebruikerId
+        // Voeg CoachProfielId + review-stats toe via join op GebruikerId
         var gebruikerIds = lijst.Select(a => a.CoachGebruikerId).Distinct().ToList();
+
         var profielIds = await _context.Coaches
             .Where(c => c.GebruikerId != null && gebruikerIds.Contains(c.GebruikerId))
             .ToDictionaryAsync(c => c.GebruikerId!, c => c.Id);
+
+        var reviewStats = await _context.Reviews
+            .Where(r => gebruikerIds.Contains(r.CoachGebruikerId))
+            .GroupBy(r => r.CoachGebruikerId)
+            .Select(g => new { CoachGebruikerId = g.Key, Gemiddeld = g.Average(r => (double)r.Sterren), Aantal = g.Count() })
+            .ToDictionaryAsync(x => x.CoachGebruikerId);
 
         var resultaat = lijst.Select(a => new {
             a.Id,
@@ -63,6 +70,7 @@ public class CoachAanbodController : ControllerBase
             CoachProfielId = profielIds.TryGetValue(a.CoachGebruikerId, out var pid) ? pid : (int?)null,
             a.CoachNaam,
             a.Titel,
+            a.KorteOmschrijving,
             a.Beschrijving,
             a.Datum,
             a.Locatie,
@@ -72,7 +80,9 @@ public class CoachAanbodController : ControllerBase
             a.PrijsPerRijder,
             a.IsGratis,
             a.AangemaaktOp,
-            a.IsActief
+            a.IsActief,
+            GemiddeldeScore = reviewStats.TryGetValue(a.CoachGebruikerId, out var rs) ? rs.Gemiddeld : 0,
+            AantalReviews = reviewStats.TryGetValue(a.CoachGebruikerId, out var rs2) ? rs2.Aantal : 0
         });
 
         return Ok(resultaat);

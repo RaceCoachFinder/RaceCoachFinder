@@ -283,7 +283,18 @@
         <div class="resultaten-kolom">
             <div class="resultaten-kop">
                 <h2>Beschikbare coaches</h2>
-                <span class="teller" id="teller">Laden...</span>
+                <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap">
+                    <span class="teller" id="teller"></span>
+                    <div style="display:flex;align-items:center;gap:0.4rem;font-size:0.85rem;color:var(--kleur-subtekst)">
+                        <span>Sorteren:</span>
+                        <select id="f-sorteer" onchange="sorteerEnRender()" style="padding:0.3rem 0.55rem;border:1px solid #ddd;border-radius:6px;font-size:0.83rem;font-family:inherit">
+                            <option value="datum">Datum (vroegst eerst)</option>
+                            <option value="recensies">Beste recensies</option>
+                            <option value="prijs-laag">Prijs laag → hoog</option>
+                            <option value="prijs-hoog">Prijs hoog → laag</option>
+                        </select>
+                    </div>
+                </div>
             </div>
             <div id="melding"></div>
             <div id="aanbod-lijst"><div class="laden"><div class="spinner"></div><p>Laden...</p></div></div>
@@ -414,14 +425,33 @@ async function laadAanbod() {
             aanbod = aanbod.filter(a => gekozenDiscs.some(d => (a.disciplines || '').includes(d)));
         }
 
-        teller.textContent = aanbod.length === 0 ? 'Geen resultaten' : `${aanbod.length} beschikbaar`;
-        lijst.innerHTML = aanbod.length === 0
-            ? '<div style="text-align:center;padding:3rem 0;color:var(--kleur-subtekst)"><div style="font-size:2.5rem;margin-bottom:0.75rem">🔍</div><p>Geen aanbiedingen gevonden.<br>Pas je filters aan of kom later terug.</p></div>'
-            : aanbod.map(a => aanbodKaartHTML(a)).join('');
+        window._huidigAanbod = aanbod;
+        sorteerEnRender();
     } catch {
-        teller.textContent = '';
-        lijst.innerHTML = '<div class="melding melding-fout">Kon aanbiedingen niet laden. Probeer het opnieuw.</div>';
+        document.getElementById('teller').textContent = '';
+        document.getElementById('aanbod-lijst').innerHTML = '<div class="melding melding-fout">Kon aanbiedingen niet laden. Probeer het opnieuw.</div>';
     }
+}
+
+function sorteerEnRender() {
+    const aanbod = (window._huidigAanbod || []).slice();
+    const sortering = document.getElementById('f-sorteer')?.value || 'datum';
+
+    if (sortering === 'recensies') {
+        aanbod.sort((a, b) => (b.gemiddeldeScore - a.gemiddeldeScore) || (b.aantalReviews - a.aantalReviews));
+    } else if (sortering === 'prijs-laag') {
+        aanbod.sort((a, b) => (a.isGratis ? 0 : (a.prijsPerRijder || 9999)) - (b.isGratis ? 0 : (b.prijsPerRijder || 9999)));
+    } else if (sortering === 'prijs-hoog') {
+        aanbod.sort((a, b) => (b.isGratis ? 0 : (b.prijsPerRijder || 0)) - (a.isGratis ? 0 : (a.prijsPerRijder || 0)));
+    }
+    // 'datum' is al gesorteerd door de backend
+
+    const teller = document.getElementById('teller');
+    const lijst = document.getElementById('aanbod-lijst');
+    teller.textContent = aanbod.length === 0 ? 'Geen resultaten' : `${aanbod.length} beschikbaar`;
+    lijst.innerHTML = aanbod.length === 0
+        ? '<div style="text-align:center;padding:3rem 0;color:var(--kleur-subtekst)"><div style="font-size:2.5rem;margin-bottom:0.75rem">🔍</div><p>Geen aanbiedingen gevonden.<br>Pas je filters aan of kom later terug.</p></div>'
+        : aanbod.map(a => aanbodKaartHTML(a)).join('');
 }
 
 function aanbodKaartHTML(a) {

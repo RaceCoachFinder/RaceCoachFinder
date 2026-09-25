@@ -260,6 +260,7 @@
                     <span>Sorteren op:</span>
                     <select id="f-sortering" onchange="renderCoaches()">
                         <option value="">Standaard</option>
+                        <option value="recensies">Beste recensies</option>
                         <option value="prijs-laag">Prijs laag → hoog</option>
                         <option value="prijs-hoog">Prijs hoog → laag</option>
                     </select>
@@ -395,7 +396,9 @@ function renderCoaches() {
         return true;
     });
 
-    if (sortering === 'prijs-laag') {
+    if (sortering === 'recensies') {
+        lijst.sort((a, b) => b.gemiddeldeScore - a.gemiddeldeScore || b.aantalReviews - a.aantalReviews);
+    } else if (sortering === 'prijs-laag') {
         lijst.sort((a, b) => minPrijs(a) - minPrijs(b));
     } else if (sortering === 'prijs-hoog') {
         lijst.sort((a, b) => minPrijs(b) - minPrijs(a));
