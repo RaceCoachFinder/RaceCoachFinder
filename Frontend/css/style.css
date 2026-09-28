@@ -594,4 +594,38 @@ footer {
     .formulier-rij { grid-template-columns: 1fr; }
     .filter-grid { grid-template-columns: 1fr 1fr; }
     .detail-prijs { margin-left: 0; text-align: left; }
+
+    /* Voorkom horizontaal scrollen */
+    body { overflow-x: hidden; }
+    .container { padding: 0 1rem; }
+
+    /* Filter + resultaten naast elkaar → onder elkaar */
+    .pagina-inhoud { flex-direction: column !important; }
+    .filter-kolom { width: 100% !important; position: static !important; }
+
+    /* Coaches grid → één kolom */
+    .coach-grid { grid-template-columns: 1fr !important; }
+
+    /* Kaart acties onder elkaar */
+    .aanbod-acties { flex-direction: column; align-items: stretch; }
+    .aanbod-acties .btn { width: 100%; text-align: center; }
+
+    /* Formulier grids → één kolom */
+    [style*="grid-template-columns: 1fr 1fr"],
+    [style*="grid-template-columns:1fr 1fr"],
+    [style*="grid-template-columns: 1fr 1fr 1fr"],
+    [style*="grid-template-columns:1fr 1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Hero sectie minder padding op mobiel */
+    .hero { padding: 3rem 1rem 2.5rem; }
+    .pagina-hero { padding: 2rem 1rem; }
+
+    /* Aanbod kaart layout aanpassen */
+    .aanbod-kaart { flex-direction: column; gap: 0.75rem; }
+    .aanbod-acties { flex-direction: row; flex-wrap: wrap; }
+
+    /* Stats balk scrollen */
+    .stats-balk { flex-wrap: wrap; gap: 1rem; padding: 1.5rem 1rem; }
 }
