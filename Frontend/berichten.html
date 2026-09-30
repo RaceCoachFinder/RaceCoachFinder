@@ -1018,7 +1018,9 @@ function renderGroepsBericht(b) {
     }
     return `
     <div style="display:flex;flex-direction:column;align-items:flex-start;margin-bottom:0.1rem">
-        <div style="font-size:0.72rem;font-weight:700;color:var(--kleur-subtekst);margin-left:0.85rem;margin-bottom:0.15rem">${esc(b.vanNaam)}</div>
+        <div style="font-size:0.72rem;font-weight:700;color:var(--kleur-subtekst);margin-left:0.85rem;margin-bottom:0.15rem">
+            <span onclick="openGesprek('${esc(b.vanGebruikerId)}','${esc(b.vanNaam)}','')" style="cursor:pointer;text-decoration:underline dotted;">${esc(b.vanNaam)}</span>
+        </div>
         <div class="bericht-bel van-ander">
             ${tekstHtml}
             <div class="bericht-tijd">${tijd}</div>
