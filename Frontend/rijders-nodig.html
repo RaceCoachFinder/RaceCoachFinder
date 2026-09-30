@@ -746,15 +746,16 @@ async function laadAlleCoaches() {
 }
 
 function zoekCoach(waarde) {
-    const q = waarde.replace('@', '').trim().toLowerCase();
     const dd = document.getElementById('coach-dropdown');
-    if (!q) { dd.style.display = 'none'; return; }
+    if (!waarde.includes('@')) { dd.style.display = 'none'; return; }
+
+    const q = waarde.slice(waarde.lastIndexOf('@') + 1).toLowerCase();
 
     const gevonden = alleCoachesLijst.filter(c =>
-        c.gepubliceerd !== false &&
-        c.naam && c.naam.toLowerCase().includes(q) &&
+        c.naam &&
+        (q === '' || c.naam.toLowerCase().includes(q)) &&
         !uitgenodigdeCoaches.find(u => u.id === c.gebruikerId)
-    ).slice(0, 5);
+    ).slice(0, 8);
 
     if (gevonden.length === 0) { dd.style.display = 'none'; return; }
     dd.innerHTML = gevonden.map(c =>
@@ -767,9 +768,10 @@ function voegCoachToe(id, naam) {
     if (uitgenodigdeCoaches.find(c => c.id === id)) return;
     uitgenodigdeCoaches.push({ id, naam });
     renderCoachTags();
-    document.getElementById('coach-zoek').value = '';
+    const zoek = document.getElementById('coach-zoek');
+    zoek.value = '';
     document.getElementById('coach-dropdown').style.display = 'none';
-    document.getElementById('coach-zoek').focus();
+    zoek.focus();
 }
 
 function verwijderCoachTag(id) {
