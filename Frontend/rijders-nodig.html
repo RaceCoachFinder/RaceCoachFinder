@@ -741,8 +741,13 @@ let alleCoachesLijst = [];
 async function laadAlleCoaches() {
     try {
         const resp = await fetch(`${API}/coaches`);
-        if (resp.ok) alleCoachesLijst = await resp.json();
-    } catch {}
+        if (resp.ok) {
+            alleCoachesLijst = await resp.json();
+            console.log('[KCF] Coaches geladen:', alleCoachesLijst.length, alleCoachesLijst.map(c => c.naam || c.Naam));
+        }
+    } catch (e) {
+        console.error('[KCF] Coaches laden mislukt:', e);
+    }
 }
 
 function zoekCoach(waarde) {
@@ -751,21 +756,29 @@ function zoekCoach(waarde) {
 
     const q = waarde.slice(waarde.lastIndexOf('@') + 1).toLowerCase();
 
-    const gevonden = alleCoachesLijst.filter(c =>
-        c.naam &&
-        (q === '' || c.naam.toLowerCase().includes(q)) &&
-        !uitgenodigdeCoaches.find(u => u.id === c.gebruikerId)
-    ).slice(0, 8);
+    // Probeer zowel camelCase (naam) als PascalCase (Naam) veldnamen
+    const gevonden = alleCoachesLijst.filter(c => {
+        const naam = c.naam || c.Naam || '';
+        const id = c.gebruikerId || c.GebruikerId || '';
+        return naam && (q === '' || naam.toLowerCase().includes(q)) &&
+               !uitgenodigdeCoaches.find(u => u.id === id);
+    }).slice(0, 8);
 
-    if (gevonden.length === 0) { dd.style.display = 'none'; return; }
-    dd.innerHTML = gevonden.map(c =>
-        `<div class="coach-suggestie" onclick="voegCoachToe('${esc(c.gebruikerId)}','${esc(c.naam)}')">${esc(c.naam)}</div>`
-    ).join('');
+    if (gevonden.length === 0) {
+        dd.innerHTML = `<div class="coach-suggestie" style="color:#999;cursor:default">Geen coaches gevonden</div>`;
+        dd.style.display = '';
+        return;
+    }
+    dd.innerHTML = gevonden.map(c => {
+        const naam = c.naam || c.Naam || '';
+        const id = c.gebruikerId || c.GebruikerId || '';
+        return `<div class="coach-suggestie" onclick="voegCoachToe('${esc(id)}','${esc(naam)}')">${esc(naam)}</div>`;
+    }).join('');
     dd.style.display = '';
 }
 
 function voegCoachToe(id, naam) {
-    if (uitgenodigdeCoaches.find(c => c.id === id)) return;
+    if (!id || uitgenodigdeCoaches.find(c => c.id === id)) return;
     uitgenodigdeCoaches.push({ id, naam });
     renderCoachTags();
     const zoek = document.getElementById('coach-zoek');
