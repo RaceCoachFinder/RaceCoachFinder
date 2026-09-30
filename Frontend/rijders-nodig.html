@@ -740,7 +740,7 @@ let alleCoachesLijst = [];
 
 async function laadAlleCoaches() {
     try {
-        const resp = await fetch(`${API}/coaches`);
+        const resp = await fetch(`${API}/coach`);
         if (resp.ok) {
             alleCoachesLijst = await resp.json();
             console.log('[KCF] Coaches geladen:', alleCoachesLijst.length, alleCoachesLijst.map(c => c.naam || c.Naam));
