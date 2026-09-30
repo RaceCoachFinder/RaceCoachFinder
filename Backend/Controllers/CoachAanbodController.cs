@@ -64,25 +64,45 @@ public class CoachAanbodController : ControllerBase
             .Select(g => new { CoachGebruikerId = g.Key, Gemiddeld = g.Average(r => (double)r.Sterren), Aantal = g.Count() })
             .ToDictionaryAsync(x => x.CoachGebruikerId);
 
-        var resultaat = lijst.Select(a => new {
-            a.Id,
-            a.CoachGebruikerId,
-            CoachProfielId = profielIds.TryGetValue(a.CoachGebruikerId, out var pid) ? pid : (int?)null,
-            a.CoachNaam,
-            a.Titel,
-            a.KorteOmschrijving,
-            a.Beschrijving,
-            a.Datum,
-            a.Locatie,
-            a.Categorieen,
-            a.Disciplines,
-            a.MaxRijders,
-            a.PrijsPerRijder,
-            a.IsGratis,
-            a.AangemaaktOp,
-            a.IsActief,
-            GemiddeldeScore = reviewStats.TryGetValue(a.CoachGebruikerId, out var rs) ? rs.Gemiddeld : 0,
-            AantalReviews = reviewStats.TryGetValue(a.CoachGebruikerId, out var rs2) ? rs2.Aantal : 0
+        // Groepsgesprekken + geaccepteerde leden per aanbod
+        var aanbodIds = lijst.Select(a => a.Id).ToList();
+        var groepen = await _context.Groepsgesprekken
+            .Where(g => aanbodIds.Contains(g.CoachAanbodId))
+            .ToDictionaryAsync(g => g.CoachAanbodId);
+
+        var groepIds = groepen.Values.Select(g => g.Id).ToList();
+        var alleLeden = await _context.GroepsgesprekLeden
+            .Where(l => groepIds.Contains(l.GroepsgesprekId))
+            .ToListAsync();
+
+        var resultaat = lijst.Select(a => {
+            groepen.TryGetValue(a.Id, out var groep);
+            var leden = groep != null
+                ? alleLeden.Where(l => l.GroepsgesprekId == groep.Id && l.GebruikerId != a.CoachGebruikerId)
+                           .Select(l => l.GebruikerNaam).ToList()
+                : new List<string>();
+            return new {
+                a.Id,
+                a.CoachGebruikerId,
+                CoachProfielId = profielIds.TryGetValue(a.CoachGebruikerId, out var pid) ? pid : (int?)null,
+                a.CoachNaam,
+                a.Titel,
+                a.KorteOmschrijving,
+                a.Beschrijving,
+                a.Datum,
+                a.Locatie,
+                a.Categorieen,
+                a.Disciplines,
+                a.MaxRijders,
+                a.PrijsPerRijder,
+                a.IsGratis,
+                a.AangemaaktOp,
+                a.IsActief,
+                GemiddeldeScore = reviewStats.TryGetValue(a.CoachGebruikerId, out var rs) ? rs.Gemiddeld : 0,
+                AantalReviews = reviewStats.TryGetValue(a.CoachGebruikerId, out var rs2) ? rs2.Aantal : 0,
+                GroepsgesprekId = groep?.Id,
+                GeaccepteerdeDeelnemers = leden
+            };
         });
 
         return Ok(resultaat);
@@ -137,7 +157,64 @@ public class CoachAanbodController : ControllerBase
 
         _context.CoachAanboden.Add(aanbod);
         await _context.SaveChangesAsync();
-        return Ok(aanbod);
+
+        // Maak groepsgesprek aan voor deze aanbieding
+        var groep = new Groepsgesprek
+        {
+            CoachAanbodId = aanbod.Id,
+            Naam = aanbod.Titel,
+            AangemaaktDoorId = userId!,
+            AangemaaktOp = DateTime.UtcNow
+        };
+        _context.Groepsgesprekken.Add(groep);
+        await _context.SaveChangesAsync();
+
+        // Voeg maker toe als lid
+        _context.GroepsgesprekLeden.Add(new GroepsgesprekLid
+        {
+            GroepsgesprekId = groep.Id,
+            GebruikerId = userId!,
+            GebruikerNaam = gebruiker.Naam,
+            ToegetreedOp = DateTime.UtcNow
+        });
+
+        // Verwerk uitgenodigde coaches
+        if (verzoek.UitgenodigdeCoachIds != null)
+        {
+            foreach (var coachId in verzoek.UitgenodigdeCoachIds.Distinct())
+            {
+                var coach = await _userManager.FindByIdAsync(coachId);
+                if (coach == null) continue;
+
+                var uitnodiging = new CoachUitnodiging
+                {
+                    CoachAanbodId = aanbod.Id,
+                    AanbodTitel = aanbod.Titel,
+                    RijderGebruikerId = userId!,
+                    RijderNaam = gebruiker.Naam,
+                    CoachGebruikerId = coachId,
+                    CoachNaam = coach.Naam,
+                    Status = "Openstaand",
+                    AangemaaktOp = DateTime.UtcNow
+                };
+                _context.CoachAanbodUitnodigingen.Add(uitnodiging);
+                await _context.SaveChangesAsync();
+
+                var datumStr = aanbod.Datum.ToString("d MMM yyyy");
+                var prijsStr = aanbod.IsGratis ? "Gratis" : (aanbod.PrijsPerRijder.HasValue ? $"€{aanbod.PrijsPerRijder} p.p." : "");
+                _context.Berichten.Add(new Bericht
+                {
+                    VanGebruikerId = userId!,
+                    NaarGebruikerId = coachId,
+                    Tekst = $"🎯 UITNODIGING:{uitnodiging.Id}\n{gebruiker.Naam} nodigt je uit voor: {aanbod.Titel}\n📍 {aanbod.Locatie} | 📅 {datumStr}{(prijsStr != "" ? " | " + prijsStr : "")}",
+                    AangemaaktOp = DateTime.UtcNow,
+                    Gelezen = false
+                });
+            }
+        }
+
+        await _context.SaveChangesAsync();
+        return Ok(new { aanbod.Id, groepsgesprekId = groep.Id });
     }
 
     [HttpDelete("{id:int}")]
@@ -165,5 +242,6 @@ public record CoachAanbodVerzoek(
     string? Disciplines,
     int? MaxRijders,
     decimal? PrijsPerRijder,
-    bool IsGratis
+    bool IsGratis,
+    List<string>? UitgenodigdeCoachIds = null
 );

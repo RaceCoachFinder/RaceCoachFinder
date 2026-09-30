@@ -143,6 +143,55 @@
         .mijn-kaart-info { flex: 1; min-width: 0; }
         .mijn-kaart-titel { font-size: 0.95rem; font-weight: 700; }
         .mijn-kaart-sub { font-size: 0.82rem; color: var(--kleur-subtekst); margin-top: 0.15rem; }
+
+        /* Coach @mention */
+        .coach-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.4rem; }
+        .coach-tag {
+            display: inline-flex; align-items: center; gap: 0.3rem;
+            background: #e3f0ff; color: #1565c0;
+            font-size: 0.78rem; font-weight: 600;
+            padding: 0.22rem 0.6rem; border-radius: 20px;
+        }
+        .coach-tag button {
+            background: none; border: none; cursor: pointer;
+            color: #1565c0; font-size: 0.85rem; line-height: 1;
+            padding: 0; margin: 0; opacity: 0.7;
+        }
+        .coach-tag button:hover { opacity: 1; }
+        .coach-mention-wrapper { position: relative; }
+        .coach-dropdown {
+            position: absolute; top: 100%; left: 0; right: 0; z-index: 200;
+            background: #fff; border: 1.5px solid #e0e0e0;
+            border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+            margin-top: 2px; overflow: hidden;
+        }
+        .coach-suggestie {
+            padding: 0.6rem 0.9rem; cursor: pointer;
+            font-size: 0.88rem; border-bottom: 1px solid #f5f5f5;
+        }
+        .coach-suggestie:last-child { border-bottom: none; }
+        .coach-suggestie:hover { background: #f0f7ff; }
+
+        /* Deelnemers op kaart */
+        .aanbod-deelnemers {
+            display: flex; flex-wrap: wrap; gap: 0.3rem;
+            margin-top: 0.4rem;
+        }
+        .chip-deelnemer {
+            background: #e8f5e9; color: #2e7d32;
+            font-size: 0.72rem; font-weight: 600;
+            padding: 0.18rem 0.55rem; border-radius: 20px;
+        }
+        .btn-reageer {
+            background: var(--kleur-primair);
+            color: var(--kleur-donker);
+            border: none; border-radius: 8px;
+            font-size: 0.82rem; font-weight: 700;
+            padding: 0.45rem 0.85rem; cursor: pointer;
+            white-space: nowrap; font-family: inherit;
+            transition: opacity 0.15s;
+        }
+        .btn-reageer:hover { opacity: 0.85; }
     </style>
 </head>
 <body>
@@ -221,6 +270,16 @@
                     <div class="formulier-groep">
                         <label for="beschrijving">Gedetailleerde beschrijving <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel) – zichtbaar via popup</span></label>
                         <textarea id="beschrijving" rows="4" placeholder="Beschrijf uitgebreid wat je biedt, wat je verwacht van de rijder, programma van de dag, wat inbegrepen is, etc."></textarea>
+                    </div>
+                    <div class="formulier-groep">
+                        <label>Coaches uitnodigen <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel) – typ @ gevolgd door naam</span></label>
+                        <div class="coach-tags" id="coach-tags"></div>
+                        <div class="coach-mention-wrapper">
+                            <input type="text" id="coach-zoek" placeholder="Typ @ om een coach te zoeken..."
+                                   oninput="zoekCoach(this.value)" onkeydown="coachZoekKeydown(event)"
+                                   autocomplete="off" style="width:100%;box-sizing:border-box">
+                            <div class="coach-dropdown" id="coach-dropdown" style="display:none"></div>
+                        </div>
                     </div>
                     <div style="display:flex;gap:0.75rem;justify-content:flex-end;margin-top:0.5rem">
                         <button type="button" onclick="toggleFormulier()" class="btn btn-secundair" style="color:#555;border-color:#ccc">Annuleren</button>
@@ -472,6 +531,14 @@ function aanbodKaartHTML(a) {
         ? `<span>👥 Max ${a.maxRijders} rijder${a.maxRijders !== 1 ? 's' : ''}</span>`
         : '';
 
+    const deelnemers = (a.geaccepteerdeDeelnemers || []).filter(Boolean);
+    const deelnemersHtml = deelnemers.length > 0
+        ? `<div class="aanbod-deelnemers">
+               <span style="font-size:0.72rem;color:var(--kleur-subtekst);font-weight:600">Deelnemers:</span>
+               ${deelnemers.map(n => `<span class="chip-deelnemer">${esc(n)}</span>`).join('')}
+           </div>`
+        : '';
+
     return `
     <div class="aanbod-kaart">
         <div class="aanbod-datum-blok">
@@ -487,6 +554,7 @@ function aanbodKaartHTML(a) {
                 ${maxRijdersTag}
             </div>
             ${a.korteOmschrijving ? `<div class="aanbod-beschrijving">${esc(a.korteOmschrijving)}</div>` : ''}
+            ${deelnemersHtml}
             <div class="chips">
                 ${cats.map(c => `<span class="chip chip-categorie">${esc(c)}</span>`).join('')}
                 ${discs.map(d => `<span class="chip chip-discipline">${esc(d)}</span>`).join('')}
@@ -494,6 +562,7 @@ function aanbodKaartHTML(a) {
             </div>
         </div>
         <div class="aanbod-acties">
+            ${a.groepsgesprekId ? `<button onclick="reageerOpActiviteit(${a.id},${a.groepsgesprekId})" class="btn-reageer">👥 Reageren op activiteit</button>` : ''}
             ${a.beschrijving ? `<button onclick='toonPopup(${JSON.stringify(a)})' class="btn btn-secundair btn-sm" style="white-space:nowrap;font-size:0.82rem;color:#555;border-color:#ccc;margin-bottom:0.4rem">Meer info</button>` : ''}
             <a href="${a.coachProfielId ? 'coach-detail.html?id=' + a.coachProfielId : '#'}" class="btn btn-primair btn-sm" style="white-space:nowrap;font-size:0.82rem">
                 Coach bekijken
@@ -593,7 +662,8 @@ async function submitAanbod(event) {
         disciplines: getGekozen('disc-grid').join(','),
         maxRijders: parseInt(document.getElementById('max-rijders').value) || null,
         prijsPerRijder: parseFloat(document.getElementById('prijs').value) || null,
-        isGratis: document.getElementById('is-gratis').checked
+        isGratis: document.getElementById('is-gratis').checked,
+        uitgenodigdeCoachIds: uitgenodigdeCoaches.map(c => c.id)
     };
 
     const btn = event.target.querySelector('button[type="submit"]');
@@ -610,6 +680,8 @@ async function submitAanbod(event) {
         melding.innerHTML = '<div class="melding melding-succes">Aanbieding geplaatst!</div>';
         event.target.reset();
         document.querySelectorAll('#cat-grid input, #disc-grid input').forEach(c => c.checked = false);
+        uitgenodigdeCoaches = [];
+        renderCoachTags();
         toggleFormulier();
         laadMijnAanbod();
         laadAanbod();
@@ -660,6 +732,93 @@ function esc(str) {
     d.textContent = String(str ?? '');
     return d.innerHTML;
 }
+
+// ===================== COACHES UITNODIGEN (@MENTION) =====================
+
+let uitgenodigdeCoaches = [];
+let alleCoachesLijst = [];
+
+async function laadAlleCoaches() {
+    try {
+        const resp = await fetch(`${API}/coaches`);
+        if (resp.ok) alleCoachesLijst = await resp.json();
+    } catch {}
+}
+
+function zoekCoach(waarde) {
+    const q = waarde.replace('@', '').trim().toLowerCase();
+    const dd = document.getElementById('coach-dropdown');
+    if (!q) { dd.style.display = 'none'; return; }
+
+    const gevonden = alleCoachesLijst.filter(c =>
+        c.gepubliceerd !== false &&
+        c.naam && c.naam.toLowerCase().includes(q) &&
+        !uitgenodigdeCoaches.find(u => u.id === c.gebruikerId)
+    ).slice(0, 5);
+
+    if (gevonden.length === 0) { dd.style.display = 'none'; return; }
+    dd.innerHTML = gevonden.map(c =>
+        `<div class="coach-suggestie" onclick="voegCoachToe('${esc(c.gebruikerId)}','${esc(c.naam)}')">${esc(c.naam)}</div>`
+    ).join('');
+    dd.style.display = '';
+}
+
+function voegCoachToe(id, naam) {
+    if (uitgenodigdeCoaches.find(c => c.id === id)) return;
+    uitgenodigdeCoaches.push({ id, naam });
+    renderCoachTags();
+    document.getElementById('coach-zoek').value = '';
+    document.getElementById('coach-dropdown').style.display = 'none';
+    document.getElementById('coach-zoek').focus();
+}
+
+function verwijderCoachTag(id) {
+    uitgenodigdeCoaches = uitgenodigdeCoaches.filter(c => c.id !== id);
+    renderCoachTags();
+}
+
+function renderCoachTags() {
+    document.getElementById('coach-tags').innerHTML = uitgenodigdeCoaches.map(c =>
+        `<span class="coach-tag">${esc(c.naam)}<button type="button" onclick="verwijderCoachTag('${esc(c.id)}')">×</button></span>`
+    ).join('');
+}
+
+function coachZoekKeydown(e) {
+    if (e.key === 'Escape') {
+        document.getElementById('coach-dropdown').style.display = 'none';
+    }
+}
+
+document.addEventListener('click', e => {
+    if (!e.target.closest('.coach-mention-wrapper')) {
+        const dd = document.getElementById('coach-dropdown');
+        if (dd) dd.style.display = 'none';
+    }
+});
+
+// ===================== REAGEREN OP ACTIVITEIT =====================
+
+async function reageerOpActiviteit(aanbodId, groepsgesprekId) {
+    if (!isIngelogd()) {
+        location.href = `inloggen.html`;
+        return;
+    }
+    try {
+        const token = localStorage.getItem('kcf_token');
+        const resp = await fetch(`${API}/groepsgesprek/deelnemen/${aanbodId}`, {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!resp.ok) throw new Error(await resp.text());
+        const data = await resp.json();
+        location.href = `berichten.html?groep=${data.groepsgesprekId}`;
+    } catch (e) {
+        alert('Kan niet deelnemen: ' + e.message);
+    }
+}
+
+// Laad coaches op achtergrond voor autocomplete
+laadAlleCoaches();
 </script>
 </body>
 </html>

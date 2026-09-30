@@ -17,6 +17,56 @@ namespace Backend.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
 
+            modelBuilder.Entity("Backend.Models.CoachUitnodiging", b =>
+                {
+                    b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("INTEGER");
+                    b.Property<int>("CoachAanbodId").HasColumnType("INTEGER");
+                    b.Property<string>("AanbodTitel").IsRequired().HasColumnType("TEXT");
+                    b.Property<string>("RijderGebruikerId").IsRequired().HasColumnType("TEXT");
+                    b.Property<string>("RijderNaam").IsRequired().HasColumnType("TEXT");
+                    b.Property<string>("CoachGebruikerId").IsRequired().HasColumnType("TEXT");
+                    b.Property<string>("CoachNaam").IsRequired().HasColumnType("TEXT");
+                    b.Property<string>("Status").IsRequired().HasColumnType("TEXT");
+                    b.Property<DateTime>("AangemaaktOp").HasColumnType("TEXT");
+                    b.HasKey("Id");
+                    b.ToTable("CoachAanbodUitnodigingen");
+                });
+
+            modelBuilder.Entity("Backend.Models.Groepsgesprek", b =>
+                {
+                    b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("INTEGER");
+                    b.Property<int>("CoachAanbodId").HasColumnType("INTEGER");
+                    b.Property<string>("Naam").IsRequired().HasColumnType("TEXT");
+                    b.Property<string>("AangemaaktDoorId").IsRequired().HasColumnType("TEXT");
+                    b.Property<DateTime>("AangemaaktOp").HasColumnType("TEXT");
+                    b.HasKey("Id");
+                    b.ToTable("Groepsgesprekken");
+                });
+
+            modelBuilder.Entity("Backend.Models.GroepsgesprekLid", b =>
+                {
+                    b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("INTEGER");
+                    b.Property<int>("GroepsgesprekId").HasColumnType("INTEGER");
+                    b.Property<string>("GebruikerId").IsRequired().HasColumnType("TEXT");
+                    b.Property<string>("GebruikerNaam").IsRequired().HasColumnType("TEXT");
+                    b.Property<DateTime>("ToegetreedOp").HasColumnType("TEXT");
+                    b.Property<DateTime?>("LaatstGelezen").HasColumnType("TEXT");
+                    b.HasKey("Id");
+                    b.ToTable("GroepsgesprekLeden");
+                });
+
+            modelBuilder.Entity("Backend.Models.Groepsbericht", b =>
+                {
+                    b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("INTEGER");
+                    b.Property<int>("GroepsgesprekId").HasColumnType("INTEGER");
+                    b.Property<string>("VanGebruikerId").IsRequired().HasColumnType("TEXT");
+                    b.Property<string>("VanNaam").IsRequired().HasColumnType("TEXT");
+                    b.Property<string>("Tekst").IsRequired().HasColumnType("TEXT");
+                    b.Property<DateTime>("AangemaaktOp").HasColumnType("TEXT");
+                    b.HasKey("Id");
+                    b.ToTable("Groepsberichten");
+                });
+
             modelBuilder.Entity("Backend.Models.CoachAanbod", b =>
                 {
                     b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("INTEGER");

@@ -559,6 +559,7 @@ if (!vereisAuth()) { /* redirect */ }
 const gebruiker = getGebruiker();
 let huidigPartnerId = null;
 let huidigPartnerRol = null;
+let huidigGroepsId = null;
 let pollingInterval = null;
 let partnerFotos = {};
 let huidigeBoekingen = [];
@@ -574,6 +575,7 @@ const rolParam      = urlParams.get('rol') || '';
 const aanvraagParam = urlParams.get('aanvraag') || '';
 const alocatieParam = urlParams.get('alocatie') || '';
 const adatumParam   = urlParams.get('adatum') || '';
+const groepParam    = urlParams.get('groep') ? parseInt(urlParams.get('groep')) : null;
 
 function toonAanvraagContext() {
     if (!aanvraagParam) return;
@@ -595,15 +597,20 @@ function sluitAanvraagContext() {
 
 async function laadGesprekken() {
     try {
-        const gesprekken = await authVerzoek('/chat/gesprekken');
-        renderGesprekkenLijst(gesprekken);
+        const [gesprekken, groepen] = await Promise.all([
+            authVerzoek('/chat/gesprekken'),
+            authVerzoek('/groepsgesprek').catch(() => [])
+        ]);
+        renderGesprekkenLijst(gesprekken, groepen);
 
-        if (partnerParam && !huidigPartnerId) {
+        if (groepParam && !huidigGroepsId) {
+            const groep = groepen.find(g => g.groepsId === groepParam);
+            if (groep) openGroepsgesprek(groep.groepsId, groep.naam, groep.leden);
+        } else if (partnerParam && !huidigPartnerId) {
             const bestaand = gesprekken.find(g => g.partnerId === partnerParam);
             if (bestaand) {
                 openGesprek(bestaand.partnerId, bestaand.partnerNaam, bestaand.partnerRol);
             } else {
-                // Nieuw gesprek — naam komt uit URL param
                 openGesprek(partnerParam, naamParam || 'Onbekend', rolParam);
             }
         }
@@ -613,27 +620,47 @@ async function laadGesprekken() {
     }
 }
 
-function renderGesprekkenLijst(gesprekken) {
+function renderGesprekkenLijst(gesprekken, groepen = []) {
     const lijst = document.getElementById('gesprekken-lijst');
 
-    // Voeg het nieuwe gesprek tijdelijk toe aan de lijst als het nog niet bestaat
     const extraRij = (partnerParam && naamParam && !gesprekken.find(g => g.partnerId === partnerParam))
         ? [{ partnerId: partnerParam, partnerNaam: naamParam, partnerRol: rolParam, laatsteBericht: 'Nieuw gesprek', laatsteTijd: new Date().toISOString(), aantalOngelezen: 0 }]
         : [];
-    const alles = [...extraRij, ...gesprekken];
+    const alleGesprekken = [...extraRij, ...gesprekken];
 
-    if (alles.length === 0) {
+    if (alleGesprekken.length === 0 && groepen.length === 0) {
         lijst.innerHTML = `<div class="geen-gesprekken">Nog geen berichten.<br><br>
             Ga naar een <a href="coaches.html">coachprofiel</a> om een gesprek te starten.</div>`;
         return;
     }
 
-    lijst.innerHTML = alles.map(g => {
+    const groepRijen = groepen.map(g => {
+        const isActief = g.groepsId === huidigGroepsId;
+        const heeftOngelezen = g.aantalOngelezen > 0;
+        const preview = g.laatsteBericht || '';
+        return `
+        <div class="gesprek-rij ${isActief ? 'actief' : ''}" onclick="openGroepsgesprek(${g.groepsId},'${esc(g.naam)}',${JSON.stringify(g.leden || [])})">
+            <div class="gesprek-avatar" style="background:#1565c0">
+                👥
+                ${heeftOngelezen ? '<div class="gesprek-ongelezen-dot"></div>' : ''}
+            </div>
+            <div class="gesprek-info">
+                <div class="gesprek-naam">${esc(g.naam)}</div>
+                <div class="gesprek-preview ${heeftOngelezen ? 'ongelezen' : ''}">${esc(preview.startsWith('🎯') ? 'Uitnodiging' : preview)}</div>
+            </div>
+            <div class="gesprek-meta">
+                <div class="gesprek-tijd">${formatTijd(g.laatsteTijd)}</div>
+                ${heeftOngelezen ? `<div class="gesprek-badge">${g.aantalOngelezen}</div>` : ''}
+            </div>
+        </div>`;
+    });
+
+    const gesprekRijen = alleGesprekken.map(g => {
         partnerFotos[g.partnerId] = g.partnerFotoUrl || '';
         const initialen = g.partnerFotoUrl
             ? '<img src="https://racecoachfinder-production.up.railway.app' + g.partnerFotoUrl + '" alt="">'
             : g.partnerNaam.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
-        const isActief = g.partnerId === huidigPartnerId;
+        const isActief = g.partnerId === huidigPartnerId && !huidigGroepsId;
         const heeftOngelezen = g.aantalOngelezen > 0;
         return `
         <div class="gesprek-rij ${isActief ? 'actief' : ''}" onclick="openGesprek('${esc(g.partnerId)}', '${esc(g.partnerNaam)}', '${esc(g.partnerRol)}')">
@@ -650,14 +677,48 @@ function renderGesprekkenLijst(gesprekken) {
                 ${heeftOngelezen ? `<div class="gesprek-badge">${g.aantalOngelezen}</div>` : ''}
             </div>
         </div>`;
-    }).join('');
+    });
+
+    lijst.innerHTML = [...groepRijen, ...gesprekRijen].join('');
 }
 
 async function openNieuwGesprek(partnerId) {
     openGesprek(partnerId, naamParam || 'Onbekend', rolParam);
 }
 
+async function openGroepsgesprek(groepsId, naam, leden) {
+    huidigGroepsId = groepsId;
+    huidigPartnerId = null;
+    huidigPartnerRol = null;
+
+    document.querySelectorAll('.gesprek-rij').forEach(r => r.classList.remove('actief'));
+    event?.currentTarget?.classList.add('actief');
+
+    document.getElementById('panel-leeg').style.display = 'none';
+    const panelGesprek = document.getElementById('panel-gesprek');
+    panelGesprek.style.display = 'flex';
+
+    const avatarEl = document.getElementById('partner-avatar');
+    avatarEl.innerHTML = '👥';
+    avatarEl.style.background = '#1565c0';
+    document.getElementById('partner-naam').textContent = naam;
+    const ledenStr = Array.isArray(leden) ? leden.join(', ') : '';
+    document.getElementById('partner-rol').textContent = `Groepsgesprek${ledenStr ? ' · ' + ledenStr : ''}`;
+
+    document.getElementById('aanvraag-context').style.display = 'none';
+    document.getElementById('btn-betaalverzoek').style.display = 'none';
+    sluitVerzoekFormulier();
+
+    if (pollingInterval) clearInterval(pollingInterval);
+    await laadGroepsBerichten(groepsId);
+    pollingInterval = setInterval(() => laadGroepsBerichten(groepsId, false), 3000);
+
+    laadBerichtenBadge();
+    document.getElementById('bericht-invoer').focus();
+}
+
 async function openGesprek(partnerId, partnerNaam, partnerRol) {
+    huidigGroepsId = null;
     huidigPartnerId = partnerId;
     huidigPartnerRol = partnerRol;
 
@@ -693,7 +754,6 @@ async function openGesprek(partnerId, partnerNaam, partnerRol) {
     document.getElementById('btn-betaalverzoek').style.display = heeftRol('Coach') ? '' : 'none';
     sluitVerzoekFormulier();
 
-    // Stop oude polling, start nieuwe
     if (pollingInterval) clearInterval(pollingInterval);
     await laadBerichten(partnerId);
     pollingInterval = setInterval(() => laadBerichten(partnerId, false), 3000);
@@ -755,10 +815,24 @@ function renderBericht(b) {
     const _ts = b.aangemaaktOp.endsWith('Z') ? b.aangemaaktOp : b.aangemaaktOp + 'Z';
     const tijd = new Date(_ts).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
 
+    const UITNODIGING_PREFIX = '🎯 UITNODIGING:';
     const QUOTE_PREFIX = '📋 Als reactie op aanvraag:';
     let tekstHtml;
 
-    if (b.tekst.startsWith(QUOTE_PREFIX)) {
+    if (!vanMij && b.tekst.startsWith(UITNODIGING_PREFIX)) {
+        const regels = b.tekst.split('\n');
+        const uitnodigingId = parseInt(regels[0].replace(UITNODIGING_PREFIX, ''));
+        const infoRegels = regels.slice(1).map(r => esc(r)).join('<br>');
+        return `
+        <div style="max-width:360px;background:#fff;border:2px solid var(--kleur-primair);border-radius:12px;padding:1rem 1.2rem;margin-bottom:0.5rem">
+            <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#9a7800;margin-bottom:0.5rem">🎯 Uitnodiging voor activiteit</div>
+            <div style="font-size:0.88rem;line-height:1.5;margin-bottom:0.75rem">${infoRegels}</div>
+            <div id="uitnodiging-acties-${uitnodigingId}" style="display:flex;gap:0.5rem">
+                <button onclick="accepteerUitnodiging(${uitnodigingId})" class="btn btn-primair" style="font-size:0.8rem;padding:0.3rem 0.85rem">✓ Accepteren</button>
+                <button onclick="weigeerUitnodiging(${uitnodigingId})" class="btn btn-secundair" style="font-size:0.8rem;padding:0.3rem 0.85rem;color:#555;border-color:#ccc">✕ Weigeren</button>
+            </div>
+        </div>`;
+    } else if (b.tekst.startsWith(QUOTE_PREFIX)) {
         const splitIdx = b.tekst.indexOf('\n\n');
         const quotePart   = splitIdx !== -1 ? b.tekst.slice(0, splitIdx) : b.tekst;
         const berichtPart = splitIdx !== -1 ? b.tekst.slice(splitIdx + 2) : '';
@@ -827,8 +901,62 @@ function renderBoeking(b) {
     </div>`;
 }
 
+async function laadGroepsBerichten(groepsId, scrollNaar = true) {
+    try {
+        const berichten = await authVerzoek(`/groepsgesprek/${groepsId}/berichten`);
+        const stroom = document.getElementById('berichten-stroom');
+        if (berichten.length === 0) {
+            stroom.innerHTML = '<div style="text-align:center;color:var(--kleur-subtekst);font-size:0.85rem;margin-top:2rem">Geen berichten nog. Stuur het eerste bericht!</div>';
+        } else {
+            let html = '';
+            let laatsteDatum = '';
+            berichten.forEach(b => {
+                const datum = new Date(b.aangemaaktOp + (b.aangemaaktOp.endsWith('Z') ? '' : 'Z'))
+                    .toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' });
+                if (datum !== laatsteDatum) {
+                    html += `<div class="datum-scheidslijn">${datum}</div>`;
+                    laatsteDatum = datum;
+                }
+                html += renderGroepsBericht(b);
+            });
+            stroom.innerHTML = html;
+        }
+        if (scrollNaar) stroom.scrollTop = stroom.scrollHeight;
+
+        const rij = document.querySelector('.gesprek-rij.actief');
+        if (rij) {
+            rij.querySelector('.gesprek-ongelezen-dot')?.remove();
+            rij.querySelector('.gesprek-badge')?.remove();
+            rij.querySelector('.gesprek-preview')?.classList.remove('ongelezen');
+        }
+    } catch {}
+}
+
+function renderGroepsBericht(b) {
+    const vanMij = b.vanGebruikerId === gebruiker.id;
+    const _ts = b.aangemaaktOp.endsWith('Z') ? b.aangemaaktOp : b.aangemaaktOp + 'Z';
+    const tijd = new Date(_ts).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+    const tekstHtml = esc(b.tekst).replace(/\n/g, '<br>');
+
+    if (vanMij) {
+        return `
+        <div class="bericht-bel van-mij">
+            ${tekstHtml}
+            <div class="bericht-tijd">${tijd}</div>
+        </div>`;
+    }
+    return `
+    <div style="display:flex;flex-direction:column;align-items:flex-start;margin-bottom:0.1rem">
+        <div style="font-size:0.72rem;font-weight:700;color:var(--kleur-subtekst);margin-left:0.85rem;margin-bottom:0.15rem">${esc(b.vanNaam)}</div>
+        <div class="bericht-bel van-ander">
+            ${tekstHtml}
+            <div class="bericht-tijd">${tijd}</div>
+        </div>
+    </div>`;
+}
+
 async function stuurBericht() {
-    if (!huidigPartnerId) return;
+    if (!huidigPartnerId && !huidigGroepsId) return;
     const invoer = document.getElementById('bericht-invoer');
     let tekst = invoer.value.trim();
     if (!tekst) return;
@@ -848,11 +976,19 @@ async function stuurBericht() {
     btn.disabled = true;
 
     try {
-        await authVerzoek(`/chat/${huidigPartnerId}`, 'POST', { tekst });
-        invoer.value = '';
-        invoer.style.height = 'auto';
-        await laadBerichten(huidigPartnerId);
-        await laadGesprekken();
+        if (huidigGroepsId) {
+            await authVerzoek(`/groepsgesprek/${huidigGroepsId}/bericht`, 'POST', { tekst });
+            invoer.value = '';
+            invoer.style.height = 'auto';
+            await laadGroepsBerichten(huidigGroepsId);
+            await laadGesprekken();
+        } else {
+            await authVerzoek(`/chat/${huidigPartnerId}`, 'POST', { tekst });
+            invoer.value = '';
+            invoer.style.height = 'auto';
+            await laadBerichten(huidigPartnerId);
+            await laadGesprekken();
+        }
     } catch (e) {
         alert('Versturen mislukt: ' + e.message);
     } finally {
@@ -875,6 +1011,35 @@ function formatTijd(datumStr) {
     const vandaag = nu.toDateString() === d.toDateString();
     if (vandaag) return d.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
     return d.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' });
+}
+
+// ── Uitnodigingen ──────────────────────────────────────────────
+async function accepteerUitnodiging(id) {
+    const acties = document.getElementById(`uitnodiging-acties-${id}`);
+    if (acties) acties.innerHTML = '<span style="font-size:0.82rem;color:var(--kleur-subtekst)">Verwerken...</span>';
+    try {
+        const data = await authVerzoek(`/coachuitnodiging/${id}/accepteer`, 'PUT');
+        if (acties) acties.innerHTML = '<span style="font-size:0.82rem;color:#2e7d32;font-weight:700">✅ Geaccepteerd</span>';
+        if (data.groepsgesprekId) {
+            await laadGesprekken();
+            const groepen = await authVerzoek('/groepsgesprek').catch(() => []);
+            const groep = groepen.find(g => g.groepsId === data.groepsgesprekId);
+            if (groep) openGroepsgesprek(groep.groepsId, groep.naam, groep.leden);
+        }
+    } catch (e) {
+        if (acties) acties.innerHTML = `<span style="font-size:0.82rem;color:#c62828">${esc(e.message)}</span>`;
+    }
+}
+
+async function weigeerUitnodiging(id) {
+    const acties = document.getElementById(`uitnodiging-acties-${id}`);
+    if (acties) acties.innerHTML = '<span style="font-size:0.82rem;color:var(--kleur-subtekst)">Verwerken...</span>';
+    try {
+        await authVerzoek(`/coachuitnodiging/${id}/wijs-af`, 'PUT');
+        if (acties) acties.innerHTML = '<span style="font-size:0.82rem;color:#555">Uitnodiging geweigerd.</span>';
+    } catch (e) {
+        if (acties) acties.innerHTML = `<span style="font-size:0.82rem;color:#c62828">${esc(e.message)}</span>`;
+    }
 }
 
 // ── Activiteit bevestigen ──────────────────────────────────────

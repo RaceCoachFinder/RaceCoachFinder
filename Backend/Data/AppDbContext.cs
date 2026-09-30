@@ -19,4 +19,8 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<GebruikerInstellingen> GebruikerInstellingen { get; set; }
     public DbSet<AgendaItem> AgendaItems { get; set; }
     public DbSet<CoachAanbod> CoachAanboden { get; set; }
+    public DbSet<CoachUitnodiging> CoachAanbodUitnodigingen { get; set; }
+    public DbSet<Groepsgesprek> Groepsgesprekken { get; set; }
+    public DbSet<GroepsgesprekLid> GroepsgesprekLeden { get; set; }
+    public DbSet<Groepsbericht> Groepsberichten { get; set; }
 }
