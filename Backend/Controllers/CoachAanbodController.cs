@@ -82,16 +82,12 @@ public class CoachAanbodController : ControllerBase
 
         var resultaat = lijst.Select(a => {
             groepen.TryGetValue(a.Id, out var groep);
-            var geaccepteerd = groep != null
-                ? alleLeden.Where(l => l.GroepsgesprekId == groep.Id && l.GebruikerId != a.CoachGebruikerId)
-                           .Select(l => l.GebruikerNaam).ToList()
-                : new List<string>();
-            var uitgenodigd = alleUitnodigingen
+            // Alleen uitgenodigde coaches tonen (geen rijders die via 'Reageren' meedoen)
+            var alleCoachNamen = alleUitnodigingen
                 .Where(u => u.CoachAanbodId == a.Id)
                 .Select(u => u.CoachNaam)
+                .Distinct()
                 .ToList();
-            // Combineer: geaccepteerde groepsleden + uitgenodigden, zonder duplicaten
-            var alleCoachNamen = geaccepteerd.Union(uitgenodigd).ToList();
             return new {
                 a.Id,
                 a.CoachGebruikerId,
