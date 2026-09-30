@@ -661,12 +661,8 @@ async function laadGesprekken() {
 
 async function verwijderGesprek(partnerId) {
     if (!confirm('Gesprek verwijderen? Alle berichten worden permanent gewist.')) return;
-    const token = localStorage.getItem('kcf_token');
     try {
-        await fetch(`${API}/chat/gesprek/${encodeURIComponent(partnerId)}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': 'Bearer ' + token }
-        });
+        await authVerzoek(`/chat/gesprek/${encodeURIComponent(partnerId)}`, 'DELETE');
         if (huidigPartnerId === partnerId) mobieleTerug();
         laadGesprekken();
     } catch { alert('Verwijderen mislukt.'); }
@@ -674,12 +670,8 @@ async function verwijderGesprek(partnerId) {
 
 async function verlatenGroep(groepId) {
     if (!confirm('Groepsgesprek verlaten?')) return;
-    const token = localStorage.getItem('kcf_token');
     try {
-        await fetch(`${API}/groepsgesprek/${groepId}/verlaten`, {
-            method: 'DELETE',
-            headers: { 'Authorization': 'Bearer ' + token }
-        });
+        await authVerzoek(`/groepsgesprek/${groepId}/verlaten`, 'DELETE');
         if (huidigGroepsId === groepId) mobieleTerug();
         laadGesprekken();
     } catch { alert('Verlaten mislukt.'); }
