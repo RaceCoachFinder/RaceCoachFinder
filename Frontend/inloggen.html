@@ -127,8 +127,8 @@ function toggleModus() {
         label.textContent = 'Uitnodigingscode (8 cijfers)';
         titel.textContent = 'Inloggen met code';
         vergeten.style.display = 'none';
-        wwVeld.style.display = 'none';
-        document.getElementById('wachtwoord').required = false;
+        wwVeld.querySelector('label').textContent = 'Tijdelijk wachtwoord';
+        document.getElementById('wachtwoord').required = true;
         knop.textContent = 'Inloggen met e-mailadres';
     } else {
         invoer.placeholder = 'jouw@email.com';
@@ -136,6 +136,7 @@ function toggleModus() {
         label.textContent = 'E-mailadres';
         titel.textContent = 'Inloggen';
         vergeten.style.display = '';
+        wwVeld.querySelector('label').textContent = 'Wachtwoord';
         wwVeld.style.display = '';
         document.getElementById('wachtwoord').required = true;
         knop.textContent = 'Inloggen met uitnodigingscode';
