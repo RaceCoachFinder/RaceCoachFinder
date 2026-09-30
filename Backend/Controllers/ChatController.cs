@@ -145,6 +145,21 @@ public class ChatController : ControllerBase
         return Ok(resultaat);
     }
 
+    // Verwijder alle berichten in een gesprek (alleen voor de huidige gebruiker)
+    [HttpDelete("gesprek/{partnerId}")]
+    public async Task<IActionResult> VerwijderGesprek(string partnerId)
+    {
+        var mijnId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var berichten = await _context.Berichten
+            .Where(b =>
+                (b.VanGebruikerId == mijnId && b.NaarGebruikerId == partnerId) ||
+                (b.VanGebruikerId == partnerId && b.NaarGebruikerId == mijnId))
+            .ToListAsync();
+        _context.Berichten.RemoveRange(berichten);
+        await _context.SaveChangesAsync();
+        return NoContent();
+    }
+
     // Aantal ongelezen berichten (voor nav badge)
     [HttpGet("ongelezen")]
     public async Task<IActionResult> GetAantalOngelezen()

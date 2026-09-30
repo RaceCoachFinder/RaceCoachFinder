@@ -119,6 +119,18 @@ public class GroepsgesprekController : ControllerBase
         return Ok(bericht);
     }
 
+    [HttpDelete("{id}/verlaten")]
+    public async Task<IActionResult> Verlaten(int id)
+    {
+        var mijnId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var lid = await _context.GroepsgesprekLeden
+            .FirstOrDefaultAsync(l => l.GroepsgesprekId == id && l.GebruikerId == mijnId);
+        if (lid == null) return NotFound();
+        _context.GroepsgesprekLeden.Remove(lid);
+        await _context.SaveChangesAsync();
+        return NoContent();
+    }
+
     [HttpPost("deelnemen/{aanbodId}")]
     public async Task<IActionResult> Deelnemen(int aanbodId)
     {

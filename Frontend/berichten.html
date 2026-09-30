@@ -48,6 +48,18 @@
         .gesprek-rij:hover { background: var(--kleur-grijs-licht); }
         .gesprek-rij.actief { background: #f0f0fa; }
 
+        .gesprek-verwijder-btn {
+            display: none; background: none; border: none; cursor: pointer;
+            color: #bbb; font-size: 1.1rem; padding: 0.2rem 0.4rem;
+            border-radius: 4px; flex-shrink: 0; line-height: 1;
+            transition: color 0.15s;
+        }
+        .gesprek-verwijder-btn:hover { color: #c62828; }
+        .gesprek-rij:hover .gesprek-verwijder-btn { display: flex; align-items: center; }
+        @media (max-width: 700px) {
+            .gesprek-verwijder-btn { display: flex; align-items: center; }
+        }
+
         .gesprek-avatar {
             width: 44px; height: 44px;
             border-radius: 50%;
@@ -647,6 +659,32 @@ async function laadGesprekken() {
     }
 }
 
+async function verwijderGesprek(partnerId) {
+    if (!confirm('Gesprek verwijderen? Alle berichten worden permanent gewist.')) return;
+    const token = localStorage.getItem('kcf_token');
+    try {
+        await fetch(`${API}/chat/gesprek/${encodeURIComponent(partnerId)}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (huidigPartnerId === partnerId) mobieleTerug();
+        laadGesprekken();
+    } catch { alert('Verwijderen mislukt.'); }
+}
+
+async function verlatenGroep(groepId) {
+    if (!confirm('Groepsgesprek verlaten?')) return;
+    const token = localStorage.getItem('kcf_token');
+    try {
+        await fetch(`${API}/groepsgesprek/${groepId}/verlaten`, {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (huidigGroepsId === groepId) mobieleTerug();
+        laadGesprekken();
+    } catch { alert('Verlaten mislukt.'); }
+}
+
 function renderGesprekkenLijst(gesprekken, groepen = []) {
     const lijst = document.getElementById('gesprekken-lijst');
 
@@ -679,6 +717,7 @@ function renderGesprekkenLijst(gesprekken, groepen = []) {
                 <div class="gesprek-tijd">${formatTijd(g.laatsteTijd)}</div>
                 ${heeftOngelezen ? `<div class="gesprek-badge">${g.aantalOngelezen}</div>` : ''}
             </div>
+            <button class="gesprek-verwijder-btn" title="Groep verlaten" onclick="event.stopPropagation();verlatenGroep(${g.groepsId})">×</button>
         </div>`;
     });
 
@@ -703,6 +742,7 @@ function renderGesprekkenLijst(gesprekken, groepen = []) {
                 <div class="gesprek-tijd">${formatTijd(g.laatsteTijd)}</div>
                 ${heeftOngelezen ? `<div class="gesprek-badge">${g.aantalOngelezen}</div>` : ''}
             </div>
+            <button class="gesprek-verwijder-btn" title="Gesprek verwijderen" onclick="event.stopPropagation();verwijderGesprek('${esc(g.partnerId)}')">×</button>
         </div>`;
     });
 
