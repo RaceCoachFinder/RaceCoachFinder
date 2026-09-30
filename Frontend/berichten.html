@@ -389,10 +389,19 @@
 
         @media (max-width: 700px) {
             .chat-wrapper { grid-template-columns: 1fr; }
-            .gesprekken-panel { display: none; }
-            .gesprekken-panel.mobiel-zichtbaar { display: flex; }
+            .gesprekken-panel { display: flex; }
+            .gesprekken-panel.mobiel-verborgen { display: none; }
             .gesprek-panel { display: none; }
             .gesprek-panel.mobiel-zichtbaar { display: flex; }
+            .mobiel-terug-btn {
+                display: flex; align-items: center; gap: 0.4rem;
+                background: none; border: none; cursor: pointer;
+                font-size: 0.9rem; font-weight: 600; color: var(--kleur-primair);
+                padding: 0; margin-right: 0.5rem; flex-shrink: 0;
+            }
+        }
+        @media (min-width: 701px) {
+            .mobiel-terug-btn { display: none; }
         }
     </style>
 </head>
@@ -426,6 +435,7 @@
 
         <div id="panel-gesprek" style="display:none;flex-direction:column;height:100%">
             <div class="gesprek-panel-header">
+                <button class="mobiel-terug-btn" onclick="mobieleTerug()">← Terug</button>
                 <div class="avatar-sm" id="partner-avatar"></div>
                 <div>
                     <strong id="partner-naam"></strong>
@@ -560,6 +570,23 @@ const gebruiker = getGebruiker();
 let huidigPartnerId = null;
 let huidigPartnerRol = null;
 let huidigGroepsId = null;
+
+function mobieleNaarChat() {
+    if (window.innerWidth <= 700) {
+        document.getElementById('gesprekken-panel').classList.add('mobiel-verborgen');
+        document.getElementById('gesprek-panel').classList.add('mobiel-zichtbaar');
+    }
+}
+
+function mobieleTerug() {
+    document.getElementById('gesprekken-panel').classList.remove('mobiel-verborgen');
+    document.getElementById('gesprek-panel').classList.remove('mobiel-zichtbaar');
+    document.getElementById('panel-leeg').style.display = 'flex';
+    document.getElementById('panel-gesprek').style.display = 'none';
+    huidigPartnerId = null;
+    huidigGroepsId = null;
+    if (pollingInterval) { clearInterval(pollingInterval); pollingInterval = null; }
+}
 let pollingInterval = null;
 let partnerFotos = {};
 let huidigeBoekingen = [];
@@ -697,6 +724,7 @@ async function openGroepsgesprek(groepsId, naam, leden) {
     document.getElementById('panel-leeg').style.display = 'none';
     const panelGesprek = document.getElementById('panel-gesprek');
     panelGesprek.style.display = 'flex';
+    mobieleNaarChat();
 
     const avatarEl = document.getElementById('partner-avatar');
     avatarEl.innerHTML = '👥';
@@ -730,6 +758,7 @@ async function openGesprek(partnerId, partnerNaam, partnerRol) {
     document.getElementById('panel-leeg').style.display = 'none';
     const panelGesprek = document.getElementById('panel-gesprek');
     panelGesprek.style.display = 'flex';
+    mobieleNaarChat();
 
     const avatarEl = document.getElementById('partner-avatar');
     const fotoUrl = partnerFotos[partnerId] || '';
