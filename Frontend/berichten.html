@@ -644,7 +644,7 @@ async function laadGesprekken() {
 
         if (groepParam && !huidigGroepsId) {
             const groep = groepen.find(g => g.groepsId === groepParam);
-            if (groep) openGroepsgesprek(groep.groepsId, groep.naam, groep.leden);
+            if (groep) openGroepsgesprekById(groep.groepsId);
         } else if (partnerParam && !huidigPartnerId) {
             const bestaand = gesprekken.find(g => g.partnerId === partnerParam);
             if (bestaand) {
@@ -677,8 +677,13 @@ async function verlatenGroep(groepId) {
     } catch { alert('Verlaten mislukt.'); }
 }
 
+let _groepCache = {};
+
 function renderGesprekkenLijst(gesprekken, groepen = []) {
     const lijst = document.getElementById('gesprekken-lijst');
+
+    // Sla groepdata op zodat onclick alleen het ID hoeft door te geven
+    groepen.forEach(g => { _groepCache[g.groepsId] = g; });
 
     const extraRij = (partnerParam && naamParam && !gesprekken.find(g => g.partnerId === partnerParam))
         ? [{ partnerId: partnerParam, partnerNaam: naamParam, partnerRol: rolParam, laatsteBericht: 'Nieuw gesprek', laatsteTijd: new Date().toISOString(), aantalOngelezen: 0 }]
@@ -696,7 +701,7 @@ function renderGesprekkenLijst(gesprekken, groepen = []) {
         const heeftOngelezen = g.aantalOngelezen > 0;
         const preview = g.laatsteBericht || '';
         return `
-        <div class="gesprek-rij ${isActief ? 'actief' : ''}" onclick="openGroepsgesprek(${g.groepsId},'${esc(g.naam)}',${JSON.stringify(g.leden || [])})">
+        <div class="gesprek-rij ${isActief ? 'actief' : ''}" onclick="openGroepsgesprekById(${g.groepsId})">
             <div class="gesprek-avatar" style="background:#1565c0">
                 👥
                 ${heeftOngelezen ? '<div class="gesprek-ongelezen-dot"></div>' : ''}
@@ -743,6 +748,11 @@ function renderGesprekkenLijst(gesprekken, groepen = []) {
 
 async function openNieuwGesprek(partnerId) {
     openGesprek(partnerId, naamParam || 'Onbekend', rolParam);
+}
+
+function openGroepsgesprekById(groepsId) {
+    const g = _groepCache[groepsId];
+    if (g) openGroepsgesprek(groepsId, g.naam, g.leden || []);
 }
 
 async function openGroepsgesprek(groepsId, naam, leden) {
