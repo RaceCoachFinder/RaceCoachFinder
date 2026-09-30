@@ -186,11 +186,13 @@ public class CoachAanbodController : ControllerBase
         });
 
         // Verwerk uitgenodigde coaches
-        if (verzoek.UitgenodigdeCoachIds != null)
+        if (verzoek.UitgenodigdeCoaches != null)
         {
-            foreach (var coachId in verzoek.UitgenodigdeCoachIds.Distinct())
+            var gezienIds = new HashSet<string>();
+            foreach (var uitnodigingVerzoek in verzoek.UitgenodigdeCoaches)
             {
-                var coach = await _userManager.FindByIdAsync(coachId);
+                if (!gezienIds.Add(uitnodigingVerzoek.Id)) continue;
+                var coach = await _userManager.FindByIdAsync(uitnodigingVerzoek.Id);
                 if (coach == null) continue;
 
                 var uitnodiging = new CoachUitnodiging
@@ -199,8 +201,9 @@ public class CoachAanbodController : ControllerBase
                     AanbodTitel = aanbod.Titel,
                     RijderGebruikerId = userId!,
                     RijderNaam = gebruiker.Naam,
-                    CoachGebruikerId = coachId,
+                    CoachGebruikerId = uitnodigingVerzoek.Id,
                     CoachNaam = coach.Naam,
+                    Percentage = uitnodigingVerzoek.Percentage,
                     Status = "Openstaand",
                     AangemaaktOp = DateTime.UtcNow
                 };
@@ -209,11 +212,12 @@ public class CoachAanbodController : ControllerBase
 
                 var datumStr = aanbod.Datum.ToString("d MMM yyyy");
                 var prijsStr = aanbod.IsGratis ? "Gratis" : (aanbod.PrijsPerRijder.HasValue ? $"€{aanbod.PrijsPerRijder} p.p." : "");
+                var percStr = uitnodigingVerzoek.Percentage.HasValue ? $"\n💰 Jouw aandeel: {uitnodigingVerzoek.Percentage}%" : "";
                 _context.Berichten.Add(new Bericht
                 {
                     VanGebruikerId = userId!,
-                    NaarGebruikerId = coachId,
-                    Tekst = $"🎯 UITNODIGING:{uitnodiging.Id}\n{gebruiker.Naam} nodigt je uit voor: {aanbod.Titel}\n📍 {aanbod.Locatie} | 📅 {datumStr}{(prijsStr != "" ? " | " + prijsStr : "")}",
+                    NaarGebruikerId = uitnodigingVerzoek.Id,
+                    Tekst = $"🎯 UITNODIGING:{uitnodiging.Id}\n{gebruiker.Naam} nodigt je uit voor: {aanbod.Titel}\n📍 {aanbod.Locatie} | 📅 {datumStr}{(prijsStr != "" ? " | " + prijsStr : "")}{percStr}",
                     AangemaaktOp = DateTime.UtcNow,
                     Gelezen = false
                 });
@@ -250,5 +254,7 @@ public record CoachAanbodVerzoek(
     int? MaxRijders,
     decimal? PrijsPerRijder,
     bool IsGratis,
-    List<string>? UitgenodigdeCoachIds = null
+    List<UitgenodigdeCoachVerzoek>? UitgenodigdeCoaches = null
 );
+
+public record UitgenodigdeCoachVerzoek(string Id, decimal? Percentage);

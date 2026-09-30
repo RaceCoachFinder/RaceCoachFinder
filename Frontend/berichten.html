@@ -1115,7 +1115,8 @@ async function accepteerUitnodiging(id) {
     if (acties) acties.innerHTML = '<span style="font-size:0.82rem;color:var(--kleur-subtekst)">Verwerken...</span>';
     try {
         const data = await authVerzoek(`/coachuitnodiging/${id}/accepteer`, 'PUT');
-        if (acties) acties.innerHTML = '<span style="font-size:0.82rem;color:#2e7d32;font-weight:700">✅ Geaccepteerd</span>';
+        const percTekst = data.percentage != null ? ` — Jouw aandeel: <strong>${data.percentage}%</strong>` : '';
+        if (acties) acties.innerHTML = `<span style="font-size:0.82rem;color:#2e7d32;font-weight:700">✅ Geaccepteerd${percTekst}</span>`;
         if (data.groepsgesprekId) {
             await laadGesprekken();
             const groepen = await authVerzoek('/groepsgesprek').catch(() => []);

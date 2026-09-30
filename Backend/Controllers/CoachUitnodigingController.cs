@@ -74,7 +74,7 @@ public class CoachUitnodigingController : ControllerBase
         }
 
         await _context.SaveChangesAsync();
-        return Ok(new { groepsgesprekId = groep?.Id, groepsNaam = groep?.Naam });
+        return Ok(new { groepsgesprekId = groep?.Id, groepsNaam = groep?.Naam, uitnodiging.Percentage });
     }
 
     [HttpPut("{id}/wijs-af")]

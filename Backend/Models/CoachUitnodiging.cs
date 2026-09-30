@@ -10,5 +10,6 @@ public class CoachUitnodiging
     public string CoachGebruikerId { get; set; } = string.Empty;
     public string CoachNaam { get; set; } = string.Empty;
     public string Status { get; set; } = "Openstaand"; // Openstaand, Geaccepteerd, Afgewezen
+    public decimal? Percentage { get; set; }
     public DateTime AangemaaktOp { get; set; } = DateTime.UtcNow;
 }

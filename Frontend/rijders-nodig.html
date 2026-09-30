@@ -663,7 +663,7 @@ async function submitAanbod(event) {
         maxRijders: parseInt(document.getElementById('max-rijders').value) || null,
         prijsPerRijder: parseFloat(document.getElementById('prijs').value) || null,
         isGratis: document.getElementById('is-gratis').checked,
-        uitgenodigdeCoachIds: uitgenodigdeCoaches.map(c => c.id)
+        uitgenodigdeCoaches: uitgenodigdeCoaches.map(c => ({ id: c.id, percentage: c.percentage }))
     };
 
     const btn = event.target.querySelector('button[type="submit"]');
@@ -782,7 +782,7 @@ function zoekCoach(waarde) {
 
 function voegCoachToe(id, naam) {
     if (!id || uitgenodigdeCoaches.find(c => c.id === id)) return;
-    uitgenodigdeCoaches.push({ id, naam });
+    uitgenodigdeCoaches.push({ id, naam, percentage: null });
     renderCoachTags();
     const zoek = document.getElementById('coach-zoek');
     zoek.value = '';
@@ -795,9 +795,25 @@ function verwijderCoachTag(id) {
     renderCoachTags();
 }
 
+function updateCoachPercentage(id, val) {
+    const c = uitgenodigdeCoaches.find(c => c.id === id);
+    if (c) c.percentage = val === '' ? null : Math.min(100, Math.max(0, parseFloat(val) || 0));
+}
+
 function renderCoachTags() {
     document.getElementById('coach-tags').innerHTML = uitgenodigdeCoaches.map(c =>
-        `<span class="coach-tag">${esc(c.naam)}<button type="button" onclick="verwijderCoachTag('${esc(c.id)}')">×</button></span>`
+        `<span class="coach-tag" style="display:inline-flex;align-items:center;gap:0.35rem">
+            <span>${esc(c.naam)}</span>
+            <input type="number" min="0" max="100" step="1"
+                value="${c.percentage ?? ''}"
+                placeholder="%"
+                style="width:46px;border:1px solid rgba(0,0,0,0.18);border-radius:5px;padding:0.1rem 0.3rem;font-size:0.78rem;background:rgba(255,255,255,0.7);text-align:center;font-family:inherit"
+                title="Percentage voor ${esc(c.naam)}"
+                onchange="updateCoachPercentage('${esc(c.id)}', this.value)"
+                oninput="updateCoachPercentage('${esc(c.id)}', this.value)">
+            <span style="font-size:0.75rem;opacity:0.7">%</span>
+            <button type="button" onclick="verwijderCoachTag('${esc(c.id)}')">×</button>
+        </span>`
     ).join('');
 }
 
