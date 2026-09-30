@@ -161,7 +161,9 @@ public class GroepsgesprekController : ControllerBase
                 Bedrag = verzoek.Bedrag,
                 Status = "Openstaand",
                 AangemaaktOp = DateTime.UtcNow,
-                BetalingsTermijn = 14
+                BetalingsTermijn = verzoek.BetalingsTermijn > 0 ? verzoek.BetalingsTermijn : 14,
+                FactuurnummerTekst = verzoek.FactuurnummerTekst,
+                FactuurJson = verzoek.FactuurJson
             });
             aantalVerstuurd++;
         }
@@ -220,4 +222,10 @@ public class GroepsgesprekController : ControllerBase
 }
 
 public record GroepsBerichtVerzoek(string Tekst);
-public record GroepsBetaalverzoekVerzoek(string Omschrijving, decimal Bedrag);
+public record GroepsBetaalverzoekVerzoek(
+    string Omschrijving,
+    decimal Bedrag,
+    string? FactuurnummerTekst = null,
+    int BetalingsTermijn = 14,
+    string? FactuurJson = null
+);
