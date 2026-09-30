@@ -531,11 +531,12 @@ function aanbodKaartHTML(a) {
         ? `<span>👥 Max ${a.maxRijders} rijder${a.maxRijders !== 1 ? 's' : ''}</span>`
         : '';
 
-    const deelnemers = (a.geaccepteerdeDeelnemers || []).filter(Boolean);
-    const deelnemersHtml = deelnemers.length > 0
+    const extraCoaches = (a.geaccepteerdeDeelnemers || []).filter(Boolean);
+    const alleCoaches = [a.coachNaam, ...extraCoaches].filter((n, i, arr) => n && arr.indexOf(n) === i);
+    const deelnemersHtml = alleCoaches.length > 0
         ? `<div class="aanbod-deelnemers">
-               <span style="font-size:0.72rem;color:var(--kleur-subtekst);font-weight:600">Deelnemers:</span>
-               ${deelnemers.map(n => `<span class="chip-deelnemer">${esc(n)}</span>`).join('')}
+               <span style="font-size:0.72rem;color:var(--kleur-subtekst);font-weight:600">Coaches:</span>
+               ${alleCoaches.map(n => `<span class="chip-deelnemer">${esc(n)}</span>`).join('')}
            </div>`
         : '';
 

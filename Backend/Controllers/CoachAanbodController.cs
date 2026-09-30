@@ -75,12 +75,23 @@ public class CoachAanbodController : ControllerBase
             .Where(l => groepIds.Contains(l.GroepsgesprekId))
             .ToListAsync();
 
+        // Uitgenodigde coaches (ook nog niet geaccepteerd)
+        var alleUitnodigingen = await _context.CoachAanbodUitnodigingen
+            .Where(u => aanbodIds.Contains(u.CoachAanbodId) && u.Status != "Afgewezen")
+            .ToListAsync();
+
         var resultaat = lijst.Select(a => {
             groepen.TryGetValue(a.Id, out var groep);
-            var leden = groep != null
+            var geaccepteerd = groep != null
                 ? alleLeden.Where(l => l.GroepsgesprekId == groep.Id && l.GebruikerId != a.CoachGebruikerId)
                            .Select(l => l.GebruikerNaam).ToList()
                 : new List<string>();
+            var uitgenodigd = alleUitnodigingen
+                .Where(u => u.CoachAanbodId == a.Id)
+                .Select(u => u.CoachNaam)
+                .ToList();
+            // Combineer: geaccepteerde groepsleden + uitgenodigden, zonder duplicaten
+            var alleCoachNamen = geaccepteerd.Union(uitgenodigd).ToList();
             return new {
                 a.Id,
                 a.CoachGebruikerId,
@@ -101,7 +112,7 @@ public class CoachAanbodController : ControllerBase
                 GemiddeldeScore = reviewStats.TryGetValue(a.CoachGebruikerId, out var rs) ? rs.Gemiddeld : 0,
                 AantalReviews = reviewStats.TryGetValue(a.CoachGebruikerId, out var rs2) ? rs2.Aantal : 0,
                 GroepsgesprekId = groep?.Id,
-                GeaccepteerdeDeelnemers = leden
+                GeaccepteerdeDeelnemers = alleCoachNamen
             };
         });
 
