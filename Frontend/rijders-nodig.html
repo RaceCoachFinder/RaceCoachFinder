@@ -548,6 +548,7 @@ function aanbodKaartHTML(a) {
         </div>
         <div class="aanbod-inhoud">
             <div class="aanbod-coach">Coach: <strong>${esc(a.coachNaam)}</strong></div>
+            ${deelnemersHtml}
             <div class="aanbod-titel">${esc(a.titel)}</div>
             <div class="aanbod-meta">
                 <span>📍 ${esc(a.locatie)}</span>
@@ -555,7 +556,6 @@ function aanbodKaartHTML(a) {
                 ${maxRijdersTag}
             </div>
             ${a.korteOmschrijving ? `<div class="aanbod-beschrijving">${esc(a.korteOmschrijving)}</div>` : ''}
-            ${deelnemersHtml}
             <div class="chips">
                 ${cats.map(c => `<span class="chip chip-categorie">${esc(c)}</span>`).join('')}
                 ${discs.map(d => `<span class="chip chip-discipline">${esc(d)}</span>`).join('')}
