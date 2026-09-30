@@ -131,6 +131,54 @@ public class GroepsgesprekController : ControllerBase
         return NoContent();
     }
 
+    [HttpPost("{id}/betaalverzoek")]
+    [Authorize(Roles = "Coach")]
+    public async Task<IActionResult> StuurBetaalverzoek(int id, [FromBody] GroepsBetaalverzoekVerzoek verzoek)
+    {
+        var coachId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var coach = await _userManager.FindByIdAsync(coachId!);
+        if (coach == null) return Unauthorized();
+
+        if (string.IsNullOrWhiteSpace(verzoek.Omschrijving)) return BadRequest("Omschrijving is verplicht.");
+        if (verzoek.Bedrag <= 0) return BadRequest("Bedrag moet groter zijn dan 0.");
+
+        var mijnLid = await _context.GroepsgesprekLeden
+            .FirstOrDefaultAsync(l => l.GroepsgesprekId == id && l.GebruikerId == coachId);
+        if (mijnLid == null) return Forbid();
+
+        var leden = await _context.GroepsgesprekLeden
+            .Where(l => l.GroepsgesprekId == id && l.GebruikerId != coachId)
+            .ToListAsync();
+
+        int aantalVerstuurd = 0;
+        foreach (var rijderLid in leden)
+        {
+            _context.Boekingen.Add(new Boeking
+            {
+                CoachGebruikerId = coachId!,
+                RijderGebruikerId = rijderLid.GebruikerId,
+                Omschrijving = verzoek.Omschrijving.Trim(),
+                Bedrag = verzoek.Bedrag,
+                Status = "Openstaand",
+                AangemaaktOp = DateTime.UtcNow,
+                BetalingsTermijn = 14
+            });
+            aantalVerstuurd++;
+        }
+
+        _context.Groepsberichten.Add(new Groepsbericht
+        {
+            GroepsgesprekId = id,
+            VanGebruikerId = coachId!,
+            VanNaam = coach.Naam,
+            Tekst = $"💶 Betaalverzoek verstuurd — {verzoek.Omschrijving.Trim()} — €{verzoek.Bedrag:F2} p.p.\n📲 Elke deelnemer kan betalen via het persoonlijk gesprek.",
+            AangemaaktOp = DateTime.UtcNow
+        });
+
+        await _context.SaveChangesAsync();
+        return Ok(new { aantalVerstuurd });
+    }
+
     [HttpPost("deelnemen/{aanbodId}")]
     public async Task<IActionResult> Deelnemen(int aanbodId)
     {
@@ -172,3 +220,4 @@ public class GroepsgesprekController : ControllerBase
 }
 
 public record GroepsBerichtVerzoek(string Tekst);
+public record GroepsBetaalverzoekVerzoek(string Omschrijving, decimal Bedrag);
