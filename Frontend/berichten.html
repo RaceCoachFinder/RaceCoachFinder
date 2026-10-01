@@ -105,6 +105,10 @@
             flex-shrink: 0;
             position: relative; overflow: hidden;
         }
+        .gesprek-avatar.groep-avatar, .gesprek-panel-header .avatar-sm.groep-avatar {
+            background: #dbeafe; font-size: 1.5rem; font-weight: 400;
+        }
+        .gesprek-panel-header .avatar-sm.groep-avatar { font-size: 1.1rem; }
         .gesprek-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
         .avatar-sm img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
 
@@ -166,7 +170,7 @@
         }
 
         .gesprek-panel-header .avatar-sm {
-            width: 36px; height: 36px;
+            width: 36px; height: 36px; flex-shrink: 0;
             border-radius: 50%;
             background: var(--kleur-primair);
             display: flex; align-items: center; justify-content: center;
@@ -767,7 +771,7 @@ function renderGesprekkenLijst(gesprekken, groepen = []) {
         const preview = g.laatsteBericht || '';
         return `
         <div class="gesprek-rij ${isActief ? 'actief' : ''}" onclick="openGroepsgesprekById(${g.groepsId})">
-            <div class="gesprek-avatar" style="background:#1565c0">
+            <div class="gesprek-avatar groep-avatar">
                 👥
                 ${heeftOngelezen ? '<div class="gesprek-ongelezen-dot"></div>' : ''}
             </div>
@@ -978,7 +982,7 @@ async function openGroepsgesprek(groepsId, naam, leden) {
 
     const avatarEl = document.getElementById('partner-avatar');
     avatarEl.innerHTML = '👥';
-    avatarEl.style.background = '#1565c0';
+    avatarEl.classList.add('groep-avatar');
     document.getElementById('partner-naam').textContent = naam;
     const ledenStr = Array.isArray(leden) ? leden.join(', ') : '';
     document.getElementById('partner-rol').textContent = `Groepsgesprek${ledenStr ? ' · ' + ledenStr : ''}`;
@@ -1011,6 +1015,8 @@ async function openGesprek(partnerId, partnerNaam, partnerRol) {
     mobieleNaarChat();
 
     const avatarEl = document.getElementById('partner-avatar');
+    avatarEl.classList.remove('groep-avatar');
+    avatarEl.style.background = '';
     const fotoUrl = partnerFotos[partnerId] || '';
     if (fotoUrl) {
         avatarEl.innerHTML = '<img src="https://racecoachfinder-production.up.railway.app' + fotoUrl + '" alt="' + partnerNaam + '">';
