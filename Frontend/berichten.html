@@ -7,12 +7,21 @@
         <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="css/style.css">
     <style>
+        /* Pagina zelf scrollt niet; alleen de lijst en de chat scrollen */
+        html, body { height: 100%; overflow: hidden; }
+        body {
+            display: flex; flex-direction: column;
+            height: 100vh; height: 100dvh;
+        }
+        body > nav { flex-shrink: 0; }
         .chat-wrapper {
             display: grid;
             grid-template-columns: 320px 1fr;
-            height: calc(100vh - 60px);
+            flex: 1;
+            min-height: 0;
             overflow: hidden;
         }
+        .gesprekken-lijst, .zoek-resultaten, .berichten-stroom { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
 
         /* === Gesprekkenlijst (links) === */
         .gesprekken-panel {
