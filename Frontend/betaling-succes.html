@@ -52,12 +52,12 @@
 <div class="succes-wrapper">
     <div class="succes-kaart">
         <div class="succes-icoon">&#10003;</div>
-        <h1>Betaling geslaagd!</h1>
+        <h1 id="succes-titel">Betaling geslaagd!</h1>
         <p id="succes-tekst">
             Bedankt voor je betaling. Je abonnement is nu actief en wordt elke maand automatisch verlengd.<br><br>
             Je kunt nu volledig gebruik maken van RaceCoachFinder als coach.
         </p>
-        <a href="tips.html?nieuw=true&rol=Coach" class="btn btn-primair">Bekijk tips &amp; ga verder</a>
+        <a href="tips.html?nieuw=true&rol=Coach" class="btn btn-primair" id="succes-knop">Bekijk tips &amp; ga verder</a>
     </div>
 </div>
 
@@ -78,8 +78,18 @@
 <script src="js/auth.js"></script>
 <script>
 updateNav();
+const succesParams = new URLSearchParams(location.search);
+// Rijder heeft een factuur van een coach betaald
+if (/^\d+$/.test(succesParams.get('boekingId') || '')) {
+    document.getElementById('succes-titel').textContent = 'Bedankt voor je betaling!';
+    document.getElementById('succes-tekst').innerHTML =
+        'Je betaling van de factuur is ontvangen. Zodra die verwerkt is, staat de factuur in je berichten op <strong>betaald</strong> en ziet je coach dat ook.';
+    const knop = document.getElementById('succes-knop');
+    knop.href = 'berichten.html';
+    knop.textContent = 'Naar mijn berichten';
+}
 // Abonnement ingesteld tijdens de gratis periode: start pas later
-const startParam = new URLSearchParams(location.search).get('start');
+const startParam = succesParams.get('start');
 if (startParam && /^\d{4}-\d{2}-\d{2}$/.test(startParam)) {
     const datum = new Date(startParam + 'T00:00:00').toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' });
     document.getElementById('succes-tekst').innerHTML =
