@@ -45,8 +45,17 @@ public class BetalingController : ControllerBase
         {
             var gebruiker = await _userManager.GetUserAsync(User);
             if (gebruiker == null) return Unauthorized();
-            if (gebruiker.AbonnementActief && gebruiker.AbonnementVerlooptOp > DateTime.UtcNow)
+            var nu = DateTime.UtcNow;
+            if (gebruiker.AbonnementActief && gebruiker.AbonnementVerlooptOp > nu)
                 return BadRequest("Je hebt al een actief abonnement.");
+            if (gebruiker.GratisVerlooptOp.HasValue && gebruiker.GratisVerlooptOp.Value.Year >= 9999)
+                return BadRequest("Je account is voor altijd gratis; je hebt geen abonnement nodig.");
+
+            // Tijdens de gratis periode: alleen €0,01 om de rekening te koppelen,
+            // het abonnement van €10/maand start op de einddatum van de gratis periode.
+            DateTime? startOp = gebruiker.GratisVerlooptOp.HasValue && gebruiker.GratisVerlooptOp > nu
+                ? gebruiker.GratisVerlooptOp.Value.Date
+                : null;
 
             var klantClient = new CustomerClient(ApiKey);
             var betalingClient = new PaymentClient(ApiKey);
@@ -66,12 +75,17 @@ public class BetalingController : ControllerBase
 
             var betaling = await betalingClient.CreatePaymentAsync(new PaymentRequest
             {
-                Amount = new Amount(Currency.EUR, "10.00"),
-                Description = "RaceCoachFinder – maandelijks abonnement",
-                RedirectUrl = $"{FrontendUrl}/betaling-succes.html",
+                Amount = new Amount(Currency.EUR, startOp.HasValue ? "0.01" : "10.00"),
+                Description = startOp.HasValue
+                    ? $"RaceCoachFinder – rekening koppelen, abonnement start {startOp:dd-MM-yyyy}"
+                    : "RaceCoachFinder – maandelijks abonnement",
+                RedirectUrl = startOp.HasValue
+                    ? $"{FrontendUrl}/betaling-succes.html?start={startOp:yyyy-MM-dd}"
+                    : $"{FrontendUrl}/betaling-succes.html",
                 WebhookUrl = $"{BackendUrl}/api/betaling/webhook",
                 SequenceType = SequenceType.First,
-                CustomerId = gebruiker.MollieKlantId
+                CustomerId = gebruiker.MollieKlantId,
+                Metadata = startOp.HasValue ? $"{{\"startOp\":\"{startOp:yyyy-MM-dd}\"}}" : null
             });
 
             return Ok(new { checkoutUrl = betaling.Links.Checkout?.Href });
@@ -161,6 +175,14 @@ public class BetalingController : ControllerBase
 
             foreach (var a in lopend)
                 await client.CancelSubscriptionAsync(gebruiker.MollieKlantId, a.Id);
+
+            // Opgezegd vóór de eerste €10: er is niets betaald, dus geen abonnementsperiode
+            if (gebruiker.GratisVerlooptOp.HasValue && gebruiker.GratisVerlooptOp > DateTime.UtcNow)
+            {
+                gebruiker.AbonnementActief = false;
+                gebruiker.AbonnementVerlooptOp = null;
+                await _userManager.UpdateAsync(gebruiker);
+            }
 
             return Ok(new { geldigTot = gebruiker.AbonnementVerlooptOp });
         }
@@ -259,20 +281,46 @@ public class BetalingController : ControllerBase
                 .FirstOrDefaultAsync(u => u.MollieKlantId == betaling.CustomerId);
             if (gebruiker == null) return Ok();
 
+            // Uitgestelde start (koppelbetaling tijdens gratis periode)?
+            DateTime? startOp = null;
+            if (!string.IsNullOrEmpty(betaling.Metadata))
+            {
+                try
+                {
+                    using var doc = System.Text.Json.JsonDocument.Parse(betaling.Metadata);
+                    if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object &&
+                        doc.RootElement.TryGetProperty("startOp", out var s) &&
+                        DateTime.TryParse(s.GetString(), System.Globalization.CultureInfo.InvariantCulture,
+                            System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal, out var d))
+                        startOp = d.Date;
+                }
+                catch (System.Text.Json.JsonException) { }
+            }
+            var vandaag = DateTime.UtcNow.Date;
+            if (startOp.HasValue && startOp.Value < vandaag) startOp = vandaag;
+
             if (betaling.SequenceType == SequenceType.First)
             {
                 var abonnementClient = new SubscriptionClient(ApiKey);
+                // Mollie kan de webhook vaker aanroepen: maak geen tweede abonnement aan
+                var bestaande = await abonnementClient.GetSubscriptionListAsync(gebruiker.MollieKlantId!, null, 50);
+                if (!bestaande.Items.Any(a => a.Status == SubscriptionStatus.Active || a.Status == SubscriptionStatus.Pending))
                 await abonnementClient.CreateSubscriptionAsync(gebruiker.MollieKlantId!, new SubscriptionRequest
                 {
                     Amount = new Amount(Currency.EUR, "10.00"),
                     Interval = "1 month",
                     Description = "RaceCoachFinder maandelijks abonnement",
-                    WebhookUrl = $"{BackendUrl}/api/betaling/webhook"
+                    WebhookUrl = $"{BackendUrl}/api/betaling/webhook",
+                    // Bij een koppelbetaling: eerste €10 pas op de einddatum van de gratis periode
+                    StartDate = startOp
                 });
             }
 
             gebruiker.AbonnementActief = true;
-            gebruiker.AbonnementVerlooptOp = DateTime.UtcNow.AddMonths(1).AddDays(3);
+            // Geldig t/m de start van het abonnement (+ marge voor de afschrijving), anders 1 maand vanaf nu
+            gebruiker.AbonnementVerlooptOp = startOp.HasValue
+                ? startOp.Value.AddDays(3)
+                : DateTime.UtcNow.AddMonths(1).AddDays(3);
             await _userManager.UpdateAsync(gebruiker);
         }
         catch (Exception ex)

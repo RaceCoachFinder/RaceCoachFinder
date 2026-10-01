@@ -53,7 +53,7 @@
     <div class="succes-kaart">
         <div class="succes-icoon">&#10003;</div>
         <h1>Betaling geslaagd!</h1>
-        <p>
+        <p id="succes-tekst">
             Bedankt voor je betaling. Je abonnement is nu actief en wordt elke maand automatisch verlengd.<br><br>
             Je kunt nu volledig gebruik maken van RaceCoachFinder als coach.
         </p>
@@ -76,6 +76,16 @@
 </footer>
 
 <script src="js/auth.js"></script>
-<script>updateNav();</script>
+<script>
+updateNav();
+// Abonnement ingesteld tijdens de gratis periode: start pas later
+const startParam = new URLSearchParams(location.search).get('start');
+if (startParam && /^\d{4}-\d{2}-\d{2}$/.test(startParam)) {
+    const datum = new Date(startParam + 'T00:00:00').toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' });
+    document.getElementById('succes-tekst').innerHTML =
+        'Je rekening is gekoppeld en je abonnement is ingesteld.<br><br>' +
+        'Je gratis periode loopt gewoon door. De eerste €10 wordt op <strong>' + datum + '</strong> afgeschreven, daarna elke maand.';
+}
+</script>
 </body>
 </html>
