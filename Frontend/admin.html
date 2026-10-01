@@ -62,7 +62,13 @@
         .gratis-optie { display: flex; align-items: center; gap: 0.6rem; padding: 0.65rem 0.8rem; border: 1.5px solid #e5e5e5; border-radius: 10px; margin-bottom: 0.5rem; cursor: pointer; font-size: 0.92rem; }
         .gratis-optie:has(input:checked) { border-color: var(--kleur-primair); background: #fffbea; }
         .gratis-optie input[type=radio] { width: auto; margin: 0; accent-color: var(--kleur-primair); }
-        .gratis-optie input[type=number] { width: 4.5rem; padding: 0.3rem 0.5rem; margin: 0; }
+        .gratis-stepper { display: flex; align-items: center; gap: 0.4rem; width: 100%; padding-left: 1.6rem; }
+        .gratis-stepper button { width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid #ddd; background: #fff; font-size: 1.2rem; font-weight: 700; cursor: pointer; line-height: 1; flex-shrink: 0; }
+        .gratis-stepper button:hover { border-color: var(--kleur-primair); }
+        .gratis-stepper input[type=number] { width: 3.6rem; text-align: center; padding: 0.35rem 0.3rem; margin: 0; font-weight: 700; }
+        .gratis-snel { display: flex; gap: 0.35rem; width: 100%; padding-left: 1.6rem; }
+        .gratis-snel button { flex: 1; padding: 0.3rem 0; border: 1.5px solid #ddd; border-radius: 999px; background: #fff; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+        .gratis-snel button:hover { border-color: var(--kleur-primair); background: #fffbea; }
         .gratis-voorbeeld { background: #f6f6f6; border-radius: 10px; padding: 0.75rem 0.9rem; font-size: 0.88rem; margin: 0.75rem 0; line-height: 1.5; }
         .gratis-waarschuwing { background: #fff3e0; color: #8a4b00; border-radius: 10px; padding: 0.65rem 0.9rem; font-size: 0.84rem; margin-bottom: 0.75rem; }
         .gratis-kaart input[type=text], .gratis-kaart input[type=number] { font-size: 16px; }
@@ -211,11 +217,21 @@
         <p style="font-size:0.88rem;color:var(--kleur-subtekst);margin:0 0 1rem" id="gratis-coach-info"></p>
 
         <div id="gratis-stap-kiezen">
-            <label class="gratis-optie">
+            <label class="gratis-optie" style="flex-wrap:wrap">
                 <input type="radio" name="gratis-actie" value="maanden" checked onchange="updateGratisVoorbeeld()">
-                <span>Extra</span>
-                <input type="number" id="gratis-maanden" value="1" min="1" max="24" oninput="updateGratisVoorbeeld()" onfocus="document.querySelector('input[name=gratis-actie][value=maanden]').checked=true">
-                <span>maand(en) gratis</span>
+                <span><strong>Maand(en) toevoegen</strong></span>
+                <div class="gratis-stepper">
+                    <button type="button" onclick="wijzigGratisMaanden(-1)" aria-label="Minder">−</button>
+                    <input type="number" id="gratis-maanden" value="1" min="1" max="24" inputmode="numeric" oninput="kiesMaanden();updateGratisVoorbeeld()">
+                    <button type="button" onclick="wijzigGratisMaanden(1)" aria-label="Meer">+</button>
+                    <span id="gratis-maanden-label">maand</span>
+                </div>
+                <div class="gratis-snel">
+                    <button type="button" onclick="zetGratisMaanden(1)">+1</button>
+                    <button type="button" onclick="zetGratisMaanden(3)">+3</button>
+                    <button type="button" onclick="zetGratisMaanden(6)">+6</button>
+                    <button type="button" onclick="zetGratisMaanden(12)">+12</button>
+                </div>
             </label>
             <label class="gratis-optie">
                 <input type="radio" name="gratis-actie" value="altijd" onchange="updateGratisVoorbeeld()">
@@ -250,7 +266,8 @@
 if (!vereisAuth('Admin')) { /* redirect */ }
 
 async function laadDashboard() {
-    await Promise.all([laadGebruikers(), laadCoaches(), laadRijders()]);
+    await laadGebruikers();
+    await Promise.all([laadCoaches(), laadRijders()]);
 }
 
 async function laadGebruikers() {
@@ -330,6 +347,7 @@ async function laadCoaches() {
                         <th>Woonplaats</th>
                         <th>Discipline</th>
                         <th>Status</th>
+                        <th>Abonnement</th>
                         <th>Weergaven</th>
                         <th></th>
                     </tr>
@@ -347,8 +365,10 @@ async function laadCoaches() {
                                     ? '<span class="badge badge-groen">Gepubliceerd</span>'
                                     : '<span class="ongepubliceerd-label">● Niet gepubliceerd</span>'}
                             </td>
+                            <td style="font-size:0.82rem">${(() => { const g = _gebruikers.find(u => u.id === c.gebruikerId); return g ? volgendeBetaling(g) : '<span style="color:#aaa">Geen account</span>'; })()}</td>
                             <td>${c.aantalWeergaven ?? 0}</td>
                             <td>
+                                ${_gebruikers.some(u => u.id === c.gebruikerId) ? `<button class="btn btn-gratis btn-sm" onclick="openGratisPopup('${esc(c.gebruikerId)}')">🎁 Gratis</button>` : ''}
                                 <button class="btn btn-gevaar btn-sm" onclick="verwijderCoach(${c.id}, '${esc(c.naam)}')">Verwijderen</button>
                             </td>
                         </tr>
@@ -515,7 +535,7 @@ function openGratisPopup(id) {
     toonGratisCoachInfo();
     document.getElementById('gratis-naam-hint').textContent = _gratisCoach.naam;
     document.getElementById('gratis-maanden').value = 1;
-    document.querySelector('input[name=gratis-actie][value=maanden]').checked = true;
+    kiesMaanden();
     document.getElementById('gratis-bevestiging').value = '';
     document.getElementById('gratis-fout').style.display = 'none';
     document.getElementById('gratis-stap-kiezen').style.display = '';
@@ -533,6 +553,22 @@ function openGratisPopup(id) {
 function sluitGratisPopup() {
     document.getElementById('gratis-popup').style.display = 'none';
     _gratisCoach = null;
+}
+
+function kiesMaanden() {
+    document.querySelector('input[name=gratis-actie][value=maanden]').checked = true;
+    const n = parseInt(document.getElementById('gratis-maanden').value);
+    document.getElementById('gratis-maanden-label').textContent = n === 1 ? 'maand' : 'maanden';
+}
+
+function zetGratisMaanden(n) {
+    document.getElementById('gratis-maanden').value = Math.min(24, Math.max(1, n));
+    kiesMaanden();
+    updateGratisVoorbeeld();
+}
+
+function wijzigGratisMaanden(stap) {
+    zetGratisMaanden((parseInt(document.getElementById('gratis-maanden').value) || 0) + stap);
 }
 
 function gekozenGratisActie() {
@@ -584,7 +620,7 @@ async function slaGratisOp() {
         document.getElementById('btn-gratis-herstel').disabled = false;
         document.getElementById('gratis-stap-kiezen').style.display = 'none';
         document.getElementById('gratis-stap-klaar').style.display = '';
-        laadGebruikers();
+        laadGebruikers().then(laadCoaches);
     } catch (e) {
         fout.textContent = e.message || 'Opslaan mislukt.';
         fout.style.display = 'block';
@@ -603,7 +639,7 @@ async function herstelGratis() {
         toonGratisCoachInfo();
         document.getElementById('gratis-resultaat').innerHTML =
             `↩ Teruggezet voor <strong>${esc(_gratisCoach.naam)}</strong>: ${formatGratis(res.nieuwe)}.`;
-        laadGebruikers();
+        laadGebruikers().then(laadCoaches);
     } catch (e) {
         alert('Ongedaan maken mislukt: ' + e.message);
         knop.disabled = false;
