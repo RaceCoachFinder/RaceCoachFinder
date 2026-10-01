@@ -161,9 +161,9 @@
         .agenda-nav { display:flex;align-items:center;justify-content:center;gap:1rem;margin-bottom:0.75rem; }
         .agenda-nav-knop { background:none;border:1px solid var(--kleur-rand);border-radius:6px;width:32px;height:32px;font-size:1.2rem;cursor:pointer;color:var(--kleur-tekst);display:flex;align-items:center;justify-content:center; }
         .agenda-nav-knop:hover { border-color:var(--kleur-primair);color:var(--kleur-primair); }
-        .agenda-weekdagen { display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:0.72rem;font-weight:700;color:var(--kleur-subtekst);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.25rem; }
-        .agenda-grid { display:grid;grid-template-columns:repeat(7,1fr);gap:2px; }
-        .agenda-dag { min-height:68px;border-radius:6px;padding:4px;cursor:pointer;border:1.5px solid transparent;transition:border-color 0.15s; }
+        .agenda-weekdagen { display:grid;grid-template-columns:repeat(7,minmax(0,1fr));text-align:center;font-size:0.72rem;font-weight:700;color:var(--kleur-subtekst);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.25rem; }
+        .agenda-grid { display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px; }
+        .agenda-dag { min-width:0;min-height:68px;border-radius:6px;padding:4px;cursor:pointer;border:1.5px solid transparent;transition:border-color 0.15s; }
         .agenda-dag:hover { border-color:var(--kleur-primair); }
         .agenda-dag.andere-maand { opacity:0.35; }
         .agenda-dag.vandaag .agenda-dag-nr { background:var(--kleur-primair);color:#000;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-weight:800; }
@@ -171,6 +171,22 @@
         .agenda-event { font-size:0.68rem;background:var(--kleur-primair);color:#000;border-radius:4px;padding:1px 5px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;font-weight:600; }
         .agenda-event.boeking { background:#d1fae5;color:#065f46; }
         .agenda-event:hover { opacity:0.8; }
+        .agenda-lijst { display:none; }
+        @media (max-width: 600px) {
+            #agenda-sectie .dashboard-kaart { padding:1.25rem 0.9rem; }
+            .agenda-grid { gap:1px; }
+            .agenda-dag { min-height:46px;padding:2px;display:flex;flex-direction:column;align-items:center; }
+            .agenda-dag-nr { font-size:0.78rem;margin-bottom:2px; }
+            .agenda-event { width:100%;height:5px;padding:0;margin-bottom:2px;font-size:0;border-radius:3px; }
+            .agenda-event.boeking { background:#10b981; }
+            .agenda-lijst { display:block;margin-top:1rem;padding-top:0.75rem;border-top:1px solid #f0f0f0; }
+            .agenda-lijst-titel { font-size:0.8rem;font-weight:700;color:var(--kleur-subtekst);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.5rem; }
+            .agenda-lijst-item { display:flex;gap:0.75rem;align-items:center;padding:0.5rem 0;border-bottom:1px solid #f5f5f5;cursor:pointer; }
+            .agenda-lijst-datum { flex-shrink:0;width:3.2rem;font-size:0.78rem;font-weight:700;color:var(--kleur-subtekst); }
+            .agenda-lijst-tekst { min-width:0;font-size:0.88rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+            .agenda-lijst-tekst::before { content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--kleur-primair);margin-right:0.45rem; }
+            .agenda-lijst-item.boeking .agenda-lijst-tekst::before { background:#10b981; }
+        }
 
         .paginering-rij {
             display:flex; align-items:center; justify-content:center; gap:0.35rem;
@@ -327,6 +343,7 @@
                 <span>Ma</span><span>Di</span><span>Wo</span><span>Do</span><span>Vr</span><span>Za</span><span>Zo</span>
             </div>
             <div class="agenda-grid" id="agenda-grid"></div>
+            <div class="agenda-lijst" id="agenda-lijst"></div>
         </div>
     </div>
 
@@ -960,6 +977,8 @@ function renderAgenda() {
             andereM = true;
         }
 
+        if (maand < 0) { maand = 11; jaar--; }
+        if (maand > 11) { maand = 0; jaar++; }
         const isVandaag = dag === vandaag.getDate() && maand === vandaag.getMonth() && jaar === vandaag.getFullYear();
         const datumStr = `${jaar}-${String(maand + 1).padStart(2,'0')}-${String(dag).padStart(2,'0')}`;
         const dagItems = agendaItems.filter(a => a.datum.startsWith(datumStr));
@@ -976,6 +995,22 @@ function renderAgenda() {
     }
 
     grid.innerHTML = html;
+
+    // Lijstweergave voor mobiel: afspraken van deze maand onder de kalender
+    const maandPrefix = `${agendaJaar}-${String(agendaMaand + 1).padStart(2,'0')}-`;
+    const maandItems = agendaItems
+        .filter(a => a.datum.startsWith(maandPrefix))
+        .sort((a, b) => a.datum.localeCompare(b.datum));
+    const korteMaand = maandNamen[agendaMaand].slice(0, 3).toLowerCase();
+    document.getElementById('agenda-lijst').innerHTML =
+        `<div class="agenda-lijst-titel">Afspraken deze maand</div>` +
+        (maandItems.length ? maandItems.map(a => {
+            const tijd = a.datum.length >= 16 ? a.datum.slice(11, 16) : '';
+            return `<div class="agenda-lijst-item${a.gekoppeldeBoekingId ? ' boeking' : ''}" onclick="verwijderAgendaItem(${a.id},'${_esc(a.titel)}')">
+                <span class="agenda-lijst-datum">${parseInt(a.datum.slice(8, 10))} ${korteMaand}</span>
+                <span class="agenda-lijst-tekst">${tijd && tijd !== '00:00' ? tijd + ' · ' : ''}${_esc(a.titel)}</span>
+            </div>`;
+        }).join('') : `<div style="font-size:0.85rem;color:var(--kleur-subtekst)">Geen afspraken deze maand.</div>`);
 }
 
 function vorigeAgendaMaand() {
