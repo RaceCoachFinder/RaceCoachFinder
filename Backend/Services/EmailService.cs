@@ -112,13 +112,13 @@ public static class EmailTemplates
         {
             actieKnop =
                 "<p style=\"color:#555;margin:0 0 24px\">Maak je profiel aan en publiceer het zodat rijders je kunnen vinden.</p>" +
-                Knop("https://race-coach-finder.vercel.app/dashboard-coach.html", "Profiel aanmaken");
+                Knop("https://www.racecoachfinder.nl/dashboard-coach.html", "Profiel aanmaken");
         }
         else
         {
             actieKnop =
                 "<p style=\"color:#555;margin:0 0 24px\">Zoek een coach die bij jou past en stuur een bericht.</p>" +
-                Knop("https://race-coach-finder.vercel.app/coaches.html", "Coaches bekijken");
+                Knop("https://www.racecoachfinder.nl/coaches.html", "Coaches bekijken");
         }
 
         var inhoud =
@@ -200,9 +200,9 @@ public static class EmailTemplates
             $"<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border:1px solid #eee;border-radius:8px;overflow:hidden;margin-bottom:24px\">" +
             itemsHtml +
             "</table>" +
-            Knop("https://race-coach-finder.vercel.app/dashboard-coach.html", "Naar agenda") +
+            Knop("https://www.racecoachfinder.nl/dashboard-coach.html", "Naar agenda") +
             "<p style=\"color:#aaa;font-size:0.78rem;margin:20px 0 0\">Je ontvangt deze herinnering omdat je agenda-reminders hebt ingeschakeld. " +
-            "Pas dit aan via <a href=\"https://race-coach-finder.vercel.app/instellingen.html\" style=\"color:#888\">Instellingen</a>.</p>";
+            "Pas dit aan via <a href=\"https://www.racecoachfinder.nl/instellingen.html\" style=\"color:#888\">Instellingen</a>.</p>";
         return Omhulsel(inhoud);
     }
 

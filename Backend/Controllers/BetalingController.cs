@@ -35,7 +35,7 @@ public class BetalingController : ControllerBase
         ?? throw new InvalidOperationException("Mollie API key niet geconfigureerd.");
 
     private const string BackendUrl = "https://racecoachfinder-production.up.railway.app";
-    private const string FrontendUrl = "https://race-coach-finder.vercel.app";
+    private const string FrontendUrl = "https://www.racecoachfinder.nl";
 
     [HttpPost("start-abonnement")]
     [Authorize(Roles = "Coach")]

@@ -17,7 +17,7 @@ public class BoekingController : ControllerBase
     private readonly AppDbContext _context;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IEmailService _email;
-    private const string FrontendUrl = "https://race-coach-finder.vercel.app";
+    private const string FrontendUrl = "https://www.racecoachfinder.nl";
 
     public BoekingController(AppDbContext context, UserManager<ApplicationUser> userManager, IEmailService email)
     {
