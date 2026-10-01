@@ -35,6 +35,42 @@
             flex: 1;
         }
 
+        .gesprekken-zoek { padding: 0.75rem 1rem; border-bottom: 1px solid #e8e8f0; position: relative; }
+        .gesprekken-zoek input {
+            width: 100%; box-sizing: border-box; font-family: inherit; font-size: 0.9rem;
+            padding: 0.55rem 2rem 0.55rem 0.85rem; border: 1.5px solid #ddd; border-radius: 8px;
+        }
+        .gesprekken-zoek input:focus { outline: none; border-color: var(--kleur-primair); }
+        .gesprekken-zoek-wis {
+            display: none; position: absolute; right: 1.5rem; top: 50%; transform: translateY(-50%);
+            background: none; border: none; cursor: pointer; color: #999; font-size: 1.1rem; line-height: 1;
+        }
+        .zoek-resultaten { overflow-y: auto; flex: 1; display: none; }
+        .gesprekken-header { display: flex; align-items: center; justify-content: space-between; }
+        .btn-nieuwe-groep {
+            width: 32px; height: 32px; border-radius: 50%; border: none; cursor: pointer;
+            background: var(--kleur-primair); color: #000; font-size: 1.3rem; font-weight: 700; line-height: 1;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .btn-nieuwe-groep:hover { opacity: 0.85; }
+        .groep-input {
+            width: 100%; box-sizing: border-box; font-family: inherit; font-size: 0.9rem;
+            padding: 0.5rem 0.75rem; border: 1.5px solid #ddd; border-radius: 8px; margin-bottom: 0.6rem;
+        }
+        .groep-input:focus { outline: none; border-color: var(--kleur-primair); }
+        .groep-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.6rem; }
+        .groep-chip {
+            display: inline-flex; align-items: center; gap: 0.3rem; background: #fff3c4;
+            border-radius: 999px; padding: 0.2rem 0.4rem 0.2rem 0.7rem; font-size: 0.8rem; font-weight: 600;
+        }
+        .groep-chip button { background: none; border: none; cursor: pointer; font-size: 0.95rem; line-height: 1; color: #666; padding: 0 0.15rem; }
+        .groep-zoek-resultaten { max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; }
+        .groep-zoek-resultaten:empty { display: none; }
+        .groep-zoek-rij { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.75rem; cursor: pointer; font-size: 0.88rem; border-bottom: 1px solid #f5f5f5; }
+        .groep-zoek-rij:hover { background: var(--kleur-grijs-licht); }
+        .groep-zoek-rij small { color: var(--kleur-subtekst); }
+        .zoek-label { padding: 0.6rem 1.5rem 0.3rem; font-size: 0.72rem; font-weight: 700; color: var(--kleur-subtekst); text-transform: uppercase; letter-spacing: 0.5px; }
+
         .gesprek-rij {
             display: flex;
             gap: 0.85rem;
@@ -384,6 +420,8 @@
             line-height: 1;
         }
         .popup-sluiten:hover { color: var(--kleur-tekst); }
+        .popup-kaart .btn-secundair { color: var(--kleur-tekst); border-color: #ddd; }
+        .popup-kaart .btn-secundair:hover { border-color: var(--kleur-tekst); }
         .sterren-rij { display: flex; gap: 0.25rem; justify-content: center; margin: 1rem 0 0.5rem; }
         .ster-knop {
             font-size: 2rem; cursor: pointer;
@@ -432,7 +470,15 @@
 
     <!-- Linker panel: gesprekkenlijst -->
     <div class="gesprekken-panel" id="gesprekken-panel">
-        <div class="gesprekken-header">Berichten</div>
+        <div class="gesprekken-header">
+            <span>Berichten</span>
+            <button class="btn-nieuwe-groep" onclick="openGroepPopup()" title="Nieuwe groep">+</button>
+        </div>
+        <div class="gesprekken-zoek">
+            <input type="text" id="gebruiker-zoek" placeholder="🔍 Zoek een gebruiker om te chatten..." autocomplete="off" oninput="zoekGebruikers()">
+            <button class="gesprekken-zoek-wis" id="gebruiker-zoek-wis" onclick="wisZoekopdracht()" title="Wissen">×</button>
+        </div>
+        <div class="zoek-resultaten" id="zoek-resultaten"></div>
         <div class="gesprekken-lijst" id="gesprekken-lijst">
             <div class="geen-gesprekken">Laden...</div>
         </div>
@@ -570,6 +616,25 @@
         <div style="display:flex;gap:0.5rem;margin-top:1rem">
             <button class="btn btn-primair" onclick="submitReview()" style="flex:1">Versturen</button>
             <button class="btn btn-secundair" onclick="sluitReviewPopupEnBevestig()" style="flex:1">Overslaan</button>
+        </div>
+    </div>
+</div>
+
+<!-- Nieuwe groep popup -->
+<div class="popup-overlay" id="groep-popup" style="display:none" onclick="if(event.target===this)sluitGroepPopup()">
+    <div class="popup-kaart">
+        <button class="popup-sluiten" onclick="sluitGroepPopup()">✕</button>
+        <h3 style="margin:0 0 0.9rem;font-size:1.1rem">👥 Nieuwe groep</h3>
+        <label style="font-size:0.8rem;font-weight:600;display:block;margin-bottom:0.25rem">Groepsnaam</label>
+        <input class="groep-input" id="groep-naam" type="text" maxlength="80" placeholder="Bijv. Trainingsdag Assen">
+        <label style="font-size:0.8rem;font-weight:600;display:block;margin-bottom:0.25rem">Deelnemers</label>
+        <div class="groep-chips" id="groep-chips"></div>
+        <input class="groep-input" id="groep-zoek" type="text" placeholder="🔍 Zoek gebruikers..." autocomplete="off" oninput="zoekGroepsleden()">
+        <div class="groep-zoek-resultaten" id="groep-zoek-resultaten"></div>
+        <div id="groep-fout" style="color:#c62828;font-size:0.82rem;margin-top:0.5rem;display:none"></div>
+        <div style="display:flex;gap:0.5rem;margin-top:1rem">
+            <button class="btn btn-primair" id="btn-groep-maken" onclick="maakGroep()" style="flex:1;min-width:0;white-space:nowrap;padding-left:0.5rem;padding-right:0.5rem">Groep maken</button>
+            <button class="btn btn-secundair" onclick="sluitGroepPopup()" style="flex:1;min-width:0;white-space:nowrap;padding-left:0.5rem;padding-right:0.5rem">Annuleren</button>
         </div>
     </div>
 </div>
@@ -744,6 +809,149 @@ function renderGesprekkenLijst(gesprekken, groepen = []) {
     });
 
     lijst.innerHTML = [...groepRijen, ...gesprekRijen].join('');
+}
+
+// ── Gebruikers zoeken om een nieuw gesprek te starten ──
+let _zoekTimer = null;
+let _zoekResultaten = [];
+
+function zoekGebruikers() {
+    const q = document.getElementById('gebruiker-zoek').value.trim();
+    document.getElementById('gebruiker-zoek-wis').style.display = q ? 'block' : 'none';
+    clearTimeout(_zoekTimer);
+    if (!q) { toonZoekResultaten(false); return; }
+    toonZoekResultaten(true);
+    const box = document.getElementById('zoek-resultaten');
+    if (q.length < 2) {
+        box.innerHTML = '<div class="geen-gesprekken">Typ minimaal 2 letters...</div>';
+        return;
+    }
+    box.innerHTML = '<div class="geen-gesprekken">Zoeken...</div>';
+    _zoekTimer = setTimeout(async () => {
+        try {
+            const resultaten = await authVerzoek('/chat/zoek?q=' + encodeURIComponent(q)) || [];
+            if (document.getElementById('gebruiker-zoek').value.trim() !== q) return;
+            _zoekResultaten = resultaten;
+            box.innerHTML = resultaten.length
+                ? '<div class="zoek-label">Start een gesprek</div>' + resultaten.map((u, i) => {
+                    const avatar = u.fotoUrl
+                        ? '<img src="https://racecoachfinder-production.up.railway.app' + esc(u.fotoUrl) + '" alt="">'
+                        : esc(u.naam.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase());
+                    return `<div class="gesprek-rij" onclick="startGesprekMet(${i})">
+                        <div class="gesprek-avatar">${avatar}</div>
+                        <div class="gesprek-info">
+                            <div class="gesprek-naam">${esc(u.naam)}</div>
+                            <div class="gesprek-preview">${(u.rol || '').includes('Coach') ? 'Coach' : 'Rijder'}</div>
+                        </div>
+                    </div>`;
+                }).join('')
+                : '<div class="geen-gesprekken">Geen gebruikers gevonden.</div>';
+        } catch {
+            box.innerHTML = '<div class="geen-gesprekken">Zoeken mislukt.</div>';
+        }
+    }, 300);
+}
+
+function toonZoekResultaten(aan) {
+    document.getElementById('zoek-resultaten').style.display = aan ? 'block' : 'none';
+    document.getElementById('gesprekken-lijst').style.display = aan ? 'none' : '';
+}
+
+function wisZoekopdracht() {
+    document.getElementById('gebruiker-zoek').value = '';
+    zoekGebruikers();
+}
+
+function startGesprekMet(index) {
+    const u = _zoekResultaten[index];
+    if (!u) return;
+    partnerFotos[u.id] = u.fotoUrl || '';
+    wisZoekopdracht();
+    openGesprek(u.id, u.naam, u.rol);
+}
+
+// ── Nieuwe groep aanmaken ──
+let _groepLeden = [];
+let _groepZoekResultaten = [];
+let _groepZoekTimer = null;
+
+function openGroepPopup() {
+    _groepLeden = [];
+    document.getElementById('groep-naam').value = '';
+    document.getElementById('groep-zoek').value = '';
+    document.getElementById('groep-zoek-resultaten').innerHTML = '';
+    document.getElementById('groep-fout').style.display = 'none';
+    renderGroepChips();
+    document.getElementById('groep-popup').style.display = 'flex';
+    setTimeout(() => document.getElementById('groep-naam').focus(), 50);
+}
+
+function sluitGroepPopup() {
+    document.getElementById('groep-popup').style.display = 'none';
+}
+
+function renderGroepChips() {
+    document.getElementById('groep-chips').innerHTML = _groepLeden.map((u, i) =>
+        `<span class="groep-chip">${esc(u.naam)}<button onclick="verwijderGroepslid(${i})" title="Verwijderen">×</button></span>`
+    ).join('');
+}
+
+function verwijderGroepslid(index) {
+    _groepLeden.splice(index, 1);
+    renderGroepChips();
+}
+
+function zoekGroepsleden() {
+    const q = document.getElementById('groep-zoek').value.trim();
+    const box = document.getElementById('groep-zoek-resultaten');
+    clearTimeout(_groepZoekTimer);
+    if (q.length < 2) { box.innerHTML = ''; return; }
+    _groepZoekTimer = setTimeout(async () => {
+        try {
+            const resultaten = await authVerzoek('/chat/zoek?q=' + encodeURIComponent(q)) || [];
+            if (document.getElementById('groep-zoek').value.trim() !== q) return;
+            _groepZoekResultaten = resultaten.filter(u => !_groepLeden.some(l => l.id === u.id));
+            box.innerHTML = _groepZoekResultaten.length
+                ? _groepZoekResultaten.map((u, i) =>
+                    `<div class="groep-zoek-rij" onclick="voegGroepslidToe(${i})">
+                        <span>${esc(u.naam)}</span><small>${(u.rol || '').includes('Coach') ? 'Coach' : 'Rijder'} ＋</small>
+                    </div>`).join('')
+                : '<div class="groep-zoek-rij" style="cursor:default"><small>Geen gebruikers gevonden.</small></div>';
+        } catch {
+            box.innerHTML = '<div class="groep-zoek-rij" style="cursor:default"><small>Zoeken mislukt.</small></div>';
+        }
+    }, 300);
+}
+
+function voegGroepslidToe(index) {
+    const u = _groepZoekResultaten[index];
+    if (!u || _groepLeden.some(l => l.id === u.id)) return;
+    _groepLeden.push(u);
+    renderGroepChips();
+    document.getElementById('groep-zoek').value = '';
+    document.getElementById('groep-zoek-resultaten').innerHTML = '';
+    document.getElementById('groep-zoek').focus();
+}
+
+async function maakGroep() {
+    const fout = document.getElementById('groep-fout');
+    const naam = document.getElementById('groep-naam').value.trim();
+    const toonFout = t => { fout.textContent = t; fout.style.display = 'block'; };
+    if (!naam) return toonFout('Geef de groep een naam.');
+    if (_groepLeden.length === 0) return toonFout('Voeg minimaal één deelnemer toe.');
+
+    const knop = document.getElementById('btn-groep-maken');
+    knop.disabled = true;
+    try {
+        const groep = await authVerzoek('/groepsgesprek', 'POST', { naam, ledenIds: _groepLeden.map(l => l.id) });
+        sluitGroepPopup();
+        await laadGesprekken();
+        openGroepsgesprek(groep.groepsId, groep.naam, groep.leden || []);
+    } catch (e) {
+        toonFout(e.message || 'Groep maken mislukt.');
+    } finally {
+        knop.disabled = false;
+    }
 }
 
 async function openNieuwGesprek(partnerId) {

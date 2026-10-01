@@ -160,6 +160,38 @@ public class ChatController : ControllerBase
         return NoContent();
     }
 
+    // Zoek gebruikers op naam om een nieuw gesprek mee te starten
+    [HttpGet("zoek")]
+    public async Task<IActionResult> ZoekGebruikers([FromQuery] string? q)
+    {
+        var mijnId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var zoekterm = (q ?? "").Trim().Replace("%", "").Replace("_", "");
+        if (zoekterm.Length < 2) return Ok(Array.Empty<object>());
+
+        var gebruikers = await _userManager.Users
+            .Where(u => u.Id != mijnId && u.Rol != "Admin" && EF.Functions.Like(u.Naam, $"%{zoekterm}%"))
+            .OrderBy(u => u.Naam)
+            .Take(20)
+            .Select(u => new { u.Id, u.Naam, u.Rol })
+            .ToListAsync();
+
+        var ids = gebruikers.Select(g => g.Id).ToList();
+        var coachFotos = await _context.Coaches
+            .Where(c => c.GebruikerId != null && ids.Contains(c.GebruikerId))
+            .ToDictionaryAsync(c => c.GebruikerId!, c => c.FotoUrl);
+        var rijderFotos = await _context.Rijders
+            .Where(r => r.GebruikerId != null && ids.Contains(r.GebruikerId))
+            .ToDictionaryAsync(r => r.GebruikerId!, r => r.FotoUrl);
+
+        return Ok(gebruikers.Select(g => new
+        {
+            g.Id,
+            g.Naam,
+            g.Rol,
+            FotoUrl = coachFotos.GetValueOrDefault(g.Id) ?? rijderFotos.GetValueOrDefault(g.Id) ?? ""
+        }));
+    }
+
     // Aantal ongelezen berichten (voor nav badge)
     [HttpGet("ongelezen")]
     public async Task<IActionResult> GetAantalOngelezen()

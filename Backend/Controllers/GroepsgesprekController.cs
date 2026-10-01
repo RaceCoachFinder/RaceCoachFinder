@@ -71,6 +71,73 @@ public class GroepsgesprekController : ControllerBase
         return Ok(resultaat);
     }
 
+    // Maak zelf een groepsgesprek aan met gekozen gebruikers
+    [HttpPost]
+    public async Task<IActionResult> MaakGroep([FromBody] NieuweGroepVerzoek verzoek)
+    {
+        var mijnId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var ik = await _userManager.FindByIdAsync(mijnId!);
+        if (ik == null) return Unauthorized();
+
+        var naam = (verzoek.Naam ?? "").Trim();
+        if (naam.Length == 0) return BadRequest("Geef de groep een naam.");
+        if (naam.Length > 80) return BadRequest("Groepsnaam mag maximaal 80 tekens zijn.");
+
+        var ledenIds = (verzoek.LedenIds ?? new List<string>())
+            .Where(id => !string.IsNullOrWhiteSpace(id) && id != mijnId)
+            .Distinct()
+            .ToList();
+        if (ledenIds.Count == 0) return BadRequest("Kies minimaal één andere deelnemer.");
+        if (ledenIds.Count > 50) return BadRequest("Een groep mag maximaal 50 deelnemers hebben.");
+
+        var leden = await _userManager.Users
+            .Where(u => ledenIds.Contains(u.Id) && u.Rol != "Admin")
+            .Select(u => new { u.Id, u.Naam })
+            .ToListAsync();
+        if (leden.Count != ledenIds.Count) return BadRequest("Een of meer gebruikers zijn niet gevonden.");
+
+        // CoachAanbodId = 0: losse groep, niet gekoppeld aan een activiteit
+        var groep = new Groepsgesprek
+        {
+            CoachAanbodId = 0,
+            Naam = naam,
+            AangemaaktDoorId = mijnId!,
+            AangemaaktOp = DateTime.UtcNow
+        };
+        _context.Groepsgesprekken.Add(groep);
+        await _context.SaveChangesAsync();
+
+        var nu = DateTime.UtcNow;
+        _context.GroepsgesprekLeden.Add(new GroepsgesprekLid
+        {
+            GroepsgesprekId = groep.Id, GebruikerId = mijnId!, GebruikerNaam = ik.Naam,
+            ToegetreedOp = nu, LaatstGelezen = nu
+        });
+        foreach (var l in leden)
+        {
+            _context.GroepsgesprekLeden.Add(new GroepsgesprekLid
+            {
+                GroepsgesprekId = groep.Id, GebruikerId = l.Id, GebruikerNaam = l.Naam, ToegetreedOp = nu
+            });
+        }
+        _context.Groepsberichten.Add(new Groepsbericht
+        {
+            GroepsgesprekId = groep.Id,
+            VanGebruikerId = mijnId!,
+            VanNaam = ik.Naam,
+            Tekst = $"👥 {ik.Naam} heeft de groep \"{naam}\" aangemaakt.",
+            AangemaaktOp = nu
+        });
+        await _context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            GroepsId = groep.Id,
+            groep.Naam,
+            Leden = new[] { ik.Naam }.Concat(leden.Select(l => l.Naam)).ToList()
+        });
+    }
+
     [HttpGet("{id}/berichten")]
     public async Task<IActionResult> GetBerichten(int id)
     {
@@ -222,6 +289,7 @@ public class GroepsgesprekController : ControllerBase
 }
 
 public record GroepsBerichtVerzoek(string Tekst);
+public record NieuweGroepVerzoek(string? Naam, List<string>? LedenIds);
 public record GroepsBetaalverzoekVerzoek(
     string Omschrijving,
     decimal Bedrag,
