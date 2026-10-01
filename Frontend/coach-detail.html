@@ -383,9 +383,10 @@ function escapeHtml(str) {
 let isFavoriet = false;
 
 async function laadFavoriet() {
-    if (!isIngelogd()) return;
     const gebruiker = getGebruiker ? getGebruiker() : null;
     if (gebruiker && coachGebruikerId && gebruiker.id === coachGebruikerId) return;
+    document.getElementById('d-favoriet-btn').style.display = '';
+    if (!isIngelogd()) return;
     try {
         const ids = await authVerzoek('/favorieten');
         if (Array.isArray(ids) && ids.includes(coachId)) {
@@ -393,10 +394,10 @@ async function laadFavoriet() {
             updateFavorietKnop();
         }
     } catch {}
-    document.getElementById('d-favoriet-btn').style.display = '';
 }
 
 async function toggleFavoriet() {
+    if (!isIngelogd()) { location.href = 'inloggen.html'; return; }
     const knop = document.getElementById('d-favoriet-btn');
     knop.disabled = true;
     try {
