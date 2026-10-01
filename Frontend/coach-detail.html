@@ -100,7 +100,6 @@
                 <div style="display:flex;flex-direction:column;gap:0.75rem">
                     <a id="d-bericht-link" href="#" class="btn btn-primair" style="display:none">Stuur bericht</a>
                     <button id="d-favoriet-btn" class="btn btn-secundair" onclick="toggleFavoriet()" style="display:none">☆ Opslaan als favoriet</button>
-                    <a id="d-email-link" href="#" class="btn btn-donker">E-mail sturen</a>
                     <a id="d-bewerk-link" href="#" class="btn btn-donker" style="display:none">Profiel bewerken</a>
                     <button id="d-verwijder-btn" class="btn btn-gevaar" onclick="verwijderCoach()" style="display:none">Verwijder coach</button>
                 </div>
@@ -167,6 +166,7 @@
 <script>
 const urlParams = new URLSearchParams(window.location.search);
 const coachId = parseInt(urlParams.get('id'));
+let coachGebruikerId = null;
 
 async function laadCoach() {
     if (!coachId) {
@@ -254,13 +254,8 @@ function vulProfiel(c) {
         document.getElementById('d-instagram').style.display = '';
     }
 
-    if (c.email) {
-        document.getElementById('d-email-link').href = `mailto:${c.email}`;
-    } else {
-        document.getElementById('d-email-link').style.display = 'none';
-    }
-
     // Toon bewerken/verwijder/bericht sturen op basis van rol
+    coachGebruikerId = c.gebruikerId;
     const gebruiker = getGebruiker ? getGebruiker() : null;
     const berichtLink = document.getElementById('d-bericht-link');
     if (gebruiker) {
@@ -308,6 +303,7 @@ function vulProfiel(c) {
         laadReviews(c.gebruikerId);
         toonReviewFormulier(c.gebruikerId);
     }
+    laadFavoriet();
 }
 
 function sterrenHtml(score) {
@@ -387,7 +383,9 @@ function escapeHtml(str) {
 let isFavoriet = false;
 
 async function laadFavoriet() {
-    if (!heeftRol('Rijder')) return;
+    if (!isIngelogd()) return;
+    const gebruiker = getGebruiker ? getGebruiker() : null;
+    if (gebruiker && coachGebruikerId && gebruiker.id === coachGebruikerId) return;
     try {
         const ids = await authVerzoek('/favorieten');
         if (Array.isArray(ids) && ids.includes(coachId)) {
@@ -479,7 +477,6 @@ function toonReviewFormulier(coachGebruikerId) {
 
 updateNav();
 laadCoach();
-laadFavoriet();
 </script>
 </body>
 </html>
