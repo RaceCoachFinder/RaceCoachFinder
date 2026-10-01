@@ -206,6 +206,59 @@ public class BetalingController : ControllerBase
         return Ok(new { bericht = "Testabonnement geactiveerd." });
     }
 
+    // Voor de bedankpagina: echte status van de laatste abonnementsbetaling (eerste betaling)
+    [HttpGet("controle-abonnement")]
+    [Authorize(Roles = "Coach")]
+    public async Task<IActionResult> ControleAbonnement()
+    {
+        var gebruiker = await _userManager.GetUserAsync(User);
+        if (gebruiker == null) return Unauthorized();
+        if (string.IsNullOrEmpty(gebruiker.MollieKlantId)) return Ok(new { status = "onbekend" });
+        try
+        {
+            var lijst = await new CustomerClient(ApiKey).GetCustomerPaymentListAsync(gebruiker.MollieKlantId, null, 10);
+            var laatste = lijst.Items
+                .Where(b => b.SequenceType == SequenceType.First)
+                .OrderByDescending(b => b.CreatedAt)
+                .FirstOrDefault();
+            return Ok(new { status = laatste?.Status ?? "onbekend" });
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine("ControleAbonnement fout: " + ex.Message);
+            return Ok(new { status = "onbekend" });
+        }
+    }
+
+    // Voor de bedankpagina: echte status van de betaling van een factuur
+    [HttpGet("controle-factuur/{boekingId:int}")]
+    [Authorize(Roles = "Rijder")]
+    public async Task<IActionResult> ControleFactuur(int boekingId)
+    {
+        var rijderId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var boeking = await _context.Boekingen.FindAsync(boekingId);
+        if (boeking == null) return NotFound();
+        if (boeking.RijderGebruikerId != rijderId) return Forbid();
+        if (boeking.Status == "Betaald") return Ok(new { status = PaymentStatus.Paid });
+        if (string.IsNullOrEmpty(boeking.MollieBetalingId)) return Ok(new { status = "onbekend" });
+        try
+        {
+            var betaling = await new PaymentClient(ApiKey).GetPaymentAsync(boeking.MollieBetalingId);
+            // Zelfde als de webhook: betaald = factuur op betaald (webhook kan later komen)
+            if (betaling.Status == PaymentStatus.Paid && boeking.Status == "Openstaand")
+            {
+                boeking.Status = "Betaald";
+                await _context.SaveChangesAsync();
+            }
+            return Ok(new { status = betaling.Status });
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine("ControleFactuur fout: " + ex.Message);
+            return Ok(new { status = "onbekend" });
+        }
+    }
+
     [HttpPost("start-factuur/{boekingId:int}")]
     [Authorize(Roles = "Rijder")]
     public async Task<IActionResult> StartFactuur(int boekingId)

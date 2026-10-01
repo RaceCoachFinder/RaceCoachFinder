@@ -51,13 +51,12 @@
 
 <div class="succes-wrapper">
     <div class="succes-kaart">
-        <div class="succes-icoon">&#10003;</div>
-        <h1 id="succes-titel">Betaling geslaagd!</h1>
+        <div class="succes-icoon" id="succes-icoon">⏳</div>
+        <h1 id="succes-titel">Betaling controleren…</h1>
         <p id="succes-tekst">
-            Bedankt voor je betaling. Je abonnement is nu actief en wordt elke maand automatisch verlengd.<br><br>
-            Je kunt nu volledig gebruik maken van RaceCoachFinder als coach.
+            Een moment geduld, we controleren de status van je betaling.
         </p>
-        <a href="tips.html?nieuw=true&rol=Coach" class="btn btn-primair" id="succes-knop">Bekijk tips &amp; ga verder</a>
+        <a href="tips.html?nieuw=true&rol=Coach" class="btn btn-primair" id="succes-knop" style="display:none">Bekijk tips &amp; ga verder</a>
     </div>
 </div>
 
@@ -78,24 +77,73 @@
 <script src="js/auth.js"></script>
 <script>
 updateNav();
+
 const succesParams = new URLSearchParams(location.search);
-// Rijder heeft een factuur van een coach betaald
-if (/^\d+$/.test(succesParams.get('boekingId') || '')) {
-    document.getElementById('succes-titel').textContent = 'Bedankt voor je betaling!';
-    document.getElementById('succes-tekst').innerHTML =
-        'Je betaling van de factuur is ontvangen. Zodra die verwerkt is, staat de factuur in je berichten op <strong>betaald</strong> en ziet je coach dat ook.';
+const boekingId = /^\d+$/.test(succesParams.get('boekingId') || '') ? succesParams.get('boekingId') : null;
+const startParam = /^\d{4}-\d{2}-\d{2}$/.test(succesParams.get('start') || '') ? succesParams.get('start') : null;
+
+function toon(icoon, titel, tekst, knopTekst, knopHref) {
+    document.getElementById('succes-icoon').textContent = icoon;
+    document.getElementById('succes-titel').textContent = titel;
+    document.getElementById('succes-tekst').innerHTML = tekst;
     const knop = document.getElementById('succes-knop');
-    knop.href = 'berichten.html';
-    knop.textContent = 'Naar mijn berichten';
+    knop.textContent = knopTekst;
+    knop.href = knopHref;
+    knop.style.display = '';
 }
-// Abonnement ingesteld tijdens de gratis periode: start pas later
-const startParam = succesParams.get('start');
-if (startParam && /^\d{4}-\d{2}-\d{2}$/.test(startParam)) {
-    const datum = new Date(startParam + 'T00:00:00').toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' });
-    document.getElementById('succes-tekst').innerHTML =
-        'Je rekening is gekoppeld en je abonnement is ingesteld.<br><br>' +
-        'Je gratis periode loopt gewoon door. De eerste €10 wordt op <strong>' + datum + '</strong> afgeschreven, daarna elke maand.';
+
+function toonGeslaagd() {
+    if (boekingId) {
+        toon('✅', 'Bedankt voor je betaling!',
+            'Je factuur is betaald. In je berichten staat de factuur op <strong>betaald</strong> en je coach ziet dat ook.',
+            'Naar mijn berichten', 'berichten.html');
+    } else if (startParam) {
+        const datum = new Date(startParam + 'T00:00:00').toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' });
+        toon('✅', 'Abonnement ingesteld!',
+            'Je rekening is gekoppeld en je abonnement is ingesteld.<br><br>' +
+            'Je gratis periode loopt gewoon door. De eerste €10 wordt op <strong>' + datum + '</strong> afgeschreven, daarna elke maand.',
+            'Naar mijn dashboard', 'dashboard-coach.html');
+    } else {
+        toon('✅', 'Betaling geslaagd!',
+            'Bedankt voor je betaling. Je abonnement is nu actief en wordt elke maand automatisch verlengd.<br><br>' +
+            'Je kunt nu volledig gebruik maken van RaceCoachFinder als coach.',
+            'Bekijk tips & ga verder', 'tips.html?nieuw=true&rol=Coach');
+    }
 }
+
+function toonMislukt(status) {
+    const reden = status === 'canceled' ? 'Je hebt de betaling geannuleerd.'
+        : status === 'expired' ? 'De betaling is verlopen.'
+        : 'De betaling is niet gelukt.';
+    toon('❌', 'Betaling niet gelukt',
+        reden + ' Er is niets afgeschreven. Je kunt het opnieuw proberen.',
+        boekingId ? 'Terug naar mijn berichten' : 'Terug naar mijn dashboard',
+        boekingId ? 'berichten.html' : 'dashboard-coach.html');
+}
+
+function toonOnbekend() {
+    toon('⏳', 'Betaling wordt verwerkt',
+        'We hebben de status van je betaling nog niet binnen. Dit kan een paar minuten duren. ' +
+        (boekingId ? 'In je berichten zie je vanzelf of de factuur betaald is.' : 'Op je dashboard zie je vanzelf of je abonnement actief is.'),
+        boekingId ? 'Naar mijn berichten' : 'Naar mijn dashboard',
+        boekingId ? 'berichten.html' : 'dashboard-coach.html');
+}
+
+async function controleerBetaling(poging = 1) {
+    if (!isIngelogd()) { toonOnbekend(); return; }
+    let status = 'onbekend';
+    try {
+        const res = await authVerzoek(boekingId ? `/betaling/controle-factuur/${boekingId}` : '/betaling/controle-abonnement');
+        status = (res && res.status) || 'onbekend';
+    } catch { status = 'onbekend'; }
+
+    if (status === 'paid' || status === 'authorized') toonGeslaagd();
+    else if (status === 'canceled' || status === 'expired' || status === 'failed') toonMislukt(status);
+    else if (poging < 5) setTimeout(() => controleerBetaling(poging + 1), 3000);   // open/pending: even wachten
+    else toonOnbekend();
+}
+
+controleerBetaling();
 </script>
 </body>
 </html>
