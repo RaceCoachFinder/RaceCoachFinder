@@ -1121,7 +1121,9 @@ async function laadAbonnementStatus() {
         } else if (status.inGratisperiode) {
             const datum = new Date(status.gratisVerlooptOp).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' });
             balk.className = 'abonnement-balk abonnement-gratis';
-            balk.innerHTML = `<span>🎁 Gratis periode actief — verloopt op ${datum}</span>`;
+            balk.innerHTML = new Date(status.gratisVerlooptOp).getFullYear() >= 9999
+                ? `<span>🎁 Je account is voor altijd gratis</span>`
+                : `<span>🎁 Gratis periode actief — verloopt op ${datum}</span>`;
         } else {
             balk.className = 'abonnement-balk abonnement-verlopen';
             balk.innerHTML = `

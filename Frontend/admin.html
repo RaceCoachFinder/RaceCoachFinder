@@ -86,12 +86,16 @@
                 <label style="font-size:0.85rem">Naam van de coach</label>
                 <input type="text" id="uitnodiging-naam" placeholder="bijv. Jan de Vries">
             </div>
-            <div style="display:flex;gap:0.75rem;align-items:flex-end">
-                <div class="formulier-groep" style="margin:0;flex:1">
-                    <label style="font-size:0.85rem">Gratis periode (maanden)</label>
+            <div style="display:flex;gap:0.75rem;align-items:flex-end;flex-wrap:wrap">
+                <div class="formulier-groep" style="margin:0;flex:1;min-width:140px">
+                    <label style="font-size:0.85rem;white-space:nowrap">Gratis periode (maanden)</label>
                     <input type="number" id="uitnodiging-maanden" value="3" min="1" max="24">
                 </div>
-                <button class="btn btn-primair" onclick="maakUitnodiging()" style="flex-shrink:0">Aanmaken</button>
+                <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.85rem;font-weight:600;white-space:nowrap;padding-bottom:0.7rem;cursor:pointer">
+                    <input type="checkbox" id="uitnodiging-altijd" onchange="toggleAltijdGratis()" style="width:auto;margin:0;accent-color:var(--kleur-primair)">
+                    Voor altijd gratis
+                </label>
+                <button class="btn btn-primair" onclick="maakUitnodiging()" style="flex:1 0 auto">Aanmaken</button>
             </div>
         </div>
         <div id="uitnodiging-resultaat" style="display:none;margin-top:1.25rem;background:#f9f9f0;border:2px solid var(--kleur-primair);border-radius:var(--rand);padding:1.1rem 1.25rem">
@@ -381,15 +385,22 @@ function esc(str) {
     return d.innerHTML;
 }
 
+function toggleAltijdGratis() {
+    const veld = document.getElementById('uitnodiging-maanden');
+    veld.disabled = document.getElementById('uitnodiging-altijd').checked;
+    veld.style.opacity = veld.disabled ? '0.4' : '';
+}
+
 async function maakUitnodiging() {
     const naam = document.getElementById('uitnodiging-naam').value.trim();
     const gratisMananden = parseInt(document.getElementById('uitnodiging-maanden').value) || 3;
+    const voorAltijdGratis = document.getElementById('uitnodiging-altijd').checked;
     if (!naam) { alert('Vul een naam in.'); return; }
     try {
-        const data = await authVerzoek('/admin/coach-uitnodiging', 'POST', { naam, gratisMananden });
+        const data = await authVerzoek('/admin/coach-uitnodiging', 'POST', { naam, gratisMananden, voorAltijdGratis });
         document.getElementById('res-code').textContent = data.code;
         document.getElementById('res-wachtwoord').textContent = data.wachtwoord;
-        document.getElementById('res-maanden').textContent = data.gratisMananden + ' maanden gratis';
+        document.getElementById('res-maanden').textContent = data.voorAltijdGratis ? 'Voor altijd gratis' : data.gratisMananden + ' maanden gratis';
         document.getElementById('uitnodiging-resultaat').style.display = '';
         document.getElementById('uitnodiging-naam').value = '';
     } catch (e) {
@@ -400,7 +411,7 @@ async function maakUitnodiging() {
 function kopieerUitnodiging() {
     const code = document.getElementById('res-code').textContent;
     const ww = document.getElementById('res-wachtwoord').textContent;
-    navigator.clipboard.writeText('Inlogcode: ' + code + '\nWachtwoord: ' + ww + '\nInloggen via: http://localhost:5500/inloggen.html');
+    navigator.clipboard.writeText('Inlogcode: ' + code + '\nWachtwoord: ' + ww + '\nInloggen via: https://www.racecoachfinder.nl/inloggen.html');
     const btn = event.currentTarget;
     btn.textContent = 'Gekopieerd!';
     setTimeout(() => btn.textContent = 'Kopieer naar klembord', 2000);
@@ -427,6 +438,7 @@ function volgendeBetaling(g) {
     }
     if (g.gratisVerlooptOp && new Date(g.gratisVerlooptOp) > nu) {
         const d = new Date(g.gratisVerlooptOp);
+        if (d.getFullYear() >= 9999) return '<span style="color:#2e7d32">Altijd gratis</span>';
         return '<span style="color:#2e7d32">Gratis t/m ' + d.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' }) + '</span>';
     }
     return '<span style="color:#c62828">Geen actief abonnement</span>';

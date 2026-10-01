@@ -101,7 +101,10 @@ public class AdminController : ControllerBase
             Rol = "Coach",
             EmailConfirmed = true,
             HeeftAccountIngericht = false,
-            GratisVerlooptOp = DateTime.UtcNow.AddMonths(verzoek.GratisMananden),
+            // Voor altijd gratis = einddatum 31-12-9999 (bestaande controles blijven zo werken)
+            GratisVerlooptOp = verzoek.VoorAltijdGratis
+                ? new DateTime(9999, 12, 31, 0, 0, 0, DateTimeKind.Utc)
+                : DateTime.UtcNow.AddMonths(verzoek.GratisMananden),
             AangemaaktOp = DateTime.UtcNow
         };
 
@@ -109,7 +112,7 @@ public class AdminController : ControllerBase
         if (!resultaat.Succeeded)
             return BadRequest(string.Join(", ", resultaat.Errors.Select(e => e.Description)));
 
-        return Ok(new { code, wachtwoord, naam = gebruiker.Naam, gratisMananden = verzoek.GratisMananden });
+        return Ok(new { code, wachtwoord, naam = gebruiker.Naam, gratisMananden = verzoek.GratisMananden, voorAltijdGratis = verzoek.VoorAltijdGratis });
     }
 
     private static string GenereerWachtwoord()
@@ -119,4 +122,4 @@ public class AdminController : ControllerBase
     }
 }
 
-public record CoachUitnodigingVerzoek(string Naam, int GratisMananden = 3);
+public record CoachUitnodigingVerzoek(string Naam, int GratisMananden = 3, bool VoorAltijdGratis = false);
