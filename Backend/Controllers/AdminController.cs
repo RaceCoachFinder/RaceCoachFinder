@@ -49,6 +49,55 @@ public class AdminController : ControllerBase
         return NoContent();
     }
 
+    // Gratis periode van een coach aanpassen. Beveiligd tegen vergissingen:
+    // alleen coaches, max 24 maanden per keer, en de naam van de coach moet
+    // als bevestiging worden meegestuurd.
+    [HttpPost("gebruikers/{id}/gratis")]
+    public async Task<IActionResult> PasGratisAan(string id, [FromBody] GratisAanpassenVerzoek verzoek)
+    {
+        var gebruiker = await _userManager.FindByIdAsync(id);
+        if (gebruiker == null) return NotFound("Gebruiker niet gevonden.");
+        if (!gebruiker.Rol.Split(',').Any(r => r.Trim() == "Coach"))
+            return BadRequest("Alleen coaches kunnen een gratis periode krijgen.");
+
+        if (!string.Equals((verzoek.Bevestiging ?? "").Trim(), gebruiker.Naam.Trim(), StringComparison.OrdinalIgnoreCase))
+            return BadRequest("Bevestiging klopt niet: typ exact de naam van de coach.");
+
+        var nu = DateTime.UtcNow;
+        var vorige = gebruiker.GratisVerlooptOp;
+        var altijd = new DateTime(9999, 12, 31, 0, 0, 0, DateTimeKind.Utc);
+
+        switch (verzoek.Actie)
+        {
+            case "maanden":
+                if (verzoek.Maanden is null or < 1 or > 24)
+                    return BadRequest("Kies tussen 1 en 24 maanden.");
+                if (vorige.HasValue && vorige.Value.Year >= 9999)
+                    return BadRequest("Deze coach is al voor altijd gratis.");
+                // Verleng vanaf de huidige einddatum als die nog loopt, anders vanaf nu
+                var basis = vorige.HasValue && vorige.Value > nu ? vorige.Value : nu;
+                gebruiker.GratisVerlooptOp = basis.AddMonths(verzoek.Maanden.Value);
+                break;
+            case "altijd":
+                if (vorige.HasValue && vorige.Value.Year >= 9999)
+                    return BadRequest("Deze coach is al voor altijd gratis.");
+                gebruiker.GratisVerlooptOp = altijd;
+                break;
+            case "herstel":
+                // Alleen bedoeld voor 'Ongedaan maken' direct na een wijziging
+                gebruiker.GratisVerlooptOp = verzoek.HerstelNaar;
+                break;
+            default:
+                return BadRequest("Onbekende actie.");
+        }
+
+        var resultaat = await _userManager.UpdateAsync(gebruiker);
+        if (!resultaat.Succeeded)
+            return BadRequest(string.Join(", ", resultaat.Errors.Select(e => e.Description)));
+
+        return Ok(new { vorige, nieuwe = gebruiker.GratisVerlooptOp });
+    }
+
     [HttpGet("coaches")]
     public async Task<IActionResult> GetAlleCoaches()
     {
@@ -122,4 +171,5 @@ public class AdminController : ControllerBase
     }
 }
 
+public record GratisAanpassenVerzoek(string Actie, int? Maanden, DateTime? HerstelNaar, string? Bevestiging);
 public record CoachUitnodigingVerzoek(string Naam, int GratisMananden = 3, bool VoorAltijdGratis = false);
