@@ -99,6 +99,14 @@
 <div class="container" style="padding-bottom:3rem">
     <div id="melding"></div>
 
+    <!-- Mollie diagnose -->
+    <div class="admin-sectie" style="max-width:480px">
+        <h3>Mollie betaalmethoden controleren</h3>
+        <p style="font-size:0.88rem;color:var(--kleur-subtekst);margin-bottom:1rem">Laat zien welke betaalmethoden Mollie toestaat voor een abonnement.</p>
+        <button class="btn btn-donker" onclick="mollieDiagnose()">Controleren</button>
+        <pre id="mollie-diagnose" style="display:none;white-space:pre-wrap;word-break:break-word;background:#f6f6f6;border-radius:8px;padding:0.75rem;margin-top:1rem;font-size:0.8rem"></pre>
+    </div>
+
     <!-- Coach uitnodiging -->
     <div class="admin-sectie" style="max-width:480px">
         <h3>Coach uitnodiging aanmaken</h3>
@@ -461,6 +469,17 @@ function esc(str) {
     const d = document.createElement('div');
     d.textContent = String(str ?? '');
     return d.innerHTML;
+}
+
+async function mollieDiagnose() {
+    const uit = document.getElementById('mollie-diagnose');
+    uit.style.display = '';
+    uit.textContent = 'Bezig…';
+    try {
+        uit.textContent = JSON.stringify(await authVerzoek('/admin/mollie-diagnose'), null, 2);
+    } catch (e) {
+        uit.textContent = 'Fout: ' + e.message;
+    }
 }
 
 function toggleAltijdGratis() {

@@ -14,11 +14,48 @@ public class AdminController : ControllerBase
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly AppDbContext _context;
+    private readonly IConfiguration _config;
 
-    public AdminController(UserManager<ApplicationUser> userManager, AppDbContext context)
+    public AdminController(UserManager<ApplicationUser> userManager, AppDbContext context, IConfiguration config)
     {
         _userManager = userManager;
         _context = context;
+        _config = config;
+    }
+
+    // Diagnose: welke betaalmethoden staat Mollie toe voor een abonnement (eerste betaling)?
+    [HttpGet("mollie-diagnose")]
+    public async Task<IActionResult> MollieDiagnose()
+    {
+        var sleutel = Environment.GetEnvironmentVariable("MOLLIE_API_KEY") ?? _config["Mollie:ApiKey"];
+        if (string.IsNullOrEmpty(sleutel)) return Ok(new { fout = "Geen Mollie API-sleutel ingesteld op de server." });
+
+        var client = new Mollie.Api.Client.PaymentMethodClient(sleutel);
+        async Task<object> Lijst(string? sequenceType, string bedrag)
+        {
+            try
+            {
+                var r = await client.GetPaymentMethodListAsync(sequenceType: sequenceType,
+                    amount: new Mollie.Api.Models.Amount(Mollie.Api.Models.Currency.EUR, bedrag));
+                return r.Items.Select(m => m.Id).ToList();
+            }
+            catch (Exception ex) { return "Fout: " + ex.Message; }
+        }
+        async Task<string> Methode(string id)
+        {
+            try { var m = await client.GetPaymentMethodAsync(id); return "beschikbaar (" + m.Description + ")"; }
+            catch (Exception ex) { return "niet beschikbaar: " + ex.Message; }
+        }
+
+        return Ok(new
+        {
+            modus = sleutel.StartsWith("live_") ? "live" : sleutel.StartsWith("test_") ? "test" : "onbekend",
+            abonnementKoppelen_0_01 = await Lijst("first", "0.01"),
+            abonnementStarten_10_00 = await Lijst("first", "10.00"),
+            losseBetaling_10_00 = await Lijst("oneoff", "10.00"),
+            ideal = await Methode("ideal"),
+            sepaIncasso = await Methode("directdebit")
+        });
     }
 
     [HttpGet("gebruikers")]
