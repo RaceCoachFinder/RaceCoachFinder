@@ -345,7 +345,6 @@ async function laadCoaches() {
                     <tr>
                         <th>Naam</th>
                         <th>Woonplaats</th>
-                        <th>Discipline</th>
                         <th>Status</th>
                         <th>Abonnement</th>
                         <th>Weergaven</th>
@@ -359,7 +358,6 @@ async function laadCoaches() {
                                 <a href="coach-detail.html?id=${c.id}" target="_blank">${esc(c.naam)}</a>
                             </td>
                             <td>${esc(c.woonplaats) || '–'}</td>
-                            <td>${esc(c.discipline) || '–'}</td>
                             <td>
                                 ${c.isGepubliceerd
                                     ? '<span class="badge badge-groen">Gepubliceerd</span>'
@@ -397,7 +395,6 @@ async function laadRijders() {
                     <tr>
                         <th>Naam</th>
                         <th>Woonplaats</th>
-                        <th>Discipline</th>
                         <th>Niveau</th>
                         <th></th>
                     </tr>
@@ -407,7 +404,6 @@ async function laadRijders() {
                         <tr>
                             <td>${esc(r.naam)}</td>
                             <td>${esc(r.woonplaats) || '–'}</td>
-                            <td>${esc(r.discipline) || '–'}</td>
                             <td>${esc(r.niveau) || '–'}</td>
                             <td>
                                 <button class="btn btn-gevaar btn-sm" onclick="verwijderRijder(${r.id}, '${esc(r.naam)}')">Verwijderen</button>
