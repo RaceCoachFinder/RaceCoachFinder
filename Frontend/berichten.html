@@ -452,6 +452,8 @@
 
         @media (max-width: 700px) {
             .chat-wrapper { grid-template-columns: 1fr; }
+            /* iPhone zoomt in bij velden met tekst kleiner dan 16px */
+            input, textarea, select { font-size: 16px !important; }
             .gesprekken-panel { display: flex; }
             .gesprekken-panel.mobiel-verborgen { display: none; }
             .gesprek-panel { display: none; }
@@ -967,6 +969,12 @@ async function maakGroep() {
     }
 }
 
+// Op touchscreens niet automatisch focussen: dat opent het toetsenbord ongevraagd
+function focusInvoer() {
+    if (window.matchMedia('(pointer: coarse)').matches) return;
+    document.getElementById('bericht-invoer').focus();
+}
+
 async function openNieuwGesprek(partnerId) {
     openGesprek(partnerId, naamParam || 'Onbekend', rolParam);
 }
@@ -1005,7 +1013,7 @@ async function openGroepsgesprek(groepsId, naam, leden) {
     pollingInterval = setInterval(() => laadGroepsBerichten(groepsId, false), 3000);
 
     laadBerichtenBadge();
-    document.getElementById('bericht-invoer').focus();
+    focusInvoer();
 }
 
 async function openGesprek(partnerId, partnerNaam, partnerRol) {
@@ -1035,7 +1043,7 @@ async function openGesprek(partnerId, partnerNaam, partnerRol) {
     document.getElementById('partner-naam').textContent = partnerNaam;
     document.getElementById('partner-rol').textContent = partnerRol === 'Coach' ? 'Coach' : 'Rijder';
 
-    document.getElementById('bericht-invoer').focus();
+    focusInvoer();
 
     // Toon aanvraag-context alleen voor het gesprek waarvandaan we kwamen
     if (partnerId === partnerParam) {
