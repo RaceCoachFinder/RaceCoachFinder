@@ -36,6 +36,18 @@
         .abonnement-actief { background: #e8f5e9; color: #2e7d32; }
         .abonnement-gratis { background: #fff8e1; color: #f57f17; }
         .abonnement-verlopen { background: #fde8ea; color: #c62828; border: 2px solid #c62828; }
+        .btn-abonnement-beheren { font-size: 0.85rem; padding: 0.4rem 1rem; background: #fff; color: var(--kleur-tekst); border: 1.5px solid rgba(0,0,0,0.15); }
+        .btn-abonnement-beheren:hover { border-color: var(--kleur-tekst); }
+
+        /* Popups (agenda + abonnement) */
+        .popup-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
+        .popup-kaart { background: #fff; border-radius: 16px; padding: 1.5rem; width: 100%; max-width: 400px; max-height: calc(100vh - 2rem); overflow-y: auto; position: relative; box-shadow: 0 8px 32px rgba(0,0,0,0.2); box-sizing: border-box; }
+        .popup-sluiten { position: absolute; top: 0.8rem; right: 0.8rem; background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--kleur-subtekst); line-height: 1; }
+        .popup-kaart .btn-secundair { color: var(--kleur-tekst); border-color: #ddd; }
+        .abo-blok { background: #f6f6f6; border-radius: 10px; padding: 0.85rem 1rem; font-size: 0.9rem; line-height: 1.55; margin-bottom: 1rem; }
+        .abo-blok strong { color: var(--kleur-tekst); }
+        .abo-knoppen { display: flex; flex-direction: column; gap: 0.5rem; }
+        .abo-knoppen .btn { width: 100%; }
 
         .stat-rij { display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 2rem; }
         .stat-kaartje {
@@ -541,6 +553,15 @@
         <p>&copy; 2026 RaceCoachFinder</p>
     </div>
 </footer>
+
+<!-- Abonnement beheren -->
+<div class="popup-overlay" id="abonnement-modal" style="display:none" onclick="if(event.target===this)sluitAbonnementBeheer()">
+    <div class="popup-kaart">
+        <button class="popup-sluiten" onclick="sluitAbonnementBeheer()">✕</button>
+        <h3 style="margin:0 0 1rem;font-size:1.1rem">⚙️ Abonnement beheren</h3>
+        <div id="abonnement-inhoud"></div>
+    </div>
+</div>
 
 <script src="js/auth.js"></script>
 <script src="js/foto-upload.js"></script>
@@ -1114,36 +1135,101 @@ async function laadAbonnementStatus() {
         const balk = document.getElementById('abonnement-balk');
         balk.style.display = '';
 
+        const beherenKnop = `<div style="width:100%"><button class="btn btn-abonnement-beheren" onclick="openAbonnementBeheer()">⚙️ Abonnement beheren</button></div>`;
         if (status.abonnementActief) {
             const datum = new Date(status.abonnementVerlooptOp).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' });
             balk.className = 'abonnement-balk abonnement-actief';
-            balk.innerHTML = `<span>✅ Abonnement actief — geldig tot ${datum}</span>`;
+            balk.innerHTML = `<span>✅ Abonnement actief — geldig tot ${datum}</span>${beherenKnop}`;
         } else if (status.inGratisperiode) {
             const datum = new Date(status.gratisVerlooptOp).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' });
             balk.className = 'abonnement-balk abonnement-gratis';
-            balk.innerHTML = new Date(status.gratisVerlooptOp).getFullYear() >= 9999
+            balk.innerHTML = (new Date(status.gratisVerlooptOp).getFullYear() >= 9999
                 ? `<span>🎁 Je account is voor altijd gratis</span>`
-                : `<span>🎁 Gratis periode actief — verloopt op ${datum}</span>`;
+                : `<span>🎁 Gratis periode actief — verloopt op ${datum}</span>`) + beherenKnop;
         } else {
             balk.className = 'abonnement-balk abonnement-verlopen';
-            balk.innerHTML = `
-                <span>⚠️ Geen actief abonnement. Abonneer voor €10/maand om coach te blijven.</span>
-                <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
-                    <button class="btn btn-primair" style="font-size:0.85rem;padding:0.4rem 1rem" onclick="startAbonnement()">Abonnement starten</button>
-                    <button class="btn btn-donker" style="font-size:0.75rem;padding:0.4rem 0.8rem;opacity:0.7" onclick="testActiveer()" title="Alleen voor testen">🧪 Test activeren</button>
-                </div>
-            `;
+            balk.innerHTML = `<span>⚠️ Geen actief abonnement. Abonneer voor €10/maand om coach te blijven.</span>${beherenKnop}`;
         }
     } catch {}
 }
 
-async function testActiveer() {
+// ── Abonnement beheren ──
+function aboDatum(d) {
+    return new Date(d).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+function sluitAbonnementBeheer() {
+    document.getElementById('abonnement-modal').style.display = 'none';
+}
+
+async function openAbonnementBeheer() {
+    const inhoud = document.getElementById('abonnement-inhoud');
+    inhoud.innerHTML = '<div class="abo-blok">Laden…</div>';
+    document.getElementById('abonnement-modal').style.display = 'flex';
     try {
-        await authVerzoek('/betaling/test-activeer', 'POST');
-        toonMelding('Testabonnement geactiveerd!', 'succes');
-        setTimeout(() => location.reload(), 1500);
+        renderAbonnementBeheer(await authVerzoek('/betaling/abonnement'));
     } catch (e) {
-        toonMelding('Fout: ' + e.message, 'fout');
+        inhoud.innerHTML = `<div class="abo-blok" style="color:#c62828">Kon je abonnement niet ophalen: ${_esc(e.message)}</div>`;
+    }
+}
+
+function renderAbonnementBeheer(a) {
+    const inhoud = document.getElementById('abonnement-inhoud');
+    const altijdGratis = a.gratisVerlooptOp && new Date(a.gratisVerlooptOp).getFullYear() >= 9999;
+    const sluitKnop = `<button class="btn btn-secundair" onclick="sluitAbonnementBeheer()">Sluiten</button>`;
+
+    if (altijdGratis) {
+        inhoud.innerHTML = `<div class="abo-blok">🎁 Je account is <strong>voor altijd gratis</strong>. Je hebt geen abonnement nodig.</div>
+            <div class="abo-knoppen">${sluitKnop}</div>`;
+    } else if (a.abonnementActief && a.lopendAbonnement) {
+        const volgende = a.lopendAbonnement.volgendeBetaling ? aboDatum(a.lopendAbonnement.volgendeBetaling) : null;
+        inhoud.innerHTML = `<div class="abo-blok">✅ <strong>Abonnement actief</strong> — €${_esc(a.lopendAbonnement.bedrag || '10.00')} per maand<br>
+                ${volgende ? `Volgende betaling: <strong>${volgende}</strong>` : `Geldig tot <strong>${aboDatum(a.abonnementVerlooptOp)}</strong>`}</div>
+            <div class="abo-knoppen">
+                <button class="btn btn-gevaar" onclick="vraagOpzeggen('${_esc(a.abonnementVerlooptOp)}')">Abonnement opzeggen</button>
+                ${sluitKnop}
+            </div>`;
+    } else if (a.abonnementActief) {
+        inhoud.innerHTML = `<div class="abo-blok">${a.mollieFout
+                ? '⚠️ We konden je abonnement nu niet controleren bij de betaalprovider. Probeer het later opnieuw.'
+                : `Je abonnement is <strong>opgezegd</strong>. Je kunt RaceCoachFinder nog gebruiken tot en met <strong>${aboDatum(a.abonnementVerlooptOp)}</strong>. Er wordt niets meer afgeschreven.`}</div>
+            <div class="abo-knoppen">${sluitKnop}</div>`;
+    } else if (a.inGratisperiode) {
+        inhoud.innerHTML = `<div class="abo-blok">🎁 Je gratis periode loopt tot en met <strong>${aboDatum(a.gratisVerlooptOp)}</strong>.<br>
+                Daarna kun je hier een abonnement nemen voor €10 per maand.</div>
+            <div class="abo-knoppen">${sluitKnop}</div>`;
+    } else {
+        inhoud.innerHTML = `<div class="abo-blok">Je hebt nu <strong>geen actief abonnement</strong>.<br>
+                Met een abonnement van <strong>€10 per maand</strong> blijft je coachprofiel zichtbaar. Maandelijks opzegbaar.</div>
+            <div class="abo-knoppen">
+                <button class="btn btn-primair" onclick="startAbonnement()">Abonnement nemen — €10/maand</button>
+                ${sluitKnop}
+            </div>`;
+    }
+}
+
+function vraagOpzeggen(geldigTot) {
+    document.getElementById('abonnement-inhoud').innerHTML = `
+        <div class="abo-blok" style="background:#fde8ea">Weet je zeker dat je je abonnement wilt opzeggen?<br>
+            Er wordt daarna <strong>niets meer afgeschreven</strong>. Je kunt RaceCoachFinder nog gebruiken tot en met <strong>${aboDatum(geldigTot)}</strong>.</div>
+        <div class="abo-knoppen">
+            <button class="btn btn-gevaar" id="btn-bevestig-opzeggen" onclick="bevestigOpzeggen()">Ja, abonnement opzeggen</button>
+            <button class="btn btn-secundair" onclick="openAbonnementBeheer()">Nee, terug</button>
+        </div>`;
+}
+
+async function bevestigOpzeggen() {
+    const knop = document.getElementById('btn-bevestig-opzeggen');
+    knop.disabled = true;
+    knop.textContent = 'Bezig met opzeggen…';
+    try {
+        await authVerzoek('/betaling/stop-abonnement', 'POST');
+        await openAbonnementBeheer();
+        laadAbonnementStatus();
+    } catch (e) {
+        knop.disabled = false;
+        knop.textContent = 'Ja, abonnement opzeggen';
+        alert('Opzeggen mislukt: ' + e.message);
     }
 }
 

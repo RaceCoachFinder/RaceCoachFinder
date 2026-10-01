@@ -45,6 +45,8 @@ public class BetalingController : ControllerBase
         {
             var gebruiker = await _userManager.GetUserAsync(User);
             if (gebruiker == null) return Unauthorized();
+            if (gebruiker.AbonnementActief && gebruiker.AbonnementVerlooptOp > DateTime.UtcNow)
+                return BadRequest("Je hebt al een actief abonnement.");
 
             var klantClient = new CustomerClient(ApiKey);
             var betalingClient = new PaymentClient(ApiKey);
@@ -98,8 +100,80 @@ public class BetalingController : ControllerBase
         });
     }
 
-    [HttpPost("test-activeer")]
+    // Details voor 'Abonnement beheren': lokale status + lopend Mollie-abonnement
+    [HttpGet("abonnement")]
     [Authorize(Roles = "Coach")]
+    public async Task<IActionResult> GetAbonnement()
+    {
+        var gebruiker = await _userManager.GetUserAsync(User);
+        if (gebruiker == null) return Unauthorized();
+
+        var nu = DateTime.UtcNow;
+        object? mollie = null;
+        var mollieFout = false;
+        if (!string.IsNullOrEmpty(gebruiker.MollieKlantId))
+        {
+            try
+            {
+                var lijst = await new SubscriptionClient(ApiKey).GetSubscriptionListAsync(gebruiker.MollieKlantId, null, 50);
+                var lopend = lijst.Items.FirstOrDefault(a => a.Status == SubscriptionStatus.Active || a.Status == SubscriptionStatus.Pending);
+                if (lopend != null)
+                    mollie = new { status = lopend.Status, volgendeBetaling = lopend.NextPaymentDate, bedrag = lopend.Amount?.Value };
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine("GetAbonnement Mollie fout: " + ex.Message);
+                mollieFout = true;
+            }
+        }
+
+        return Ok(new
+        {
+            abonnementActief = gebruiker.AbonnementActief && gebruiker.AbonnementVerlooptOp > nu,
+            abonnementVerlooptOp = gebruiker.AbonnementVerlooptOp,
+            inGratisperiode = gebruiker.GratisVerlooptOp.HasValue && gebruiker.GratisVerlooptOp > nu,
+            gratisVerlooptOp = gebruiker.GratisVerlooptOp,
+            lopendAbonnement = mollie,
+            mollieFout
+        });
+    }
+
+    // Abonnement opzeggen: stopt toekomstige afschrijvingen bij Mollie.
+    // De al betaalde periode blijft geldig tot AbonnementVerlooptOp.
+    [HttpPost("stop-abonnement")]
+    [Authorize(Roles = "Coach")]
+    public async Task<IActionResult> StopAbonnement()
+    {
+        var gebruiker = await _userManager.GetUserAsync(User);
+        if (gebruiker == null) return Unauthorized();
+        if (string.IsNullOrEmpty(gebruiker.MollieKlantId))
+            return BadRequest("Er is geen abonnement om op te zeggen.");
+
+        try
+        {
+            var client = new SubscriptionClient(ApiKey);
+            var lijst = await client.GetSubscriptionListAsync(gebruiker.MollieKlantId, null, 50);
+            var lopend = lijst.Items
+                .Where(a => a.Status == SubscriptionStatus.Active || a.Status == SubscriptionStatus.Pending)
+                .ToList();
+            if (lopend.Count == 0)
+                return BadRequest("Er is geen lopend abonnement om op te zeggen.");
+
+            foreach (var a in lopend)
+                await client.CancelSubscriptionAsync(gebruiker.MollieKlantId, a.Id);
+
+            return Ok(new { geldigTot = gebruiker.AbonnementVerlooptOp });
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine("StopAbonnement fout: " + ex);
+            return StatusCode(500, "Opzeggen is niet gelukt. Probeer het later opnieuw of neem contact op.");
+        }
+    }
+
+    // Alleen voor testen door een admin; coaches mogen zichzelf geen gratis abonnement geven
+    [HttpPost("test-activeer")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> TestActiveer()
     {
         var gebruiker = await _userManager.GetUserAsync(User);
