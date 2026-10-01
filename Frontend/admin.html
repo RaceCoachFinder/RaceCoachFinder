@@ -26,6 +26,9 @@
         .admin-tabel td { padding: 0.75rem; border-bottom: 1px solid #f5f5f5; vertical-align: middle; }
         .admin-tabel tr:last-child td { border-bottom: none; }
         .admin-tabel tr:hover td { background: #fafafa; }
+        /* Tabellen zijwaarts scrollbaar op kleine schermen */
+        #gebruikers-tabel, #coaches-tabel, #rijders-tabel { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+        .admin-tabel th, .admin-tabel td { white-space: nowrap; }
 
         .badge-rol { padding: 0.18rem 0.55rem; border-radius: 20px; font-size: 0.72rem; font-weight: 700; }
         .badge-coach { background: #e3f0ff; color: #1565c0; }
