@@ -2,7 +2,7 @@
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
     <title>Berichten – RaceCoachFinder</title>
         <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="css/style.css">
@@ -247,6 +247,7 @@
 
         .gesprek-invoer textarea {
             flex: 1;
+            min-width: 0;
             resize: none;
             min-height: 42px;
             max-height: 120px;
@@ -451,7 +452,13 @@
         .review-textarea:focus { outline: none; border-color: var(--kleur-primair); }
 
         @media (max-width: 700px) {
-            .chat-wrapper { grid-template-columns: 1fr; }
+            .chat-wrapper { grid-template-columns: minmax(0, 1fr); }
+            .gesprek-panel, .gesprekken-panel { min-width: 0; }
+            .gesprek-invoer { padding: 0.75rem 1rem; gap: 0.5rem; }
+            .btn-betaalverzoek { padding: 0 0.9rem; font-size: 1rem; }
+            .betaalverzoek-tekst { display: none; }
+            .gesprek-panel-header { padding: 0.85rem 1rem; }
+            .gesprek-panel-header > div { min-width: 0; }
             /* iPhone zoomt in bij velden met tekst kleiner dan 16px */
             input, textarea, select { font-size: 16px !important; }
             .gesprekken-panel { display: flex; }
@@ -608,7 +615,7 @@
             </div>
 
             <div class="gesprek-invoer">
-                <button class="btn-betaalverzoek" id="btn-betaalverzoek" onclick="toggleVerzoekFormulier()" style="display:none">€ Betaalverzoek</button>
+                <button class="btn-betaalverzoek" id="btn-betaalverzoek" onclick="toggleVerzoekFormulier()" style="display:none">€<span class="betaalverzoek-tekst"> Betaalverzoek</span></button>
                 <textarea id="bericht-invoer" placeholder="Typ een bericht..." rows="1"
                     onkeydown="handleInvoerKeydown(event)"
                     oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
