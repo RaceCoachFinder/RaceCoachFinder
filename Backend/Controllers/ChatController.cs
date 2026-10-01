@@ -58,7 +58,7 @@ public class ChatController : ControllerBase
         {
             var afzender = await _userManager.FindByIdAsync(mijnId!);
             var preview = verzoek.Tekst.Length > 100 ? verzoek.Tekst[..100] + "…" : verzoek.Tekst;
-            var url = $"http://localhost:5500/berichten.html?partner={mijnId}&naam={Uri.EscapeDataString(afzender?.Naam ?? "")}&rol={afzender?.Rol ?? ""}";
+            var url = $"https://www.racecoachfinder.nl/berichten.html?partner={mijnId}&naam={Uri.EscapeDataString(afzender?.Naam ?? "")}&rol={afzender?.Rol ?? ""}";
             _ = _email.VerstuurAsync(ontvanger.Email, ontvanger.Naam,
                 $"Nieuw bericht van {afzender?.Naam ?? "iemand"} – RaceCoachFinder",
                 EmailTemplates.NieuwBericht(afzender?.Naam ?? "Iemand", preview, url));
