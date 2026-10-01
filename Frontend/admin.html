@@ -65,7 +65,7 @@
         .gratis-stepper { display: flex; align-items: center; gap: 0.4rem; width: 100%; padding-left: 1.6rem; }
         .gratis-stepper button { width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid #ddd; background: #fff; font-size: 1.2rem; font-weight: 700; cursor: pointer; line-height: 1; flex-shrink: 0; }
         .gratis-stepper button:hover { border-color: var(--kleur-primair); }
-        .gratis-stepper input[type=number] { font-size: 16px; width: 3.6rem; text-align: center; padding: 0.35rem 0.3rem; margin: 0; font-weight: 700; }
+        .gratis-stepper input[type=number] { width: 3.6rem; text-align: center; padding: 0.35rem 0.3rem; margin: 0; font-weight: 700; }
         .gratis-snel { display: flex; gap: 0.35rem; width: 100%; padding-left: 1.6rem; }
         .gratis-snel button { flex: 1; padding: 0.3rem 0; border: 1.5px solid #ddd; border-radius: 999px; background: #fff; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
         .gratis-snel button:hover { border-color: var(--kleur-primair); background: #fffbea; }
@@ -113,11 +113,7 @@
             <div style="display:flex;gap:0.75rem;align-items:flex-end;flex-wrap:wrap">
                 <div class="formulier-groep" style="margin:0;flex:1;min-width:140px">
                     <label style="font-size:0.85rem;white-space:nowrap">Gratis periode (maanden)</label>
-                    <div class="gratis-stepper" style="padding-left:0">
-                        <button type="button" onclick="wijzigUitnodigingMaanden(-1)" aria-label="Minder">−</button>
-                        <input type="number" id="uitnodiging-maanden" value="3" min="1" max="24" inputmode="numeric">
-                        <button type="button" onclick="wijzigUitnodigingMaanden(1)" aria-label="Meer">+</button>
-                    </div>
+                    <input type="number" id="uitnodiging-maanden" value="3" min="1" max="24">
                 </div>
                 <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.85rem;font-weight:600;white-space:nowrap;padding-bottom:0.7rem;cursor:pointer">
                     <input type="checkbox" id="uitnodiging-altijd" onchange="toggleAltijdGratis()" style="width:auto;margin:0;accent-color:var(--kleur-primair)">
@@ -471,16 +467,10 @@ function esc(str) {
     return d.innerHTML;
 }
 
-function wijzigUitnodigingMaanden(stap) {
-    const veld = document.getElementById('uitnodiging-maanden');
-    if (veld.disabled) return;
-    veld.value = Math.min(24, Math.max(1, (parseInt(veld.value) || 0) + stap));
-}
-
 function toggleAltijdGratis() {
     const veld = document.getElementById('uitnodiging-maanden');
     veld.disabled = document.getElementById('uitnodiging-altijd').checked;
-    veld.parentElement.style.opacity = veld.disabled ? '0.4' : '';
+    veld.style.opacity = veld.disabled ? '0.4' : '';
 }
 
 async function maakUitnodiging() {
