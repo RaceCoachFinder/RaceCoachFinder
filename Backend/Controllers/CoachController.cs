@@ -29,9 +29,9 @@ public class CoachController : ControllerBase
         var query = _context.Coaches.Where(c => c.IsGepubliceerd).AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(naam))
-            query = query.Where(c => c.Naam.Contains(naam));
+            query = query.Where(c => c.Naam.ToLower().Contains(naam.ToLower()));
         if (!string.IsNullOrWhiteSpace(locatie))
-            query = query.Where(c => c.Woonplaats.Contains(locatie));
+            query = query.Where(c => c.Woonplaats.ToLower().Contains(locatie.ToLower()));
         if (!string.IsNullOrWhiteSpace(discipline))
             query = query.Where(c => c.Discipline.Contains(discipline));
         if (!string.IsNullOrWhiteSpace(specialisatie))
