@@ -167,13 +167,52 @@
             cursor: pointer;
         }
 
+        .mobiel-filter-toggle {
+            display: none;
+        }
+
         @media (max-width: 700px) {
             .zoek-layout {
                 grid-template-columns: 1fr;
             }
             .filter-sidebar {
                 position: static;
+                display: none;
+                margin-bottom: 0;
             }
+            .filter-sidebar.mobiel-open {
+                display: block;
+            }
+            .mobiel-filter-toggle {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                background: var(--kleur-wit);
+                border: 1.5px solid #ddd;
+                border-radius: 8px;
+                padding: 0.55rem 1rem;
+                font-size: 0.9rem;
+                font-weight: 600;
+                color: var(--kleur-tekst);
+                cursor: pointer;
+                font-family: inherit;
+                margin-bottom: 0.75rem;
+                box-shadow: var(--schaduw);
+                transition: border-color 0.15s;
+            }
+            .mobiel-filter-toggle:hover { border-color: var(--kleur-primair); }
+            .mobiel-filter-toggle .filter-pijl { font-size: 0.7rem; opacity: 0.5; transition: transform 0.2s; }
+            .mobiel-filter-toggle.open .filter-pijl { transform: rotate(180deg); }
+            .mobiel-filter-badge {
+                background: var(--kleur-primair);
+                color: var(--kleur-donker);
+                border-radius: 10px;
+                padding: 0.1rem 0.45rem;
+                font-size: 0.72rem;
+                font-weight: 700;
+                display: none;
+            }
+            .mobiel-filter-badge.zichtbaar { display: inline; }
         }
     </style>
 </head>
@@ -191,10 +230,15 @@
 <div class="container pagina-sectie">
     <h1 class="sectie-titel">Coaches zoeken</h1>
 
+    <button class="mobiel-filter-toggle" id="mobiel-filter-toggle" onclick="toggleMobielFilter()">
+        ⚙ Filters <span class="mobiel-filter-badge" id="filter-badge"></span>
+        <span class="filter-pijl">▼</span>
+    </button>
+
     <div class="zoek-layout">
 
         <!-- Sidebar filters -->
-        <aside class="filter-sidebar">
+        <aside class="filter-sidebar" id="filter-sidebar">
             <h2>Filters</h2>
 
             <div class="filter-veld">
@@ -339,6 +383,31 @@ const kwalsDropdown = maakMultiDropdown('f-kwaliteiten', KWALITEITEN, renderCoac
 
 let alleCoaches = [];
 
+function toggleMobielFilter() {
+    const sidebar = document.getElementById('filter-sidebar');
+    const toggle = document.getElementById('mobiel-filter-toggle');
+    const isOpen = sidebar.classList.toggle('mobiel-open');
+    toggle.classList.toggle('open', isOpen);
+}
+
+function updateFilterBadge() {
+    const aktief = [
+        document.getElementById('f-naam').value.trim(),
+        document.getElementById('f-locatie').value.trim(),
+        document.getElementById('f-taal').value.trim(),
+        document.getElementById('f-ervaring').value !== '0' ? '1' : '',
+        document.getElementById('f-maxprijs').value !== '0' ? '1' : '',
+        document.getElementById('f-online').checked ? '1' : '',
+        document.getElementById('f-favorieten').checked ? '1' : '',
+    ].filter(Boolean).length + (specsDropdown?.getGekozen().length || 0) + (kwalsDropdown?.getGekozen().length || 0);
+
+    const badge = document.getElementById('filter-badge');
+    if (badge) {
+        badge.textContent = aktief || '';
+        badge.classList.toggle('zichtbaar', aktief > 0);
+    }
+}
+
 async function zoekCoaches() {
     const grid = document.getElementById('coach-grid');
     grid.innerHTML = '<div class="laden"><div class="spinner"></div><p>Zoeken...</p></div>';
@@ -355,6 +424,7 @@ async function zoekCoaches() {
             [alleCoaches[i], alleCoaches[j]] = [alleCoaches[j], alleCoaches[i]];
         }
         renderCoaches();
+        updateFilterBadge();
     } catch (e) {
         grid.innerHTML = `<div class="melding melding-fout">
             Kan backend niet bereiken. Zorg dat de API draait op poort 5000.<br>
@@ -430,6 +500,7 @@ function resetFilters() {
     document.getElementById('f-favorieten').checked = false;
     document.getElementById('f-sortering').value = '';
     zoekCoaches();
+    updateFilterBadge();
 }
 
 function minPrijs(c) {
