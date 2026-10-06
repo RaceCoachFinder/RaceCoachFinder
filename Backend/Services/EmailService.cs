@@ -221,6 +221,23 @@ public static class EmailTemplates
         return Omhulsel(inhoud);
     }
 
+    public static string CoachRapport(string coachNaam, int coachId, string reden, string melderInfo, string coachUrl)
+    {
+        var inhoud =
+            "<h2 style=\"margin:0 0 8px;color:#c62828;font-size:1.2rem\">⚑ Nieuwe melding over een coach</h2>" +
+            "<p style=\"color:#555;margin:0 0 20px\">Er is een melding ingediend via de coachpagina.</p>" +
+            "<table style=\"width:100%;border-collapse:collapse;margin-bottom:20px\">" +
+            "<tr><td style=\"padding:8px 12px;background:#f9f9f9;font-weight:700;width:130px;border:1px solid #eee\">Coach</td>" +
+            "<td style=\"padding:8px 12px;border:1px solid #eee\">" + Esc(coachNaam) + " (ID: " + coachId + ")</td></tr>" +
+            "<tr><td style=\"padding:8px 12px;background:#f9f9f9;font-weight:700;border:1px solid #eee\">Melder</td>" +
+            "<td style=\"padding:8px 12px;border:1px solid #eee\">" + Esc(melderInfo) + "</td></tr>" +
+            "<tr><td style=\"padding:8px 12px;background:#f9f9f9;font-weight:700;border:1px solid #eee\">Reden</td>" +
+            "<td style=\"padding:8px 12px;border:1px solid #eee;white-space:pre-wrap\">" + Esc(reden) + "</td></tr>" +
+            "</table>" +
+            "<div style=\"text-align:center\">" + Knop(coachUrl, "Bekijk coachpagina") + "</div>";
+        return Omhulsel(inhoud);
+    }
+
     private static string Esc(string s) =>
         s.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\"", "&quot;");
 }

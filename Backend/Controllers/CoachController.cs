@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using Backend.Data;
 using Backend.Models;
+using Backend.Services;
 
 namespace Backend.Controllers;
 
@@ -14,11 +15,17 @@ public class CoachController : ControllerBase
 {
     private readonly AppDbContext _context;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IEmailService _email;
+    private readonly ILogger<CoachController> _logger;
+    private readonly IConfiguration _config;
 
-    public CoachController(AppDbContext context, UserManager<ApplicationUser> userManager)
+    public CoachController(AppDbContext context, UserManager<ApplicationUser> userManager, IEmailService email, ILogger<CoachController> logger, IConfiguration config)
     {
         _context = context;
         _userManager = userManager;
+        _email = email;
+        _logger = logger;
+        _config = config;
     }
 
     // Publiek: alleen gepubliceerde coaches (met gemiddelde score)
@@ -205,4 +212,36 @@ public class CoachController : ControllerBase
         await _context.SaveChangesAsync();
         return Ok(new { isGepubliceerd = coach.IsGepubliceerd });
     }
+
+    [HttpPost("{id}/rapporteren")]
+    public async Task<IActionResult> RapporteerCoach(int id, [FromBody] CoachRapportVerzoek verzoek)
+    {
+        if (string.IsNullOrWhiteSpace(verzoek.Reden))
+            return BadRequest("Geef een reden op.");
+
+        var coach = await _context.Coaches.FindAsync(id);
+        if (coach == null) return NotFound();
+
+        var melderInfo = "Anoniem";
+        var gebruikerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (gebruikerId != null)
+        {
+            var melder = await _userManager.FindByIdAsync(gebruikerId);
+            if (melder != null)
+                melderInfo = $"{melder.Naam} ({melder.Email})";
+        }
+
+        var adminEmail = _config["Email:Afzender"] ?? "racecoachfinder@gmail.com";
+        var coachUrl = $"https://www.racecoachfinder.nl/coach-detail.html?id={id}";
+
+        _ = _email.VerstuurAsync(adminEmail, "RaceCoachFinder Admin",
+            $"Melding over coach: {coach.Naam}",
+            EmailTemplates.CoachRapport(coach.Naam, id, verzoek.Reden, melderInfo, coachUrl))
+            .ContinueWith(t => _logger.LogError(t.Exception, "Rapportage-mail mislukt voor coach {Id}", id),
+                TaskContinuationOptions.OnlyOnFaulted);
+
+        return Ok();
+    }
 }
+
+public record CoachRapportVerzoek(string Reden);

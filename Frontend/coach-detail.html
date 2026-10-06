@@ -143,6 +143,25 @@
     </div>
 </div>
 
+<!-- Rapporteer-link -->
+<div id="rapporteer-link-wrapper" style="display:none;text-align:center;padding:0 0 2rem">
+    <button onclick="openRapportModal()" style="background:none;border:none;color:#bbb;font-size:0.8rem;cursor:pointer;text-decoration:underline;padding:0">Rapporteer deze coach</button>
+</div>
+
+<!-- Rapporteer modal -->
+<div id="rapporteer-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:10px;padding:2rem;max-width:440px;width:calc(100% - 2rem);box-shadow:0 8px 32px rgba(0,0,0,0.18)">
+        <h3 style="margin:0 0 0.5rem;font-size:1.1rem">Coach rapporteren</h3>
+        <p style="color:#666;font-size:0.88rem;margin:0 0 1rem">Beschrijf waarom je deze coach wilt melden. RaceCoachFinder beoordeelt elke melding.</p>
+        <textarea id="rapporteer-tekst" rows="4" placeholder="Beschrijf het probleem..." style="width:100%;padding:0.6rem 0.75rem;border:1px solid #ddd;border-radius:6px;font-family:inherit;font-size:0.9rem;box-sizing:border-box;resize:vertical"></textarea>
+        <div id="rapporteer-melding" style="margin-top:0.5rem;font-size:0.85rem"></div>
+        <div style="display:flex;gap:0.75rem;margin-top:1rem;justify-content:flex-end">
+            <button onclick="sluitRapportModal()" style="background:none;border:1px solid #ddd;border-radius:6px;padding:0.5rem 1.1rem;cursor:pointer;font-size:0.9rem">Annuleren</button>
+            <button onclick="verstuurRapport()" style="background:#c62828;color:#fff;border:none;border-radius:6px;padding:0.5rem 1.25rem;cursor:pointer;font-size:0.9rem;font-weight:600">Versturen</button>
+        </div>
+    </div>
+</div>
+
 <div id="fout-melding" style="display:none" class="container pagina-sectie">
     <div class="melding melding-fout">Coach niet gevonden. <a href="coaches.html">Terug naar overzicht</a></div>
 </div>
@@ -304,7 +323,59 @@ function vulProfiel(c) {
         toonReviewFormulier(c.gebruikerId);
     }
     laadFavoriet();
+
+    // Rapporteer-link tonen (niet voor eigen profiel)
+    const huidigGebruiker = getGebruiker ? getGebruiker() : null;
+    if (!huidigGebruiker || huidigGebruiker.id !== c.gebruikerId) {
+        document.getElementById('rapporteer-link-wrapper').style.display = 'block';
+    }
 }
+
+function openRapportModal() {
+    document.getElementById('rapporteer-tekst').value = '';
+    document.getElementById('rapporteer-melding').textContent = '';
+    const modal = document.getElementById('rapporteer-modal');
+    modal.style.display = 'flex';
+}
+
+function sluitRapportModal() {
+    document.getElementById('rapporteer-modal').style.display = 'none';
+}
+
+async function verstuurRapport() {
+    const reden = document.getElementById('rapporteer-tekst').value.trim();
+    const meldingEl = document.getElementById('rapporteer-melding');
+    if (!reden) {
+        meldingEl.style.color = '#c62828';
+        meldingEl.textContent = 'Geef een reden op.';
+        return;
+    }
+    const knop = document.querySelector('#rapporteer-modal button[onclick="verstuurRapport()"]');
+    knop.disabled = true;
+    knop.textContent = 'Versturen...';
+    try {
+        const r = await fetch(`https://racecoachfinder-production.up.railway.app/api/coach/${coachId}/rapporteren`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reden })
+        });
+        if (!r.ok) throw new Error(await r.text());
+        sluitRapportModal();
+        meldingEl.style.color = '#2e7d32';
+        meldingEl.textContent = 'Melding verstuurd. Bedankt!';
+        document.getElementById('rapporteer-link-wrapper').querySelector('button').textContent = 'Melding verstuurd';
+        document.getElementById('rapporteer-link-wrapper').querySelector('button').disabled = true;
+    } catch {
+        meldingEl.style.color = '#c62828';
+        meldingEl.textContent = 'Er ging iets mis. Probeer het opnieuw.';
+        knop.disabled = false;
+        knop.textContent = 'Versturen';
+    }
+}
+
+document.getElementById('rapporteer-modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('rapporteer-modal')) sluitRapportModal();
+});
 
 function sterrenHtml(score) {
     let h = '';
