@@ -354,6 +354,7 @@ async function submitRegistreren() {
 
         if (regData.tweedeRol) {
             toonMelding('Tweede rol toegevoegd! Je kan nu inloggen.', 'succes');
+            setActieveRol('Coach');
             setTimeout(() => location.href = 'inloggen.html', 1500);
         } else if (regData.wachtOpBevestiging) {
             toonMelding('Account aangemaakt! Controleer je e-mail voor de bevestigingscode.', 'succes');
