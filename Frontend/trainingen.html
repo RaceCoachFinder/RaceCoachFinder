@@ -272,10 +272,10 @@
                         <textarea id="beschrijving" rows="4" placeholder="Beschrijf uitgebreid wat je biedt, wat je verwacht van de rijder, programma van de dag, wat inbegrepen is, etc."></textarea>
                     </div>
                     <div class="formulier-groep">
-                        <label>Coaches uitnodigen <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel) – typ @ gevolgd door naam</span></label>
+                        <label>Coaches uitnodigen <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel)</span></label>
                         <div class="coach-tags" id="coach-tags"></div>
                         <div class="coach-mention-wrapper">
-                            <input type="text" id="coach-zoek" placeholder="Typ @ om een coach te zoeken..."
+                            <input type="text" id="coach-zoek" placeholder="Typ naam om een coach te zoeken..."
                                    oninput="zoekCoach(this.value)" onkeydown="coachZoekKeydown(event)"
                                    autocomplete="off" style="width:100%;box-sizing:border-box">
                             <div class="coach-dropdown" id="coach-dropdown" style="display:none"></div>
@@ -755,9 +755,8 @@ async function laadAlleCoaches() {
 
 function zoekCoach(waarde) {
     const dd = document.getElementById('coach-dropdown');
-    if (!waarde.includes('@')) { dd.style.display = 'none'; return; }
-
-    const q = waarde.slice(waarde.lastIndexOf('@') + 1).toLowerCase();
+    const q = waarde.trim().toLowerCase();
+    if (!q) { dd.style.display = 'none'; return; }
 
     // Probeer zowel camelCase (naam) als PascalCase (Naam) veldnamen
     const gevonden = alleCoachesLijst.filter(c => {
