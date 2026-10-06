@@ -51,7 +51,7 @@ public class AdminController : ControllerBase
         {
             modus = sleutel.StartsWith("live_") ? "live" : sleutel.StartsWith("test_") ? "test" : "onbekend",
             abonnementKoppelen_0_01 = await Lijst("first", "0.01"),
-            abonnementStarten_10_00 = await Lijst("first", "10.00"),
+            abonnementStarten_5_00 = await Lijst("first", "5.00"),
             losseBetaling_10_00 = await Lijst("oneoff", "10.00"),
             ideal = await Methode("ideal"),
             sepaIncasso = await Methode("directdebit")

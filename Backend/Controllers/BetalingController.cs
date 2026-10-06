@@ -75,10 +75,10 @@ public class BetalingController : ControllerBase
 
             var betaling = await betalingClient.CreatePaymentAsync(new PaymentRequest
             {
-                Amount = new Amount(Currency.EUR, startOp.HasValue ? "0.01" : "10.00"),
+                Amount = new Amount(Currency.EUR, startOp.HasValue ? "0.01" : "5.00"),
                 Description = startOp.HasValue
                     ? $"RaceCoachFinder – rekening koppelen, abonnement start {startOp:dd-MM-yyyy}"
-                    : "RaceCoachFinder – maandelijks abonnement",
+                    : "RaceCoachFinder – eerste maand introductieprijs (daarna €10/mnd)",
                 RedirectUrl = startOp.HasValue
                     ? $"{FrontendUrl}/betaling-succes.html?start={startOp:yyyy-MM-dd}"
                     : $"{FrontendUrl}/betaling-succes.html",
