@@ -539,17 +539,42 @@ textarea { resize: vertical; min-height: 80px; }
 
 .pakket-verwijder {
     background: none;
-    border: 1px solid #bbb;
-    border-radius: 4px;
+    border: none;
     cursor: pointer;
-    color: #999;
-    font-size: 0.85rem;
-    padding: 0.2rem 0.45rem;
+    color: #c62828;
+    font-size: 1.2rem;
+    padding: 0 0.25rem;
     flex-shrink: 0;
-    line-height: 1;
 }
 
-.pakket-verwijder:hover { background: #f0f0f0; border-color: #999; color: #555; }
+.pakket-verwijder:hover { opacity: 0.7; }
+
+.pakket-toevoegen {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #2e7d32;
+    font-size: 1.3rem;
+    padding: 0 0.25rem;
+    flex-shrink: 0;
+    font-weight: 700;
+}
+
+.pakket-toevoegen:hover { opacity: 0.7; }
+
+.pakket-bevestigd {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.6rem;
+    background: #f9f9f9;
+    border-radius: 6px;
+    margin-bottom: 0.4rem;
+    font-size: 0.9rem;
+}
+
+.pakket-bevestigd-label { flex: 2; color: #222; }
+.pakket-bevestigd-prijs { flex: 1; min-width: 80px; color: #555; }
 
 .prijzen-preview {
     margin-top: 0.75rem;

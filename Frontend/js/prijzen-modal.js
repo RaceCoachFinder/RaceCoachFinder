@@ -10,17 +10,19 @@ function sluitModal() {
     document.getElementById('modal-overlay').classList.remove('open');
 }
 
-// Sluit modal als je buiten het witte vlak klikt
 function sluitModalBuiten(event) {
     if (event.target === document.getElementById('modal-overlay')) sluitModal();
 }
 
 function voegPakketToe() {
-    huidigePakketten.push({ label: '', prijs: 0 });
+    const labelEl = document.getElementById('nieuw-pakket-label');
+    const prijsEl = document.getElementById('nieuw-pakket-prijs');
+    const label = (labelEl?.value || '').trim();
+    const prijs = parseFloat(prijsEl?.value) || 0;
+    if (!label) { labelEl?.focus(); return; }
+    huidigePakketten.push({ label, prijs });
     renderPakketLijst();
-    // Focus op het nieuwe lege label veld
-    const inputs = document.querySelectorAll('.pakket-label');
-    inputs[inputs.length - 1].focus();
+    document.getElementById('nieuw-pakket-label')?.focus();
 }
 
 function verwijderPakket(index) {
@@ -30,26 +32,34 @@ function verwijderPakket(index) {
 
 function renderPakketLijst() {
     const lijst = document.getElementById('pakket-lijst');
-    if (huidigePakketten.length === 0) {
-        lijst.innerHTML = `<p style="color:var(--kleur-subtekst);font-size:0.88rem;margin-bottom:0.75rem">Nog geen pakketten. Klik op "+ Pakket toevoegen".</p>`;
-        return;
-    }
-    lijst.innerHTML = huidigePakketten.map((p, i) => `
-        <div class="pakket-rij">
-            <input type="text" class="pakket-label" placeholder="bijv. Racedag coachen"
-                value="${escapeAttr(p.label)}"
-                oninput="huidigePakketten[${i}].label = this.value">
-            <input type="number" placeholder="€ prijs" min="0" step="5"
-                value="${p.prijs || ''}"
-                oninput="huidigePakketten[${i}].prijs = parseFloat(this.value) || 0">
+
+    const bevestigdHtml = huidigePakketten.map((p, i) => `
+        <div class="pakket-bevestigd">
+            <span class="pakket-bevestigd-label">${escapeHtml(p.label)}</span>
+            <span class="pakket-bevestigd-prijs">€${p.prijs}</span>
             <button type="button" class="pakket-verwijder" onclick="verwijderPakket(${i})" title="Verwijder">&#x2715;</button>
         </div>
     `).join('');
+
+    lijst.innerHTML = bevestigdHtml + `
+        <div class="pakket-rij">
+            <input type="text" class="pakket-label" id="nieuw-pakket-label" placeholder="bijv. Racedag coachen"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();voegPakketToe();}">
+            <input type="number" id="nieuw-pakket-prijs" placeholder="€ prijs" min="0" step="5"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();voegPakketToe();}">
+            <button type="button" class="pakket-toevoegen" onclick="voegPakketToe()" title="Toevoegen">&#x2713;</button>
+        </div>
+    `;
 }
 
 function slaanPrijzenOp() {
-    // Verwijder lege rijen
-    huidigePakketten = huidigePakketten.filter(p => p.label.trim() !== '');
+    // Voeg eventueel ingevuld maar niet bevestigd pakket ook toe
+    const labelEl = document.getElementById('nieuw-pakket-label');
+    const prijsEl = document.getElementById('nieuw-pakket-prijs');
+    const label = (labelEl?.value || '').trim();
+    if (label) {
+        huidigePakketten.push({ label, prijs: parseFloat(prijsEl?.value) || 0 });
+    }
     sluitModal();
     updatePrijzenPreview();
 }
