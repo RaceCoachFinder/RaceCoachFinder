@@ -50,18 +50,28 @@ public class ChatController : ControllerBase
         _context.Berichten.Add(bericht);
         await _context.SaveChangesAsync();
 
-        // Stuur e-mailmelding alleen als dit de eerste ongelezen bericht van deze afzender is
-        var heeftAlOngelezen = await _context.Berichten.AnyAsync(b =>
-            b.VanGebruikerId == mijnId && b.NaarGebruikerId == naarGebruikerId && !b.Gelezen && b.Id != bericht.Id);
+        // Controleer e-mail instellingen van de ontvanger
+        var instellingen = await _context.GebruikerInstellingen
+            .FirstOrDefaultAsync(i => i.GebruikerId == naarGebruikerId);
 
-        if (!heeftAlOngelezen && !string.IsNullOrEmpty(ontvanger.Email))
+        var emailAan = instellingen?.EmailAan ?? true;
+        var drempel = instellingen?.BerichtenDrempel is > 0 ? instellingen.BerichtenDrempel : 1;
+
+        if (emailAan && !string.IsNullOrEmpty(ontvanger.Email))
         {
-            var afzender = await _userManager.FindByIdAsync(mijnId!);
-            var preview = verzoek.Tekst.Length > 100 ? verzoek.Tekst[..100] + "…" : verzoek.Tekst;
-            var url = $"https://www.racecoachfinder.nl/berichten.html?partner={mijnId}&naam={Uri.EscapeDataString(afzender?.Naam ?? "")}&rol={afzender?.Rol ?? ""}";
-            _ = _email.VerstuurAsync(ontvanger.Email, ontvanger.Naam,
-                $"Nieuw bericht van {afzender?.Naam ?? "iemand"} – RaceCoachFinder",
-                EmailTemplates.NieuwBericht(afzender?.Naam ?? "Iemand", preview, url));
+            // Tel alle ongelezen berichten voor de ontvanger (van alle afzenders)
+            var aantalOngelezen = await _context.Berichten
+                .CountAsync(b => b.NaarGebruikerId == naarGebruikerId && !b.Gelezen);
+
+            if (aantalOngelezen % drempel == 0)
+            {
+                var afzender = await _userManager.FindByIdAsync(mijnId!);
+                var preview = verzoek.Tekst.Length > 100 ? verzoek.Tekst[..100] + "…" : verzoek.Tekst;
+                var url = $"https://www.racecoachfinder.nl/berichten.html?partner={mijnId}&naam={Uri.EscapeDataString(afzender?.Naam ?? "")}&rol={afzender?.Rol ?? ""}";
+                _ = _email.VerstuurAsync(ontvanger.Email, ontvanger.Naam,
+                    $"Nieuw bericht van {afzender?.Naam ?? "iemand"} – RaceCoachFinder",
+                    EmailTemplates.NieuwBericht(afzender?.Naam ?? "Iemand", preview, url));
+            }
         }
 
         return Ok(bericht);
