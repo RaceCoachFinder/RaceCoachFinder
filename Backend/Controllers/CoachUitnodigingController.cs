@@ -73,6 +73,30 @@ public class CoachUitnodigingController : ControllerBase
             }
         }
 
+        // Controleer of alle uitnodigingen voor dit aanbod geaccepteerd zijn
+        var aanbod = await _context.CoachAanboden.FindAsync(uitnodiging.CoachAanbodId);
+        if (aanbod != null)
+        {
+            var nogOpenstaand = await _context.CoachAanbodUitnodigingen
+                .AnyAsync(u => u.CoachAanbodId == uitnodiging.CoachAanbodId && u.Status == "Openstaand");
+            if (!nogOpenstaand)
+            {
+                aanbod.IsActief = true;
+                aanbod.WachtOpCoaches = false;
+                if (groep != null)
+                {
+                    _context.Groepsberichten.Add(new Groepsbericht
+                    {
+                        GroepsgesprekId = groep.Id,
+                        VanGebruikerId = mijnId!,
+                        VanNaam = uitnodiging.CoachNaam,
+                        Tekst = "🎉 Alle coaches hebben geaccepteerd. De training staat nu online!",
+                        AangemaaktOp = DateTime.UtcNow
+                    });
+                }
+            }
+        }
+
         await _context.SaveChangesAsync();
         return Ok(new { groepsgesprekId = groep?.Id, groepsNaam = groep?.Naam, uitnodiging.Percentage });
     }
@@ -88,6 +112,36 @@ public class CoachUitnodigingController : ControllerBase
             return BadRequest("Uitnodiging is al verwerkt.");
 
         uitnodiging.Status = "Afgewezen";
+
+        // Stuur bericht naar de maker van de training
+        var aanbod = await _context.CoachAanboden.FindAsync(uitnodiging.CoachAanbodId);
+        if (aanbod != null)
+        {
+            _context.Berichten.Add(new Bericht
+            {
+                VanGebruikerId = mijnId!,
+                NaarGebruikerId = aanbod.CoachGebruikerId,
+                Tekst = $"❌ {uitnodiging.CoachNaam} heeft de uitnodiging voor \"{uitnodiging.AanbodTitel}\" geweigerd. Je kan de training aanpassen zodat hij alsnog online kan komen.",
+                AangemaaktOp = DateTime.UtcNow,
+                Gelezen = false
+            });
+
+            // Bericht in groepschat
+            var groep = await _context.Groepsgesprekken
+                .FirstOrDefaultAsync(g => g.CoachAanbodId == uitnodiging.CoachAanbodId);
+            if (groep != null)
+            {
+                _context.Groepsberichten.Add(new Groepsbericht
+                {
+                    GroepsgesprekId = groep.Id,
+                    VanGebruikerId = mijnId!,
+                    VanNaam = uitnodiging.CoachNaam,
+                    Tekst = $"❌ {uitnodiging.CoachNaam} heeft de uitnodiging geweigerd.",
+                    AangemaaktOp = DateTime.UtcNow
+                });
+            }
+        }
+
         await _context.SaveChangesAsync();
         return Ok();
     }

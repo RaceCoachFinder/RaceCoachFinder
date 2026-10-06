@@ -17,4 +17,5 @@ public class CoachAanbod
     public bool IsGratis { get; set; } = false;
     public DateTime AangemaaktOp { get; set; } = DateTime.UtcNow;
     public bool IsActief { get; set; } = true;
+    public bool WachtOpCoaches { get; set; } = false; // true zolang niet alle uitgenodigde coaches geaccepteerd hebben
 }

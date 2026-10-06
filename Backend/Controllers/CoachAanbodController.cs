@@ -124,7 +124,77 @@ public class CoachAanbodController : ControllerBase
             .Where(a => a.CoachGebruikerId == userId)
             .OrderByDescending(a => a.AangemaaktOp)
             .ToListAsync();
-        return Ok(lijst);
+
+        var aanbodIds = lijst.Select(a => a.Id).ToList();
+        var uitnodigingen = await _context.CoachAanbodUitnodigingen
+            .Where(u => aanbodIds.Contains(u.CoachAanbodId))
+            .ToListAsync();
+
+        var resultaat = lijst.Select(a => new {
+            a.Id, a.Titel, a.Datum, a.Locatie, a.Categorieen, a.Disciplines,
+            a.MaxRijders, a.PrijsPerRijder, a.IsGratis, a.IsActief, a.WachtOpCoaches,
+            a.KorteOmschrijving, a.Beschrijving,
+            Uitnodigingen = uitnodigingen
+                .Where(u => u.CoachAanbodId == a.Id)
+                .Select(u => new { u.Id, u.CoachGebruikerId, u.CoachNaam, u.Status, u.Percentage })
+                .ToList()
+        });
+
+        return Ok(resultaat);
+    }
+
+    [HttpPut("{id:int}")]
+    [Authorize(Roles = "Coach")]
+    public async Task<IActionResult> Bewerken(int id, [FromBody] CoachAanbodVerzoek verzoek)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var gebruiker = await _userManager.FindByIdAsync(userId!);
+        if (gebruiker == null) return Unauthorized();
+
+        var aanbod = await _context.CoachAanboden.FindAsync(id);
+        if (aanbod == null) return NotFound();
+        if (aanbod.CoachGebruikerId != userId) return Forbid();
+
+        aanbod.Titel = verzoek.Titel.Trim();
+        aanbod.KorteOmschrijving = verzoek.KorteOmschrijving?.Trim() ?? string.Empty;
+        aanbod.Beschrijving = verzoek.Beschrijving?.Trim() ?? string.Empty;
+        aanbod.Datum = verzoek.Datum;
+        aanbod.Locatie = verzoek.Locatie.Trim();
+        aanbod.Categorieen = verzoek.Categorieen ?? string.Empty;
+        aanbod.Disciplines = verzoek.Disciplines ?? string.Empty;
+        aanbod.MaxRijders = verzoek.MaxRijders;
+        aanbod.PrijsPerRijder = verzoek.PrijsPerRijder;
+        aanbod.IsGratis = verzoek.IsGratis;
+
+        // Zet afgewezen coaches terug op Openstaand en stuur opnieuw bericht
+        var afgewezen = await _context.CoachAanbodUitnodigingen
+            .Where(u => u.CoachAanbodId == id && u.Status == "Afgewezen")
+            .ToListAsync();
+
+        foreach (var u in afgewezen)
+        {
+            u.Status = "Openstaand";
+            var datumStr = aanbod.Datum.ToString("d MMM yyyy");
+            var prijsStr = aanbod.IsGratis ? "Gratis" : (aanbod.PrijsPerRijder.HasValue ? $"€{aanbod.PrijsPerRijder} p.p." : "");
+            _context.Berichten.Add(new Bericht
+            {
+                VanGebruikerId = userId!,
+                NaarGebruikerId = u.CoachGebruikerId,
+                Tekst = $"🎯 UITNODIGING:{u.Id}\n{gebruiker.Naam} heeft de training aangepast en nodigt je opnieuw uit: {aanbod.Titel}\n📍 {aanbod.Locatie} | 📅 {datumStr}{(prijsStr != "" ? " | " + prijsStr : "")}",
+                AangemaaktOp = DateTime.UtcNow,
+                Gelezen = false
+            });
+        }
+
+        // Hercheck of alle uitnodigingen nu geaccepteerd zijn
+        var openstaand = await _context.CoachAanbodUitnodigingen
+            .Where(u => u.CoachAanbodId == id && u.Status == "Openstaand")
+            .CountAsync();
+        aanbod.WachtOpCoaches = openstaand > 0 || afgewezen.Count > 0;
+        aanbod.IsActief = !aanbod.WachtOpCoaches;
+
+        await _context.SaveChangesAsync();
+        return Ok(new { aanbod.Id, aanbod.IsActief, aanbod.WachtOpCoaches });
     }
 
     [HttpPost]
@@ -144,6 +214,7 @@ public class CoachAanbodController : ControllerBase
         if (verzoek.Datum.Date < DateTime.UtcNow.Date)
             return BadRequest("Datum moet in de toekomst liggen.");
 
+        var heeftUitnodigingen = verzoek.UitgenodigdeCoaches?.Any() == true;
         var aanbod = new CoachAanbod
         {
             CoachGebruikerId = userId!,
@@ -159,7 +230,8 @@ public class CoachAanbodController : ControllerBase
             PrijsPerRijder = verzoek.PrijsPerRijder,
             IsGratis = verzoek.IsGratis,
             AangemaaktOp = DateTime.UtcNow,
-            IsActief = true
+            IsActief = !heeftUitnodigingen,
+            WachtOpCoaches = heeftUitnodigingen
         };
 
         _context.CoachAanboden.Add(aanbod);
