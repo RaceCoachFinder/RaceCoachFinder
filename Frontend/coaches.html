@@ -467,7 +467,9 @@ function renderCoaches() {
     });
 
     if (sortering === 'recensies') {
-        lijst.sort((a, b) => b.gemiddeldeScore - a.gemiddeldeScore || b.aantalReviews - a.aantalReviews);
+        // Bayesiaans gemiddelde: (n*r + m*C) / (n+m), m=5, C=4.0
+        const bayesScore = c => (c.aantalReviews * c.gemiddeldeScore + 5 * 4.0) / (c.aantalReviews + 5);
+        lijst.sort((a, b) => bayesScore(b) - bayesScore(a));
     } else if (sortering === 'prijs-laag') {
         lijst.sort((a, b) => minPrijs(a) - minPrijs(b));
     } else if (sortering === 'prijs-hoog') {
