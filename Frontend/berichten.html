@@ -1542,7 +1542,7 @@ function leesRegelWaarden() {
         const el = document.getElementById('regel-' + r.id);
         if (!el) return;
         r.omschrijving = el.querySelector('.r-omschrijving').value;
-        r.aantal = parseFloat(el.querySelector('.r-aantal').value) || 0;
+        r.aantal = parseInt(el.querySelector('.r-aantal').value) || 0;
         r.prijs = parseFloat(el.querySelector('.r-prijs').value) || 0;
         r.btw = parseFloat(el.querySelector('.r-btw').value) || 0;
     });
@@ -1553,7 +1553,7 @@ function renderRegels() {
     container.innerHTML = factuurRegels.map(r => `
         <div class="factuur-regel" id="regel-${r.id}">
             <input class="factuur-input r-omschrijving" type="text" placeholder="Omschrijving" value="${esc(r.omschrijving)}" oninput="berekenTotaal()">
-            <input class="factuur-input r-aantal" type="number" min="0.01" step="0.01" value="${r.aantal}" style="text-align:right" oninput="berekenTotaal()">
+            <input class="factuur-input r-aantal" type="number" min="1" step="1" value="${r.aantal}" style="text-align:right" oninput="berekenTotaal()">
             <input class="factuur-input r-prijs" type="number" min="0" step="0.01" value="${r.prijs}" placeholder="€" style="text-align:right" oninput="berekenTotaal()">
             <select class="factuur-input r-btw" onchange="berekenTotaal()">
                 <option value="0" ${r.btw===0?'selected':''}>0%</option>
