@@ -55,12 +55,35 @@
             margin-bottom: 1.5rem;
             background: #fafaf0;
         }
-        .plan-naam { font-weight: 700; font-size: 1rem; margin-bottom: 0.5rem; }
-        .plan-prijs-oud { font-size: 2.4rem; font-weight: 900; color: #bbb; text-decoration: line-through; text-decoration-color: #e53935; text-decoration-thickness: 3px; line-height: 1; }
-        .plan-korting-blok { margin: 0.4rem 0 0.1rem; display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
-        .plan-korting-badge { background: #e53935; color: #fff; font-size: 0.78rem; font-weight: 800; padding: 0.2rem 0.65rem; border-radius: 20px; letter-spacing: 0.3px; white-space: nowrap; }
-        .plan-korting-tekst { font-size: 0.88rem; color: #555; }
-        .plan-nieuw-prijs { font-size: 2rem; font-weight: 900; color: var(--kleur-primair); line-height: 1; }
+        .plan-naam { font-weight: 700; font-size: 1rem; margin-bottom: 0.75rem; }
+        .plan-prijs-blok { margin-bottom: 0.85rem; }
+        .plan-prijs-oud {
+            display: inline-block;
+            font-size: 2rem; font-weight: 900;
+            color: #999;
+            text-decoration: line-through;
+            text-decoration-color: #e53935;
+            text-decoration-thickness: 3px;
+            line-height: 1;
+            letter-spacing: -1px;
+        }
+        .plan-prijs-oud-suffix { font-size: 1rem; font-weight: 600; }
+        .plan-korting-label {
+            display: block;
+            font-size: 0.72rem; font-weight: 900;
+            letter-spacing: 1.5px; text-transform: uppercase;
+            color: #e53935;
+            margin: 0.4rem 0 0.1rem;
+        }
+        .plan-nieuw-prijs {
+            display: inline-block;
+            font-size: 3.2rem; font-weight: 900;
+            color: var(--kleur-primair);
+            line-height: 1;
+            letter-spacing: -2px;
+        }
+        .plan-nieuw-prijs-suffix { font-size: 1rem; font-weight: 600; color: var(--kleur-subtekst); }
+        .plan-na-tekst { font-size: 0.76rem; color: var(--kleur-subtekst); margin-top: 0.35rem; }
         .plan-voordelen { list-style: none; padding: 0; margin: 0.9rem 0 0; display: flex; flex-direction: column; gap: 0.4rem; }
         .plan-voordelen li { font-size: 0.88rem; display: flex; align-items: center; gap: 0.5rem; }
         .plan-voordelen li::before { content: "✓"; color: var(--kleur-primair); font-weight: 700; flex-shrink: 0; }
@@ -187,12 +210,12 @@
         <div class="stap-inhoud" id="stap-3">
             <div class="plan-kaart">
                 <div class="plan-naam">RaceCoachFinder</div>
-                <div class="plan-prijs-oud">€10 <span style="font-size:1rem;font-weight:600;color:#bbb">/ maand</span></div>
-                <div class="plan-korting-blok">
-                    <span class="plan-korting-badge">Eerste maand 50% korting!</span>
-                    <span class="plan-korting-tekst">Nu voor maar <strong class="plan-nieuw-prijs">€5</strong></span>
+                <div class="plan-prijs-blok">
+                    <span class="plan-prijs-oud">€10,<span class="plan-prijs-oud-suffix">-</span></span>
+                    <div class="plan-korting-label">Eerste maand 50% korting</div>
+                    <span class="plan-nieuw-prijs">€5,<span class="plan-nieuw-prijs-suffix">- p/m*</span></span>
+                    <div class="plan-na-tekst">* Daarna €10 / maand · op elk moment opzegbaar</div>
                 </div>
-                <div style="font-size:0.78rem;color:var(--kleur-subtekst);margin-top:0.35rem">Daarna €10 / maand · op elk moment opzegbaar</div>
                 <ul class="plan-voordelen">
                     <li>Zichtbaar voor alle rijders op het platform</li>
                     <li>Onbeperkt berichten en boekingen ontvangen</li>
