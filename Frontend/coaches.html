@@ -359,6 +359,7 @@ function maakMultiDropdown(containerId, opties, onChangeFn) {
         document.querySelectorAll('.multi-dropdown-open').forEach(d => { if (d !== el) d.classList.remove('multi-dropdown-open'); });
         el.classList.toggle('multi-dropdown-open');
     });
+    el.querySelector('.multi-dropdown-paneel').addEventListener('click', e => e.stopPropagation());
     el.querySelectorAll('input[type="checkbox"]').forEach(cb => {
         cb.addEventListener('change', () => { updateLabel(); if (onChangeFn) onChangeFn(); });
     });
