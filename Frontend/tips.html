@@ -24,6 +24,8 @@
             align-items: center;
             gap: 0.75rem;
             margin-bottom: 0.5rem;
+            cursor: pointer;
+            user-select: none;
         }
         .sectie-icoon {
             width: 46px; height: 46px;
@@ -37,6 +39,26 @@
 
         .sectie-titel { font-size: 1.6rem; font-weight: 800; margin: 0; }
         .sectie-subtitel { color: var(--kleur-subtekst); font-size: 0.95rem; margin: 0.35rem 0 2.5rem; }
+
+        .sectie-pijl {
+            margin-left: auto;
+            font-size: 1.1rem;
+            color: var(--kleur-subtekst);
+            transition: transform 0.25s ease;
+            flex-shrink: 0;
+        }
+        .sectie-kop.dicht .sectie-pijl { transform: rotate(-90deg); }
+
+        .sectie-inhoud {
+            overflow: hidden;
+            transition: max-height 0.35s ease, opacity 0.25s ease;
+            max-height: 2000px;
+            opacity: 1;
+        }
+        .sectie-inhoud.dicht {
+            max-height: 0;
+            opacity: 0;
+        }
 
         .tips-grid {
             display: grid;
@@ -131,10 +153,12 @@
 <!-- Coach tips -->
 <div class="tips-sectie" id="coach-sectie">
     <div class="container">
-        <div class="sectie-kop">
+        <div class="sectie-kop" id="coach-kop" onclick="toggleSectie('coach')">
             <div class="sectie-icoon coach">🏁</div>
             <h2 class="sectie-titel">Tips voor coaches</h2>
+            <span class="sectie-pijl">▼</span>
         </div>
+        <div class="sectie-inhoud" id="coach-inhoud">
         <p class="sectie-subtitel">Zo word je beter gevonden en haal je meer uit het platform.</p>
 
         <div class="tips-grid">
@@ -181,16 +205,19 @@
                 </div>
             </div>
         </div>
+        </div><!-- /coach-inhoud -->
     </div>
 </div>
 
 <!-- Rijder tips -->
 <div class="tips-sectie" id="rijder-sectie">
     <div class="container">
-        <div class="sectie-kop">
+        <div class="sectie-kop" id="rijder-kop" onclick="toggleSectie('rijder')">
             <div class="sectie-icoon rijder">🪖</div>
             <h2 class="sectie-titel">Tips voor rijders</h2>
+            <span class="sectie-pijl">▼</span>
         </div>
+        <div class="sectie-inhoud" id="rijder-inhoud">
         <p class="sectie-subtitel">Vind de juiste coach en haal het maximale uit elke sessie.</p>
 
         <div class="tips-grid">
@@ -237,6 +264,7 @@
                 </div>
             </div>
         </div>
+        </div><!-- /rijder-inhoud -->
     </div>
 </div>
 
@@ -258,6 +286,19 @@
 <script>
 updateNav();
 
+function toggleSectie(naam) {
+    const kop = document.getElementById(naam + '-kop');
+    const inhoud = document.getElementById(naam + '-inhoud');
+    const isDicht = inhoud.classList.contains('dicht');
+    inhoud.classList.toggle('dicht', !isDicht);
+    kop.classList.toggle('dicht', !isDicht);
+}
+
+function sluitSectie(naam) {
+    document.getElementById(naam + '-inhoud').classList.add('dicht');
+    document.getElementById(naam + '-kop').classList.add('dicht');
+}
+
 const params = new URLSearchParams(location.search);
 const isNieuw = params.get('nieuw') === 'true';
 const rol = params.get('rol') || '';
@@ -273,16 +314,17 @@ if (isNieuw) {
         tekst.textContent = 'Je account en abonnement zijn actief. Hieronder staan tips om het meeste uit RaceCoachFinder te halen. Lees ze even door voor je verder gaat!';
         link.href = 'dashboard-coach.html';
         link.textContent = 'Ga naar mijn coachprofiel';
+        sluitSectie('rijder');
     } else {
         titel.textContent = 'Welkom bij RaceCoachFinder!';
         tekst.textContent = 'Je account is aangemaakt. Hieronder staan tips om het meeste uit het platform te halen. Succes met het vinden van jouw coach!';
         link.href = 'dashboard-rijder.html';
         link.textContent = 'Ga naar mijn dashboard';
+        sluitSectie('coach');
     }
 
     banner.style.display = '';
 
-    // Scroll naar de juiste sectie na de banner
     const sectie = rol === 'Rijder' ? document.getElementById('rijder-sectie') : document.getElementById('coach-sectie');
     if (sectie) setTimeout(() => sectie.scrollIntoView({ behavior: 'smooth', block: 'start' }), 400);
 }
