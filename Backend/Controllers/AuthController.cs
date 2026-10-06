@@ -19,14 +19,23 @@ public class AuthController : ControllerBase
     private readonly IEmailService _email;
     private readonly IWachtwoordResetService _resetService;
     private readonly IEmailVerificatieService _verificatie;
+    private readonly ILogger<AuthController> _logger;
 
-    public AuthController(UserManager<ApplicationUser> userManager, IConfiguration config, IEmailService email, IWachtwoordResetService resetService, IEmailVerificatieService verificatie)
+    public AuthController(UserManager<ApplicationUser> userManager, IConfiguration config, IEmailService email, IWachtwoordResetService resetService, IEmailVerificatieService verificatie, ILogger<AuthController> logger)
     {
         _userManager = userManager;
         _config = config;
         _email = email;
         _resetService = resetService;
         _verificatie = verificatie;
+        _logger = logger;
+    }
+
+    private void StuurEmailAsync(string email, string naam, string onderwerp, string html, [System.Runtime.CompilerServices.CallerMemberName] string aanroeper = "")
+    {
+        _ = _email.VerstuurAsync(email, naam, onderwerp, html)
+            .ContinueWith(t => _logger.LogError(t.Exception, "E-mail mislukt [{Aanroeper}] naar {Email}: {Onderwerp}", aanroeper, email, onderwerp),
+                TaskContinuationOptions.OnlyOnFaulted);
     }
 
     [HttpPost("registreren")]
@@ -67,7 +76,7 @@ public class AuthController : ControllerBase
         }
 
         var code = _verificatie.MaakCode(verzoek.Email);
-        _ = _email.VerstuurAsync(gebruiker.Email!, gebruiker.Naam,
+        StuurEmailAsync(gebruiker.Email!, gebruiker.Naam,
             "Bevestig je e-mailadres – RaceCoachFinder",
             EmailTemplates.EmailBevestiging(gebruiker.Naam, code));
 
@@ -86,7 +95,7 @@ public class AuthController : ControllerBase
         if (!gebruiker.EmailConfirmed)
         {
             var code = _verificatie.MaakCode(verzoek.Email);
-            _ = _email.VerstuurAsync(gebruiker.Email!, gebruiker.Naam,
+            StuurEmailAsync(gebruiker.Email!, gebruiker.Naam,
                 "Bevestig je e-mailadres – RaceCoachFinder",
                 EmailTemplates.EmailBevestiging(gebruiker.Naam, code));
             return Unauthorized(new { fout = "email_niet_bevestigd", email = verzoek.Email });
@@ -174,7 +183,7 @@ public class AuthController : ControllerBase
         await _userManager.UpdateAsync(gebruiker);
         _verificatie.VerwijderCode(verzoek.Email);
 
-        _ = _email.VerstuurAsync(gebruiker.Email!, gebruiker.Naam,
+        StuurEmailAsync(gebruiker.Email!, gebruiker.Naam,
             "Welkom bij RaceCoachFinder!",
             EmailTemplates.Welkom(gebruiker.Naam, gebruiker.Rol));
 
@@ -189,7 +198,7 @@ public class AuthController : ControllerBase
         if (gebruiker != null && !gebruiker.EmailConfirmed)
         {
             var code = _verificatie.MaakCode(verzoek.Email);
-            _ = _email.VerstuurAsync(gebruiker.Email!, gebruiker.Naam,
+            StuurEmailAsync(gebruiker.Email!, gebruiker.Naam,
                 "Bevestig je e-mailadres – RaceCoachFinder",
                 EmailTemplates.EmailBevestiging(gebruiker.Naam, code));
         }
