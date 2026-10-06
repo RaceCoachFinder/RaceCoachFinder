@@ -6,7 +6,31 @@
       "PowerShell(New-Item -ItemType Directory -Force \"Y:\\\\Coach Finder\\\\Claude\\\\Kart coach finder\\\\Backend\\\\Controllers\")",
       "PowerShell(New-Item -ItemType Directory -Force \"Y:\\\\Coach Finder\\\\Claude\\\\Kart coach finder\\\\Frontend\\\\css\")",
       "PowerShell(New-Item -ItemType Directory -Force \"Y:\\\\Coach Finder\\\\Claude\\\\Kart coach finder\\\\Frontend\\\\js\")",
-      "mcp__visualize__show_widget"
+      "mcp__visualize__show_widget",
+      "Bash(git rm *)",
+      "Bash(git add *)",
+      "Bash(Remove-Item -Recurse -Force \"Backend\\\\.git\")",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(xargs sed -i 's|http://localhost:5000|https://racecoachfinder-production.up.railway.app|g')",
+      "Bash(xargs sed -i 's|<li><a href=\"coaches.html\">Coaches</a></li>|<li><a href=\"coaches.html\">Coaches</a></li>\\\\n        <li><a href=\"hoe-werkt-het.html\">Hoe werkt het</a></li>|g')",
+      "Bash(dotnet ef *)",
+      "Bash(git commit *)",
+      "Bash(dotnet build *)",
+      "Bash(powershell -Command \"\\(Get-Content privacybeleid.html -Raw\\) -replace '<nav class=\\\\\"doc-toc\\\\\" aria-label=\\\\\"Inhoudsopgave\\\\\">', '<div class=\\\\\"doc-toc\\\\\">' -replace '</nav>\\\\s*<!-- Inhoud -->', '</div>' | Set-Content privacybeleid.html -Encoding UTF8 -NoNewline\")",
+      "Bash(Remove-Item \"Y:\\\\Coach Finder\\\\Claude\\\\Kart coach finder\\\\Frontend\\\\factuur-test.html\")",
+      "Bash(git commit -m 'Fix migratie: voeg [Migration] attribuut toe zodat EF Core hem herkent *)",
+      "PowerShell(Remove-Item -Recurse -Force \"Y:\\\\Coach Finder\\\\Claude\\\\Kart coach finder\\\\Backend\\\\obj\" -ErrorAction SilentlyContinue; cd \"Y:\\\\Coach Finder\\\\Claude\\\\Kart coach finder\\\\Backend\"; dotnet build 2>&1 | Where-Object { $_ -match \"error|warning|Build\" } | Select-Object -Last 30)",
+      "PowerShell(Remove-Item -Recurse -Force \"Y:\\\\Coach Finder\\\\Claude\\\\Kart coach finder\\\\Backend\\\\obj\" -ErrorAction SilentlyContinue; cd \"Y:\\\\Coach Finder\\\\Claude\\\\Kart coach finder\\\\Backend\"; dotnet build 2>&1 | Where-Object { $_ -match \"error|Build succeeded|Build FAILED\" } | Select-Object -Last 5)",
+      "PowerShell(cd \"Y:\\\\Coach Finder\\\\Claude\\\\Kart coach finder\\\\Backend\"; dotnet build 2>&1 | Where-Object { $_ -match \"error\" } | Select-Object -First 5)",
+      "mcp__visualize__read_me",
+      "Bash(git remote *)",
+      "Bash(gh api *)",
+      "Bash(gh repo *)",
+      "Bash(xargs grep -l \"EmailTemplates\")",
+      "Bash(awk 'NR>=1140 && NR<=1180' Frontend/dashboard-coach.html)",
+      "Bash(awk 'NR>=830 && NR<=900' Frontend/dashboard-coach.html)",
+      "Bash(awk 'NR>=1250 && NR<=1288' Frontend/dashboard-coach.html)"
     ]
   }
 }

@@ -127,8 +127,8 @@ function updateNav() {
                     '<li><a href="coaches.html">Coaches</a></li>';
         navLinks.innerHTML = vaste + navLinks.innerHTML;
     }
-    // Verwijder eventuele plain Rijder(s) nodig link (wordt als gele knop toegevoegd)
-    var bestaandRn = navLinks.querySelector('a[href="rijders-nodig.html"]');
+    // Verwijder eventuele plain Trainingen link (wordt als gele knop toegevoegd)
+    var bestaandRn = navLinks.querySelector('a[href="trainingen.html"]');
     if (bestaandRn) bestaandRn.closest('li').remove();
 
     if (gebruiker) {
@@ -147,10 +147,10 @@ function updateNav() {
                 '<li class="nav-auth"><a href="#" onclick="wisselRol();return false;" style="background:#f0f0f0;color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700;font-size:0.82rem;white-space:nowrap">⇄ ' + andereRol + '</a></li>';
             // Only show role-specific buttons based on active role
             if (actief === 'Rijder') {
-                rolKnoppenHtml = '<li class="nav-auth"><a href="rijders-nodig.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Rijder(s) nodig</a></li>' +
+                rolKnoppenHtml = '<li class="nav-auth"><a href="trainingen.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Trainingen</a></li>' +
                                  '<li class="nav-auth"><a href="coach-nodig.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Coach nodig?</a></li>';
             } else if (actief === 'Coach') {
-                rolKnoppenHtml = '<li class="nav-auth"><a href="rijders-nodig.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Rijder(s) nodig</a></li>' +
+                rolKnoppenHtml = '<li class="nav-auth"><a href="trainingen.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Trainingen</a></li>' +
                                  '<li class="nav-auth"><a href="coach-gezocht.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Coach gezocht</a></li>';
             }
         } else {
@@ -159,11 +159,11 @@ function updateNav() {
             if (rollen.indexOf('Admin') !== -1) dashboardUrl = 'admin.html';
             dashboardHtml = '<li class="nav-auth"><a href="' + dashboardUrl + '">' + _esc(gebruiker.naam) + '</a></li>';
             if (rollen.indexOf('Rijder') !== -1) {
-                rolKnoppenHtml += '<li class="nav-auth"><a href="rijders-nodig.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Rijder(s) nodig</a></li>' +
+                rolKnoppenHtml += '<li class="nav-auth"><a href="trainingen.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Trainingen</a></li>' +
                                   '<li class="nav-auth"><a href="coach-nodig.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Coach nodig?</a></li>';
             }
             if (rollen.indexOf('Coach') !== -1) {
-                rolKnoppenHtml += '<li class="nav-auth"><a href="rijders-nodig.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Rijder(s) nodig</a></li>' +
+                rolKnoppenHtml += '<li class="nav-auth"><a href="trainingen.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Trainingen</a></li>' +
                                   '<li class="nav-auth"><a href="coach-gezocht.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Coach gezocht</a></li>';
             }
         }
@@ -180,7 +180,7 @@ function updateNav() {
         laadBerichtenBadge();
     } else {
         navLinks.innerHTML +=
-            '<li class="nav-auth"><a href="rijders-nodig.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Rijder(s) nodig</a></li>' +
+            '<li class="nav-auth"><a href="trainingen.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Trainingen</a></li>' +
             '<li class="nav-auth"><a href="inloggen.html">Inloggen</a></li>' +
             '<li class="nav-auth"><a href="registreren.html" style="background:var(--kleur-primair);color:#fff;padding:0.3rem 0.9rem;border-radius:6px;font-weight:600">Registreren</a></li>';
     }
