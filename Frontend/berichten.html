@@ -114,6 +114,17 @@
             flex-shrink: 0;
             position: relative; overflow: hidden;
         }
+        .btn-groepsleden {
+            margin-left: auto; flex-shrink: 0; background: #fff; border: 1.5px solid #ddd; border-radius: 999px;
+            padding: 0.35rem 0.8rem; font-size: 0.82rem; font-weight: 600; cursor: pointer; white-space: nowrap;
+        }
+        .btn-groepsleden:hover { border-color: var(--kleur-primair); }
+        .leden-rij { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0; border-bottom: 1px solid #f2f2f2; }
+        .leden-rij:last-child { border-bottom: none; }
+        .leden-naam { flex: 1; min-width: 0; font-size: 0.92rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .leden-badge { font-size: 0.72rem; font-weight: 700; background: #fff3c4; color: #8a6d00; border-radius: 999px; padding: 0.1rem 0.5rem; margin-left: 0.35rem; }
+        .btn-lid-verwijderen { flex-shrink: 0; background: #fff; color: #c62828; border: 1.5px solid #f3c1c1; border-radius: 8px; padding: 0.3rem 0.7rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
+        .btn-lid-verwijderen:hover { background: #fdecec; }
         .gesprek-avatar.groep-avatar, .gesprek-panel-header .avatar-sm.groep-avatar {
             background: #dbeafe; font-size: 1.5rem; font-weight: 400;
         }
@@ -521,6 +532,7 @@
                     <strong id="partner-naam"></strong>
                     <div style="font-size:0.78rem;color:var(--kleur-subtekst)" id="partner-rol"></div>
                 </div>
+                <button class="btn-groepsleden" id="btn-groepsleden" onclick="openLedenPopup()" style="display:none">👥 Leden</button>
             </div>
 
             <div class="berichten-stroom" id="berichten-stroom"></div>
@@ -639,6 +651,15 @@
             <button class="btn btn-primair" onclick="submitReview()" style="flex:1">Versturen</button>
             <button class="btn btn-secundair" onclick="sluitReviewPopupEnBevestig()" style="flex:1">Overslaan</button>
         </div>
+    </div>
+</div>
+
+<!-- Groepsleden popup -->
+<div class="popup-overlay" id="leden-popup" style="display:none" onclick="if(event.target===this)sluitLedenPopup()">
+    <div class="popup-kaart">
+        <button class="popup-sluiten" onclick="sluitLedenPopup()">✕</button>
+        <h3 style="margin:0 0 0.75rem;font-size:1.1rem">👥 Groepsleden</h3>
+        <div id="leden-lijst"></div>
     </div>
 </div>
 
@@ -830,7 +851,13 @@ function renderGesprekkenLijst(gesprekken, groepen = []) {
         </div>`;
     });
 
-    lijst.innerHTML = [...groepRijen, ...gesprekRijen].join('');
+    // Groepen en 1-op-1 gesprekken door elkaar, nieuwste bericht bovenaan
+    const tijd = t => { const d = new Date(t); return isNaN(d) ? 0 : d.getTime(); };
+    const rijen = [
+        ...groepen.map((g, i) => ({ tijd: tijd(g.laatsteTijd), html: groepRijen[i] })),
+        ...alleGesprekken.map((g, i) => ({ tijd: tijd(g.laatsteTijd), html: gesprekRijen[i] }))
+    ].sort((a, b) => b.tijd - a.tijd);
+    lijst.innerHTML = rijen.map(r => r.html).join('');
 }
 
 // ── Gebruikers zoeken om een nieuw gesprek te starten ──
@@ -982,6 +1009,56 @@ function focusInvoer() {
     document.getElementById('bericht-invoer').focus();
 }
 
+// ── Groepsleden bekijken / verwijderen (alleen beheerder = aanmaker) ──
+function openLedenPopup() {
+    renderLedenLijst();
+    document.getElementById('leden-popup').style.display = 'flex';
+}
+
+function sluitLedenPopup() {
+    document.getElementById('leden-popup').style.display = 'none';
+}
+
+function renderLedenLijst() {
+    const g = _groepCache[huidigGroepsId];
+    const lijst = document.getElementById('leden-lijst');
+    if (!g || !Array.isArray(g.ledenLijst)) {
+        lijst.innerHTML = '<p style="color:var(--kleur-subtekst);font-size:0.9rem">Leden konden niet geladen worden.</p>';
+        return;
+    }
+    const mijnId = (getGebruiker() || {}).id;
+    lijst.innerHTML = (g.isBeheerder
+            ? '<p style="font-size:0.82rem;color:var(--kleur-subtekst);margin:0 0 0.5rem">Jij bent beheerder van deze groep en kunt leden verwijderen.</p>'
+            : '') +
+        g.ledenLijst.map((l, i) => {
+            const isBeheerder = l.gebruikerId === g.beheerderId;
+            const isIk = l.gebruikerId === mijnId;
+            return `<div class="leden-rij">
+                <span class="leden-naam">${esc(l.gebruikerNaam)}${isIk ? ' (jij)' : ''}${isBeheerder ? '<span class="leden-badge">Beheerder</span>' : ''}</span>
+                ${g.isBeheerder && !isBeheerder ? `<button class="btn-lid-verwijderen" onclick="verwijderGroepslid(${i})">Verwijderen</button>` : ''}
+            </div>`;
+        }).join('');
+}
+
+async function verwijderGroepslid(index) {
+    const g = _groepCache[huidigGroepsId];
+    const lid = g && g.ledenLijst[index];
+    if (!lid) return;
+    if (!confirm(`${lid.gebruikerNaam} uit de groep "${g.naam}" verwijderen?`)) return;
+    try {
+        await authVerzoek(`/groepsgesprek/${g.groepsId}/leden/${encodeURIComponent(lid.gebruikerId)}`, 'DELETE');
+        await laadGesprekken();
+        const bijgewerkt = _groepCache[g.groepsId];
+        if (bijgewerkt) {
+            document.getElementById('partner-rol').textContent = 'Groepsgesprek · ' + (bijgewerkt.leden || []).join(', ');
+        }
+        renderLedenLijst();
+        laadGroepsBerichten(g.groepsId);
+    } catch (e) {
+        alert('Verwijderen mislukt: ' + e.message);
+    }
+}
+
 async function openNieuwGesprek(partnerId) {
     openGesprek(partnerId, naamParam || 'Onbekend', rolParam);
 }
@@ -1007,6 +1084,7 @@ async function openGroepsgesprek(groepsId, naam, leden) {
     const avatarEl = document.getElementById('partner-avatar');
     avatarEl.innerHTML = '👥';
     avatarEl.classList.add('groep-avatar');
+    document.getElementById('btn-groepsleden').style.display = '';
     document.getElementById('partner-naam').textContent = naam;
     const ledenStr = Array.isArray(leden) ? leden.join(', ') : '';
     document.getElementById('partner-rol').textContent = `Groepsgesprek${ledenStr ? ' · ' + ledenStr : ''}`;
@@ -1041,6 +1119,7 @@ async function openGesprek(partnerId, partnerNaam, partnerRol) {
     const avatarEl = document.getElementById('partner-avatar');
     avatarEl.classList.remove('groep-avatar');
     avatarEl.style.background = '';
+    document.getElementById('btn-groepsleden').style.display = 'none';
     const fotoUrl = partnerFotos[partnerId] || '';
     if (fotoUrl) {
         avatarEl.innerHTML = '<img src="https://racecoachfinder-production.up.railway.app' + fotoUrl + '" alt="' + partnerNaam + '">';

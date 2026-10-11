@@ -62,6 +62,9 @@ public class GroepsgesprekController : ControllerBase
                 g.Naam,
                 g.CoachAanbodId,
                 Leden = leden.Select(l => l.GebruikerNaam).ToList(),
+                LedenLijst = leden.Select(l => new { l.GebruikerId, l.GebruikerNaam }).ToList(),
+                IsBeheerder = g.AangemaaktDoorId == mijnId,
+                BeheerderId = g.AangemaaktDoorId,
                 AantalOngelezen = aantalOngelezen,
                 LaatsteBericht = laatste?.Tekst ?? "",
                 LaatsteTijd = laatste?.AangemaaktOp ?? g.AangemaaktOp
@@ -184,6 +187,38 @@ public class GroepsgesprekController : ControllerBase
         await _context.SaveChangesAsync();
 
         return Ok(bericht);
+    }
+
+    // Beheerder (aanmaker van de groep) verwijdert een lid uit de groep
+    [HttpDelete("{id}/leden/{gebruikerId}")]
+    public async Task<IActionResult> VerwijderLid(int id, string gebruikerId)
+    {
+        var mijnId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var groep = await _context.Groepsgesprekken.FindAsync(id);
+        if (groep == null) return NotFound("Groep niet gevonden.");
+        if (groep.AangemaaktDoorId != mijnId)
+            return StatusCode(403, "Alleen de beheerder van de groep kan leden verwijderen.");
+        if (gebruikerId == mijnId)
+            return BadRequest("Je kunt jezelf niet verwijderen. Gebruik 'Groep verlaten'.");
+
+        var lid = await _context.GroepsgesprekLeden
+            .FirstOrDefaultAsync(l => l.GroepsgesprekId == id && l.GebruikerId == gebruikerId);
+        if (lid == null) return NotFound("Deze persoon zit niet (meer) in de groep.");
+
+        var beheerder = await _context.GroepsgesprekLeden
+            .FirstOrDefaultAsync(l => l.GroepsgesprekId == id && l.GebruikerId == mijnId);
+
+        _context.GroepsgesprekLeden.Remove(lid);
+        _context.Groepsberichten.Add(new Groepsbericht
+        {
+            GroepsgesprekId = id,
+            VanGebruikerId = mijnId!,
+            VanNaam = beheerder?.GebruikerNaam ?? "Beheerder",
+            Tekst = $"🚫 {lid.GebruikerNaam} is uit de groep verwijderd.",
+            AangemaaktOp = DateTime.UtcNow
+        });
+        await _context.SaveChangesAsync();
+        return NoContent();
     }
 
     [HttpDelete("{id}/verlaten")]
