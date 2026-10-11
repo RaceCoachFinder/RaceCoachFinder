@@ -209,6 +209,14 @@ public class GroepsgesprekController : ControllerBase
             .FirstOrDefaultAsync(l => l.GroepsgesprekId == id && l.GebruikerId == mijnId);
 
         _context.GroepsgesprekLeden.Remove(lid);
+        // Onthouden, zodat diegene zich niet zelf opnieuw via de training kan aanmelden
+        if (!await _context.GroepsgesprekVerwijderingen.AnyAsync(v => v.GroepsgesprekId == id && v.GebruikerId == gebruikerId))
+            _context.GroepsgesprekVerwijderingen.Add(new GroepsgesprekVerwijdering
+            {
+                GroepsgesprekId = id,
+                GebruikerId = gebruikerId,
+                VerwijderdOp = DateTime.UtcNow
+            });
         _context.Groepsberichten.Add(new Groepsbericht
         {
             GroepsgesprekId = id,
@@ -219,6 +227,49 @@ public class GroepsgesprekController : ControllerBase
         });
         await _context.SaveChangesAsync();
         return NoContent();
+    }
+
+    // Beheerder (aanmaker van de groep) voegt iemand toe; ook iemand die eerder verwijderd is
+    [HttpPost("{id}/leden")]
+    public async Task<IActionResult> VoegLidToe(int id, [FromBody] LidToevoegenVerzoek verzoek)
+    {
+        var mijnId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var groep = await _context.Groepsgesprekken.FindAsync(id);
+        if (groep == null) return NotFound("Groep niet gevonden.");
+        if (groep.AangemaaktDoorId != mijnId)
+            return StatusCode(403, "Alleen de beheerder van de groep kan leden toevoegen.");
+
+        var nieuw = await _userManager.FindByIdAsync(verzoek.GebruikerId ?? "");
+        if (nieuw == null || nieuw.Rol == "Admin") return NotFound("Gebruiker niet gevonden.");
+
+        if (await _context.GroepsgesprekLeden.AnyAsync(l => l.GroepsgesprekId == id && l.GebruikerId == nieuw.Id))
+            return BadRequest($"{nieuw.Naam} zit al in de groep.");
+        if (await _context.GroepsgesprekLeden.CountAsync(l => l.GroepsgesprekId == id) >= 50)
+            return BadRequest("Een groep mag maximaal 50 deelnemers hebben.");
+
+        var beheerder = await _context.GroepsgesprekLeden
+            .FirstOrDefaultAsync(l => l.GroepsgesprekId == id && l.GebruikerId == mijnId);
+
+        _context.GroepsgesprekLeden.Add(new GroepsgesprekLid
+        {
+            GroepsgesprekId = id,
+            GebruikerId = nieuw.Id,
+            GebruikerNaam = nieuw.Naam,
+            ToegetreedOp = DateTime.UtcNow
+        });
+        // Eerder verwijderd? Door de beheerder weer toegevoegd, dus blokkade opheffen
+        _context.GroepsgesprekVerwijderingen.RemoveRange(
+            _context.GroepsgesprekVerwijderingen.Where(v => v.GroepsgesprekId == id && v.GebruikerId == nieuw.Id));
+        _context.Groepsberichten.Add(new Groepsbericht
+        {
+            GroepsgesprekId = id,
+            VanGebruikerId = mijnId!,
+            VanNaam = beheerder?.GebruikerNaam ?? "Beheerder",
+            Tekst = $"➕ {nieuw.Naam} is aan de groep toegevoegd.",
+            AangemaaktOp = DateTime.UtcNow
+        });
+        await _context.SaveChangesAsync();
+        return Ok(new { gebruikerId = nieuw.Id, gebruikerNaam = nieuw.Naam });
     }
 
     [HttpDelete("{id}/verlaten")]
@@ -296,6 +347,9 @@ public class GroepsgesprekController : ControllerBase
         if (groep == null)
             return NotFound("Groepsgesprek niet gevonden voor deze aanbieding.");
 
+        if (await _context.GroepsgesprekVerwijderingen.AnyAsync(v => v.GroepsgesprekId == groep.Id && v.GebruikerId == mijnId))
+            return StatusCode(403, "Je bent door de beheerder uit deze groep verwijderd en kunt je niet opnieuw aanmelden.");
+
         var isAlLid = await _context.GroepsgesprekLeden
             .AnyAsync(l => l.GroepsgesprekId == groep.Id && l.GebruikerId == mijnId);
 
@@ -324,6 +378,7 @@ public class GroepsgesprekController : ControllerBase
 }
 
 public record GroepsBerichtVerzoek(string Tekst);
+public record LidToevoegenVerzoek(string? GebruikerId);
 public record NieuweGroepVerzoek(string? Naam, List<string>? LedenIds);
 public record GroepsBetaalverzoekVerzoek(
     string Omschrijving,

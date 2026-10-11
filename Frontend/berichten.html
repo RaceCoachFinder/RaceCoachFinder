@@ -660,6 +660,11 @@
         <button class="popup-sluiten" onclick="sluitLedenPopup()">✕</button>
         <h3 style="margin:0 0 0.75rem;font-size:1.1rem">👥 Groepsleden</h3>
         <div id="leden-lijst"></div>
+        <div id="leden-toevoegen" style="display:none;margin-top:1rem;padding-top:0.85rem;border-top:1px solid #eee">
+            <label style="font-size:0.84rem;font-weight:700;display:block;margin-bottom:0.35rem">➕ Lid toevoegen</label>
+            <input class="groep-input" id="leden-zoek" type="text" placeholder="🔍 Zoek op naam..." autocomplete="off" oninput="zoekNieuwLid()" style="margin-bottom:0.4rem">
+            <div class="groep-zoek-resultaten" id="leden-zoek-resultaten"></div>
+        </div>
     </div>
 </div>
 
@@ -1012,6 +1017,10 @@ function focusInvoer() {
 // ── Groepsleden bekijken / verwijderen (alleen beheerder = aanmaker) ──
 function openLedenPopup() {
     renderLedenLijst();
+    const g = _groepCache[huidigGroepsId];
+    document.getElementById('leden-toevoegen').style.display = g && g.isBeheerder ? '' : 'none';
+    document.getElementById('leden-zoek').value = '';
+    document.getElementById('leden-zoek-resultaten').innerHTML = '';
     document.getElementById('leden-popup').style.display = 'flex';
 }
 
@@ -1028,7 +1037,7 @@ function renderLedenLijst() {
     }
     const mijnId = (getGebruiker() || {}).id;
     lijst.innerHTML = (g.isBeheerder
-            ? '<p style="font-size:0.82rem;color:var(--kleur-subtekst);margin:0 0 0.5rem">Jij bent beheerder van deze groep en kunt leden verwijderen.</p>'
+            ? '<p style="font-size:0.82rem;color:var(--kleur-subtekst);margin:0 0 0.5rem">Jij bent beheerder van deze groep en kunt leden toevoegen en verwijderen.</p>'
             : '') +
         g.ledenLijst.map((l, i) => {
             const isBeheerder = l.gebruikerId === g.beheerderId;
@@ -1056,6 +1065,52 @@ async function verwijderGroepslid(index) {
         laadGroepsBerichten(g.groepsId);
     } catch (e) {
         alert('Verwijderen mislukt: ' + e.message);
+    }
+}
+
+let _ledenZoekTimer = null;
+let _ledenZoekResultaten = [];
+
+function zoekNieuwLid() {
+    const q = document.getElementById('leden-zoek').value.trim();
+    const box = document.getElementById('leden-zoek-resultaten');
+    clearTimeout(_ledenZoekTimer);
+    if (q.length < 2) { box.innerHTML = ''; return; }
+    _ledenZoekTimer = setTimeout(async () => {
+        try {
+            const g = _groepCache[huidigGroepsId];
+            const leden = new Set((g && g.ledenLijst || []).map(l => l.gebruikerId));
+            const resultaten = await authVerzoek('/chat/zoek?q=' + encodeURIComponent(q)) || [];
+            if (document.getElementById('leden-zoek').value.trim() !== q) return;
+            _ledenZoekResultaten = resultaten.filter(u => !leden.has(u.id));
+            box.innerHTML = _ledenZoekResultaten.length
+                ? _ledenZoekResultaten.map((u, i) =>
+                    `<div class="groep-zoek-rij" onclick="voegNieuwLidToe(${i})">
+                        <span>${esc(u.naam)}</span><small>${(u.rol || '').includes('Coach') ? 'Coach' : 'Rijder'} ＋</small>
+                    </div>`).join('')
+                : '<div class="groep-zoek-rij" style="cursor:default"><small>Geen (nieuwe) gebruikers gevonden.</small></div>';
+        } catch {
+            box.innerHTML = '<div class="groep-zoek-rij" style="cursor:default"><small>Zoeken mislukt.</small></div>';
+        }
+    }, 300);
+}
+
+async function voegNieuwLidToe(index) {
+    const u = _ledenZoekResultaten[index];
+    const g = _groepCache[huidigGroepsId];
+    if (!u || !g) return;
+    if (!confirm(`${u.naam} toevoegen aan de groep "${g.naam}"?`)) return;
+    try {
+        await authVerzoek(`/groepsgesprek/${g.groepsId}/leden`, 'POST', { gebruikerId: u.id });
+        await laadGesprekken();
+        const bijgewerkt = _groepCache[g.groepsId];
+        if (bijgewerkt) document.getElementById('partner-rol').textContent = 'Groepsgesprek · ' + (bijgewerkt.leden || []).join(', ');
+        document.getElementById('leden-zoek').value = '';
+        document.getElementById('leden-zoek-resultaten').innerHTML = '';
+        renderLedenLijst();
+        laadGroepsBerichten(g.groepsId);
+    } catch (e) {
+        alert('Toevoegen mislukt: ' + e.message);
     }
 }
 

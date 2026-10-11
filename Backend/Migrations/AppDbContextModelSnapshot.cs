@@ -580,6 +580,27 @@ namespace Backend.Migrations
                     b.ToTable("GroepsgesprekLeden");
                 });
 
+            modelBuilder.Entity("Backend.Models.GroepsgesprekVerwijdering", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("GebruikerId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("GroepsgesprekId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("VerwijderdOp")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("GroepsgesprekVerwijderingen");
+                });
+
             modelBuilder.Entity("Backend.Models.Review", b =>
                 {
                     b.Property<int>("Id")
