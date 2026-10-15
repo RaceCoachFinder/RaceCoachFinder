@@ -192,7 +192,17 @@
             transition: opacity 0.15s;
         }
         .btn-reageer:hover { opacity: 0.85; }
-    </style>
+            .bw-coaches-blok { background: #f8f8f8; border-radius: 8px; padding: 0.85rem; margin-bottom: 1rem; }
+        .bw-coach-rij { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; padding: 0.5rem 0; border-bottom: 1px solid #eaeaea; }
+        .bw-coach-rij input[type=number], .bw-coach-toevoegen input { padding: 0.35rem 0.45rem; border: 1.5px solid #ddd; border-radius: 6px; font-family: inherit; font-size: 16px; box-sizing: border-box; }
+        .bw-coach-toevoegen { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; margin-top: 0.6rem; }
+        .bw-coach-toevoegen input[type=text] { width: 100%; }
+        .bw-coach-dropdown { position: absolute; left: 0; right: 0; top: 100%; background: #fff; border: 1px solid #ddd; border-radius: 6px; z-index: 5; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .bw-badge { display: inline-block; font-size: 0.72rem; font-weight: 700; border-radius: 20px; padding: 0.1rem 0.5rem; margin-top: 0.15rem; }
+        .bw-ok { background: #e8f5e9; color: #2e7d32; } .bw-nee { background: #fde8ea; color: #c62828; } .bw-wacht { background: #fff3cd; color: #856404; }
+        .bw-klein { background: #fff; border: 1.5px solid #ccc; border-radius: 6px; padding: 0.3rem 0.6rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
+        .bw-rood { color: #c62828; border-color: #f3c1c1; }
+</style>
 </head>
 <body>
 
@@ -612,7 +622,7 @@ function mijnKaartHTML(a) {
         statusBadge = '<span style="background:#e8f5e9;color:#2e7d32;font-size:0.72rem;font-weight:700;padding:0.18rem 0.55rem;border-radius:20px">Actief</span>';
     }
 
-    const bewerkKnop = (!verlopen && (a.wachtOpCoaches || afgewezen.length > 0))
+    const bewerkKnop = !verlopen
         ? `<button onclick="openBewerkModal(${a.id})" class="btn" style="font-size:0.8rem;padding:0.3rem 0.7rem;white-space:nowrap;border:1px solid #ccc">Bewerken</button>`
         : '';
 
@@ -671,9 +681,15 @@ function openBewerkModal(id) {
     const afgewezen = (a.uitnodigingen || []).filter(u => u.status === 'Afgewezen');
     document.getElementById('bw-afgewezen-info').innerHTML = afgewezen.length > 0
         ? `<div style="background:#fde8ea;border-radius:6px;padding:0.65rem 0.85rem;font-size:0.85rem;color:#c62828;margin-bottom:1rem">
-            ❌ <strong>${afgewezen.map(u => u.coachNaam).join(', ')}</strong> heeft geweigerd. Na opslaan wordt er opnieuw een uitnodiging verstuurd.
+            ❌ <strong>${afgewezen.map(u => u.coachNaam).join(', ')}</strong> heeft geweigerd. Na opslaan wordt er opnieuw een uitnodiging verstuurd, of verwijder de coach hieronder.
            </div>`
         : '';
+    renderBewerkCoaches();
+    bwGekozenCoach = null;
+    document.getElementById('bw-coach-zoek').value = '';
+    document.getElementById('bw-coach-perc').value = '';
+    document.getElementById('bw-coach-uitnodigen').disabled = true;
+    bwMelding('');
 
     m.style.display = 'flex';
 }
@@ -720,6 +736,133 @@ async function submitBewerken(event) {
     } finally {
         btn.disabled = false; btn.textContent = 'Opslaan';
     }
+}
+
+// ===================== COACHES BEHEREN (bewerken) =====================
+
+let bwGekozenCoach = null;
+
+function bwStatusBadge(status) {
+    if (status === 'Geaccepteerd') return '<span class="bw-badge bw-ok">✓ Geaccepteerd</span>';
+    if (status === 'Afgewezen') return '<span class="bw-badge bw-nee">✕ Geweigerd</span>';
+    return '<span class="bw-badge bw-wacht">⏳ Wacht op antwoord</span>';
+}
+
+function renderBewerkCoaches() {
+    const lijst = (bewerkData && bewerkData.uitnodigingen) || [];
+    document.getElementById('bw-coaches').innerHTML = lijst.length
+        ? lijst.map(u => `
+            <div class="bw-coach-rij">
+                <div style="flex:1;min-width:120px">
+                    <div style="font-weight:600;font-size:0.9rem">${esc(u.coachNaam)}</div>
+                    ${bwStatusBadge(u.status)}
+                </div>
+                <input type="number" min="0" max="100" step="1" value="${u.percentage ?? ''}" placeholder="%"
+                    id="bw-perc-${u.id}" style="width:64px" oninput="document.getElementById('bw-perc-knop-${u.id}').style.display=''">
+                <span style="font-size:0.8rem;color:#777">%</span>
+                <button type="button" class="bw-klein" id="bw-perc-knop-${u.id}" style="display:none" onclick="slaBewerkPercentageOp(${u.id})">Opslaan</button>
+                <button type="button" class="bw-klein bw-rood" onclick="verwijderBewerkCoach(${u.id})">Verwijderen</button>
+            </div>`).join('')
+        : '<p style="font-size:0.85rem;color:var(--kleur-subtekst);margin:0 0 0.5rem">Nog geen andere coaches bij deze training.</p>';
+}
+
+function bwMelding(tekst, fout) {
+    const el = document.getElementById('bw-coaches-melding');
+    el.textContent = tekst;
+    el.style.color = fout ? '#c62828' : '#2e7d32';
+}
+
+async function bwVerzoek(pad, methode, body) {
+    const token = localStorage.getItem('kcf_token');
+    const resp = await fetch(`${API}/coachaanbod/${bewerkAanbodId}/coaches${pad}`, {
+        method: methode,
+        headers: Object.assign({ 'Authorization': 'Bearer ' + token }, body ? { 'Content-Type': 'application/json' } : {}),
+        body: body ? JSON.stringify(body) : undefined
+    });
+    if (!resp.ok) throw new Error(await resp.text() || ('Fout ' + resp.status));
+}
+
+async function herlaadBewerkData() {
+    await laadMijnAanbod();
+    bewerkData = (window._mijnAanbodCache || []).find(x => x.id === bewerkAanbodId) || bewerkData;
+    renderBewerkCoaches();
+    laadAanbod();
+}
+
+let _bwZoekTimer = null;
+let _bwZoekResultaten = [];
+function zoekBewerkCoach(waarde) {
+    bwGekozenCoach = null;
+    document.getElementById('bw-coach-uitnodigen').disabled = true;
+    const dd = document.getElementById('bw-coach-dropdown');
+    const q = waarde.trim();
+    clearTimeout(_bwZoekTimer);
+    if (q.length < 2) { dd.style.display = 'none'; return; }
+    _bwZoekTimer = setTimeout(async () => {
+        try {
+            const alUitgenodigd = new Set(((bewerkData && bewerkData.uitnodigingen) || []).map(u => u.coachGebruikerId));
+            const resultaten = await authVerzoek('/chat/zoek?q=' + encodeURIComponent(q)) || [];
+            if (document.getElementById('bw-coach-zoek').value.trim() !== q) return;
+            _bwZoekResultaten = resultaten.filter(u => (u.rol || '').split(',').map(r => r.trim()).includes('Coach') && !alUitgenodigd.has(u.id));
+            dd.innerHTML = _bwZoekResultaten.length
+                ? _bwZoekResultaten.map((c, i) => `<div class="coach-suggestie" onclick="kiesBewerkCoach(${i})">${esc(c.naam)}</div>`).join('')
+                : '<div class="coach-suggestie" style="color:#999;cursor:default">Geen coaches gevonden</div>';
+        } catch {
+            dd.innerHTML = '<div class="coach-suggestie" style="color:#999;cursor:default">Zoeken mislukt</div>';
+        }
+        dd.style.display = '';
+    }, 250);
+}
+
+function kiesBewerkCoach(index) {
+    const c = _bwZoekResultaten[index];
+    if (!c) return;
+    bwGekozenCoach = { id: c.id, naam: c.naam };
+    document.getElementById('bw-coach-zoek').value = c.naam;
+    document.getElementById('bw-coach-dropdown').style.display = 'none';
+    document.getElementById('bw-coach-uitnodigen').disabled = false;
+    document.getElementById('bw-coach-perc').focus();
+}
+
+
+async function nodigBewerkCoachUit() {
+    if (!bwGekozenCoach) return;
+    const percVal = document.getElementById('bw-coach-perc').value;
+    const percentage = percVal === '' ? null : parseFloat(percVal);
+    if (!confirm(`${bwGekozenCoach.naam} uitnodigen${percentage != null ? ` met ${percentage}% aandeel` : ''}?\nDe training gaat offline tot deze coach accepteert.`)) return;
+    try {
+        await bwVerzoek('', 'POST', { id: bwGekozenCoach.id, percentage });
+        bwMelding(`✅ ${bwGekozenCoach.naam} is uitgenodigd.`);
+        bwGekozenCoach = null;
+        document.getElementById('bw-coach-zoek').value = '';
+        document.getElementById('bw-coach-perc').value = '';
+        document.getElementById('bw-coach-uitnodigen').disabled = true;
+        await herlaadBewerkData();
+    } catch (e) { bwMelding(e.message, true); }
+}
+
+async function slaBewerkPercentageOp(uitnodigingId) {
+    const u = (bewerkData.uitnodigingen || []).find(x => x.id === uitnodigingId);
+    const val = document.getElementById('bw-perc-' + uitnodigingId).value;
+    const percentage = val === '' ? null : parseFloat(val);
+    if (!u) return;
+    if (!confirm(`Aandeel van ${u.coachNaam} wijzigen naar ${percentage ?? 'geen'}%?\n${u.coachNaam} krijgt een nieuwe uitnodiging en moet opnieuw accepteren. Tot die tijd staat de training offline.`)) return;
+    try {
+        await bwVerzoek('/' + uitnodigingId, 'PUT', { percentage });
+        bwMelding(`✅ Aandeel van ${u.coachNaam} aangepast.`);
+        await herlaadBewerkData();
+    } catch (e) { bwMelding(e.message, true); }
+}
+
+async function verwijderBewerkCoach(uitnodigingId) {
+    const u = (bewerkData.uitnodigingen || []).find(x => x.id === uitnodigingId);
+    if (!u) return;
+    if (!confirm(`${u.coachNaam} verwijderen als coach van deze training?\n${u.coachNaam} hoeft dan niets meer te accepteren en wordt uit de groepschat gehaald.`)) return;
+    try {
+        await bwVerzoek('/' + uitnodigingId, 'DELETE');
+        bwMelding(`✅ ${u.coachNaam} is verwijderd.`);
+        await herlaadBewerkData();
+    } catch (e) { bwMelding(e.message, true); }
 }
 
 // ===================== FORMULIER =====================
@@ -918,6 +1061,10 @@ function coachZoekKeydown(e) {
 }
 
 document.addEventListener('click', e => {
+    if (!e.target.closest('.bw-coach-toevoegen')) {
+        const bw = document.getElementById('bw-coach-dropdown');
+        if (bw) bw.style.display = 'none';
+    }
     if (!e.target.closest('.coach-mention-wrapper')) {
         const dd = document.getElementById('coach-dropdown');
         if (dd) dd.style.display = 'none';
@@ -954,6 +1101,19 @@ laadAlleCoaches();
     <div style="background:#fff;border-radius:10px;padding:1.75rem;max-width:500px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.18);max-height:90vh;overflow-y:auto">
         <h3 style="margin:0 0 1rem;font-size:1.1rem">Training aanpassen</h3>
         <div id="bw-afgewezen-info"></div>
+        <div class="bw-coaches-blok">
+            <div style="font-weight:700;font-size:0.92rem;margin-bottom:0.5rem">👥 Coaches</div>
+            <div id="bw-coaches"></div>
+            <div class="bw-coach-toevoegen">
+                <div style="position:relative;flex:1;min-width:150px">
+                    <input type="text" id="bw-coach-zoek" placeholder="Coach zoeken..." autocomplete="off" oninput="zoekBewerkCoach(this.value)">
+                    <div id="bw-coach-dropdown" class="bw-coach-dropdown" style="display:none"></div>
+                </div>
+                <input type="number" id="bw-coach-perc" min="0" max="100" step="1" placeholder="%" style="width:64px">
+                <button type="button" class="btn btn-primair" id="bw-coach-uitnodigen" onclick="nodigBewerkCoachUit()" disabled style="font-size:0.82rem;padding:0.4rem 0.8rem">Uitnodigen</button>
+            </div>
+            <div id="bw-coaches-melding" style="font-size:0.82rem;margin-top:0.4rem"></div>
+        </div>
         <form onsubmit="submitBewerken(event)">
             <div class="formulier-groep">
                 <label>Titel</label>

@@ -300,6 +300,163 @@ public class CoachAanbodController : ControllerBase
         return Ok(new { aanbod.Id, groepsgesprekId = groep.Id });
     }
 
+    // ── Coaches van een bestaande training beheren (alleen de maker) ──
+
+    private static string UitnodigingTekst(CoachAanbod aanbod, CoachUitnodiging u, string makerNaam, string inleiding)
+    {
+        var datumStr = aanbod.Datum.ToString("d MMM yyyy");
+        var prijsStr = aanbod.IsGratis ? "Gratis" : (aanbod.PrijsPerRijder.HasValue ? $"€{aanbod.PrijsPerRijder} p.p." : "");
+        var percStr = u.Percentage.HasValue ? $"\n💰 Jouw aandeel: {u.Percentage}%" : "";
+        return $"🎯 UITNODIGING:{u.Id}\n{makerNaam} {inleiding}: {aanbod.Titel}\n📍 {aanbod.Locatie} | 📅 {datumStr}{(prijsStr != "" ? " | " + prijsStr : "")}{percStr}";
+    }
+
+    // Training staat pas online als alle uitgenodigde coaches geaccepteerd hebben
+    private async Task HerberekenStatus(CoachAanbod aanbod, string mijnId, string mijnNaam)
+    {
+        var nietGeaccepteerd = await _context.CoachAanbodUitnodigingen
+            .AnyAsync(u => u.CoachAanbodId == aanbod.Id && u.Status != "Geaccepteerd");
+        var wasWachtend = aanbod.WachtOpCoaches;
+        aanbod.WachtOpCoaches = nietGeaccepteerd;
+        aanbod.IsActief = !nietGeaccepteerd;
+
+        if (wasWachtend && !nietGeaccepteerd)
+        {
+            var groep = await _context.Groepsgesprekken.FirstOrDefaultAsync(g => g.CoachAanbodId == aanbod.Id);
+            if (groep != null)
+                _context.Groepsberichten.Add(new Groepsbericht
+                {
+                    GroepsgesprekId = groep.Id, VanGebruikerId = mijnId, VanNaam = mijnNaam,
+                    Tekst = "🎉 Alle coaches hebben geaccepteerd. De training staat nu online!",
+                    AangemaaktOp = DateTime.UtcNow
+                });
+        }
+    }
+
+    private async Task<string?> ControleerPercentages(int aanbodId, decimal? nieuw, int? behalveUitnodigingId)
+    {
+        if (nieuw.HasValue && (nieuw < 0 || nieuw > 100)) return "Percentage moet tussen 0 en 100 liggen.";
+        var anderen = await _context.CoachAanbodUitnodigingen
+            .Where(u => u.CoachAanbodId == aanbodId && (behalveUitnodigingId == null || u.Id != behalveUitnodigingId))
+            .SumAsync(u => u.Percentage ?? 0);
+        if (anderen + (nieuw ?? 0) > 100)
+            return $"Samen komen de percentages boven de 100% (andere coaches hebben al {anderen:0.##}%).";
+        return null;
+    }
+
+    [HttpPost("{id:int}/coaches")]
+    [Authorize(Roles = "Coach")]
+    public async Task<IActionResult> CoachToevoegen(int id, [FromBody] UitgenodigdeCoachVerzoek verzoek)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var maker = await _userManager.FindByIdAsync(userId!);
+        var aanbod = await _context.CoachAanboden.FindAsync(id);
+        if (aanbod == null || maker == null) return NotFound();
+        if (aanbod.CoachGebruikerId != userId) return Forbid();
+        if (verzoek.Id == userId) return BadRequest("Je kunt jezelf niet uitnodigen.");
+
+        var coach = await _userManager.FindByIdAsync(verzoek.Id ?? "");
+        if (coach == null || !coach.Rol.Split(',').Any(r => r.Trim() == "Coach"))
+            return BadRequest("Coach niet gevonden.");
+        if (await _context.CoachAanbodUitnodigingen.AnyAsync(u => u.CoachAanbodId == id && u.CoachGebruikerId == coach.Id))
+            return BadRequest($"{coach.Naam} is al uitgenodigd voor deze training.");
+        var fout = await ControleerPercentages(id, verzoek.Percentage, null);
+        if (fout != null) return BadRequest(fout);
+
+        var u = new CoachUitnodiging
+        {
+            CoachAanbodId = id, AanbodTitel = aanbod.Titel,
+            RijderGebruikerId = userId!, RijderNaam = maker.Naam,
+            CoachGebruikerId = coach.Id, CoachNaam = coach.Naam,
+            Percentage = verzoek.Percentage, Status = "Openstaand", AangemaaktOp = DateTime.UtcNow
+        };
+        _context.CoachAanbodUitnodigingen.Add(u);
+        await _context.SaveChangesAsync();
+
+        _context.Berichten.Add(new Bericht
+        {
+            VanGebruikerId = userId!, NaarGebruikerId = coach.Id,
+            Tekst = UitnodigingTekst(aanbod, u, maker.Naam, "nodigt je uit voor"),
+            AangemaaktOp = DateTime.UtcNow, Gelezen = false
+        });
+        await HerberekenStatus(aanbod, userId!, maker.Naam);
+        await _context.SaveChangesAsync();
+        return Ok(new { u.Id, u.CoachNaam, u.Status, u.Percentage });
+    }
+
+    [HttpPut("{id:int}/coaches/{uitnodigingId:int}")]
+    [Authorize(Roles = "Coach")]
+    public async Task<IActionResult> CoachPercentageWijzigen(int id, int uitnodigingId, [FromBody] PercentageVerzoek verzoek)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var maker = await _userManager.FindByIdAsync(userId!);
+        var aanbod = await _context.CoachAanboden.FindAsync(id);
+        if (aanbod == null || maker == null) return NotFound();
+        if (aanbod.CoachGebruikerId != userId) return Forbid();
+        var u = await _context.CoachAanbodUitnodigingen.FirstOrDefaultAsync(x => x.Id == uitnodigingId && x.CoachAanbodId == id);
+        if (u == null) return NotFound("Uitnodiging niet gevonden.");
+        if (u.Percentage == verzoek.Percentage) return Ok(new { u.Id, u.Status, u.Percentage });
+        var fout = await ControleerPercentages(id, verzoek.Percentage, u.Id);
+        if (fout != null) return BadRequest(fout);
+
+        // Ander aandeel = andere afspraak: de coach moet opnieuw accepteren
+        u.Percentage = verzoek.Percentage;
+        u.Status = "Openstaand";
+        _context.Berichten.Add(new Bericht
+        {
+            VanGebruikerId = userId!, NaarGebruikerId = u.CoachGebruikerId,
+            Tekst = UitnodigingTekst(aanbod, u, maker.Naam, "heeft jouw aandeel aangepast en nodigt je opnieuw uit voor"),
+            AangemaaktOp = DateTime.UtcNow, Gelezen = false
+        });
+        await _context.SaveChangesAsync();
+        await HerberekenStatus(aanbod, userId!, maker.Naam);
+        await _context.SaveChangesAsync();
+        return Ok(new { u.Id, u.Status, u.Percentage });
+    }
+
+    [HttpDelete("{id:int}/coaches/{uitnodigingId:int}")]
+    [Authorize(Roles = "Coach")]
+    public async Task<IActionResult> CoachVerwijderen(int id, int uitnodigingId)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var maker = await _userManager.FindByIdAsync(userId!);
+        var aanbod = await _context.CoachAanboden.FindAsync(id);
+        if (aanbod == null || maker == null) return NotFound();
+        if (aanbod.CoachGebruikerId != userId) return Forbid();
+        var u = await _context.CoachAanbodUitnodigingen.FirstOrDefaultAsync(x => x.Id == uitnodigingId && x.CoachAanbodId == id);
+        if (u == null) return NotFound("Uitnodiging niet gevonden.");
+
+        _context.CoachAanbodUitnodigingen.Remove(u);
+
+        // Ook uit de groepschat van de training halen
+        var groep = await _context.Groepsgesprekken.FirstOrDefaultAsync(g => g.CoachAanbodId == id);
+        if (groep != null)
+        {
+            var lid = await _context.GroepsgesprekLeden
+                .FirstOrDefaultAsync(l => l.GroepsgesprekId == groep.Id && l.GebruikerId == u.CoachGebruikerId);
+            if (lid != null)
+            {
+                _context.GroepsgesprekLeden.Remove(lid);
+                _context.Groepsberichten.Add(new Groepsbericht
+                {
+                    GroepsgesprekId = groep.Id, VanGebruikerId = userId!, VanNaam = maker.Naam,
+                    Tekst = $"🚫 {u.CoachNaam} is geen coach meer bij deze training.",
+                    AangemaaktOp = DateTime.UtcNow
+                });
+            }
+        }
+
+        _context.Berichten.Add(new Bericht
+        {
+            VanGebruikerId = userId!, NaarGebruikerId = u.CoachGebruikerId,
+            Tekst = $"ℹ️ {maker.Naam} heeft je uitnodiging voor \"{aanbod.Titel}\" ingetrokken. Je hoeft niets meer te doen.",
+            AangemaaktOp = DateTime.UtcNow, Gelezen = false
+        });
+        await _context.SaveChangesAsync();
+        await HerberekenStatus(aanbod, userId!, maker.Naam);
+        await _context.SaveChangesAsync();
+        return NoContent();
+    }
+
     [HttpDelete("{id:int}")]
     [Authorize(Roles = "Coach")]
     public async Task<IActionResult> Verwijderen(int id)
@@ -330,3 +487,4 @@ public record CoachAanbodVerzoek(
 );
 
 public record UitgenodigdeCoachVerzoek(string Id, decimal? Percentage);
+public record PercentageVerzoek(decimal? Percentage);

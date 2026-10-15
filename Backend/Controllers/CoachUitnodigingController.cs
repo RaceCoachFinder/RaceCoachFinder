@@ -33,6 +33,36 @@ public class CoachUitnodigingController : ControllerBase
         return Ok(lijst);
     }
 
+    // Actuele status + alle informatie van een uitnodiging (voor de uitnodiging-kaart in berichten)
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> GetDetails(int id)
+    {
+        var mijnId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var u = await _context.CoachAanbodUitnodigingen.FindAsync(id);
+        if (u == null) return NotFound("Deze uitnodiging is ingetrokken.");
+        var aanbod = await _context.CoachAanboden.FindAsync(u.CoachAanbodId);
+        if (aanbod == null) return NotFound("Deze training bestaat niet meer.");
+        if (u.CoachGebruikerId != mijnId && aanbod.CoachGebruikerId != mijnId) return Forbid();
+
+        var coaches = await _context.CoachAanbodUitnodigingen
+            .Where(x => x.CoachAanbodId == aanbod.Id)
+            .Select(x => new { x.CoachNaam, x.Status, x.Percentage })
+            .ToListAsync();
+
+        return Ok(new
+        {
+            u.Id, u.Status, u.Percentage,
+            Training = new
+            {
+                aanbod.Id, aanbod.Titel, aanbod.KorteOmschrijving, aanbod.Beschrijving, aanbod.Datum,
+                aanbod.Locatie, aanbod.Categorieen, aanbod.Disciplines, aanbod.MaxRijders,
+                aanbod.PrijsPerRijder, aanbod.IsGratis, aanbod.WachtOpCoaches,
+                MakerNaam = aanbod.CoachNaam
+            },
+            Coaches = coaches
+        });
+    }
+
     [HttpPut("{id}/accepteer")]
     public async Task<IActionResult> Accepteer(int id)
     {
@@ -77,8 +107,9 @@ public class CoachUitnodigingController : ControllerBase
         var aanbod = await _context.CoachAanboden.FindAsync(uitnodiging.CoachAanbodId);
         if (aanbod != null)
         {
+            // Let op: deze uitnodiging is nog niet opgeslagen als 'Geaccepteerd', dus die niet meetellen
             var nogOpenstaand = await _context.CoachAanbodUitnodigingen
-                .AnyAsync(u => u.CoachAanbodId == uitnodiging.CoachAanbodId && u.Status == "Openstaand");
+                .AnyAsync(u => u.CoachAanbodId == uitnodiging.CoachAanbodId && u.Id != uitnodiging.Id && u.Status != "Geaccepteerd");
             if (!nogOpenstaand)
             {
                 aanbod.IsActief = true;
