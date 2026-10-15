@@ -174,7 +174,10 @@ async function uploadFoto(input) {
         const formData = new FormData();
         formData.append('bestand', blob, 'profielfoto.jpg');
 
-        const antwoord = await fetch('https://racecoachfinder-production.up.railway.app/api/upload/profielfoto', {
+        // Welk profiel hoort bij deze pagina? Dan zet de server de foto er direct op.
+        const profiel = location.pathname.includes('dashboard-coach') ? 'coach'
+            : location.pathname.includes('dashboard-rijder') ? 'rijder' : '';
+        const antwoord = await fetch('https://racecoachfinder-production.up.railway.app/api/upload/profielfoto' + (profiel ? '?profiel=' + profiel : ''), {
             method: 'POST',
             headers: authHeader(),
             body: formData
@@ -189,7 +192,9 @@ async function uploadFoto(input) {
         document.getElementById('fotoUrl').value = data.url;
         toonFotoCirkel(data.url, document.getElementById('naam')?.value || '');
 
-        meldingEl.textContent = 'Foto opgeslagen';
+        meldingEl.textContent = data.opgeslagen
+            ? 'Foto opgeslagen'
+            : 'Foto geüpload — wordt opgeslagen zodra je je profiel opslaat';
         meldingEl.style.color = '#2e7d32';
     } catch (e) {
         meldingEl.textContent = e.message;
