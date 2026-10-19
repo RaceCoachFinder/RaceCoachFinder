@@ -470,13 +470,32 @@
                     <div id="groep-wedstrijd-velden" style="display:none">
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
                             <div class="formulier-groep">
-                                <label for="groep-org">Organisatie / competitie *</label>
+                                <label for="groep-org">Organisatie / competitie <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel)</span></label>
                                 <input type="text" id="groep-org" placeholder="bijv. Rotax Max Euro Challenge">
                             </div>
                             <div class="formulier-groep">
-                                <label for="groep-wnaam">Wedstrijd / circuit *</label>
+                                <label for="groep-wnaam">Wedstrijd / circuit <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel)</span></label>
                                 <input type="text" id="groep-wnaam" placeholder="bijv. Ronde 3 – Genk">
                             </div>
+                        </div>
+                        <div class="formulier-groep">
+                            <label>Soort wedstrijd</label>
+                            <div style="display:flex;gap:1.25rem;margin-top:0.25rem">
+                                <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-weight:400;text-transform:none;letter-spacing:0"><input type="radio" name="groep-wed-soort" id="groep-wed-sprint" value="Sprint" checked style="width:auto;accent-color:var(--kleur-primair)"> 🏎️ Sprint</label>
+                                <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-weight:400;text-transform:none;letter-spacing:0"><input type="radio" name="groep-wed-soort" id="groep-wed-endurance" value="Endurance" style="width:auto;accent-color:var(--kleur-primair)"> ⏱️ Endurance</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Training: wat aanpakken -->
+                    <div id="groep-training-velden">
+                        <div class="formulier-groep">
+                            <label>Wat wil je aanpakken? <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel)</span></label>
+                            <div class="multi-check-grid" id="groep-kwal-grid"></div>
+                        </div>
+                        <div class="formulier-groep">
+                            <label>Categorie kart <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel)</span></label>
+                            <div class="multi-check-grid" id="groep-spec-grid"></div>
                         </div>
                     </div>
 
@@ -1264,13 +1283,16 @@ function setGroepType(type) {
     const locIn = document.getElementById('groep-locatie');
     const orgIn = document.getElementById('groep-org');
     const wnaamIn = document.getElementById('groep-wnaam');
+    const trainVelden = document.getElementById('groep-training-velden');
     if (type === 'Wedstrijd') {
         wedVelden.style.display = '';
+        if (trainVelden) trainVelden.style.display = 'none';
         datumReq.textContent = '*'; locReq.textContent = '*';
         datumIn.required = true; locIn.required = true;
-        orgIn.required = true; wnaamIn.required = true;
+        orgIn.required = false; wnaamIn.required = false;
     } else {
         wedVelden.style.display = 'none';
+        if (trainVelden) trainVelden.style.display = '';
         datumReq.textContent = '(optioneel)'; locReq.textContent = '(optioneel)';
         datumIn.required = false; locIn.required = false;
         orgIn.required = false; wnaamIn.required = false;
@@ -1292,11 +1314,19 @@ async function submitGroepRijder(event) {
     const melding = document.getElementById('groep-rijder-melding');
     melding.innerHTML = '';
     const datumVal = document.getElementById('groep-datum').value;
+    const wedSoort = document.querySelector('input[name="groep-wed-soort"]:checked')?.value || 'Sprint';
+    const gekozenKwals = [...document.querySelectorAll('#groep-kwal-grid input:checked')].map(c => c.value);
+    const gekozenSpecs = [...document.querySelectorAll('#groep-spec-grid input:checked')].map(c => c.value);
+    const kwaliteiten = groepType === 'Wedstrijd'
+        ? wedSoort
+        : gekozenKwals.join(',');
     const body = {
         locatie: document.getElementById('groep-locatie').value.trim(),
         datum: datumVal ? new Date(datumVal).toISOString() : null,
         maxPrijs: parseFloat(document.getElementById('groep-maxprijs').value) || null,
         beschrijving: document.getElementById('groep-beschrijving').value.trim(),
+        specialisaties: gekozenSpecs.join(','),
+        kwaliteiten: kwaliteiten,
         soortOpdracht: groepType,
         isGroep: true,
         groepGrootte: parseInt(document.getElementById('groep-grootte').value) || null,
@@ -1307,6 +1337,7 @@ async function submitGroepRijder(event) {
         await authVerzoek('/aanvragen', 'POST', body);
         melding.innerHTML = '<div class="melding melding-succes">Verzoek geplaatst!</div>';
         event.target.reset();
+        document.querySelectorAll('#groep-kwal-grid input, #groep-spec-grid input').forEach(c => c.checked = false);
         setGroepType('Training');
         toggleGroepRijderForm();
         laadMijnGroepAanvragen();
@@ -1412,6 +1443,17 @@ async function groepSluitAanvraag(id) {
         alert('Verwijderen mislukt: ' + e.message);
     }
 }
+
+// Bouw groep form grids
+const KWALITEITEN_G = ['Sprint','Endurance','Regenrijden','Snelheid','Basis','Inhalen','Verdedigen','Kwalificatie','Race brain','Rijstijl','Rempunten','Algemeen'];
+const SPECIALISATIES_G = ['Huurkart','Rotax Max','OK / Junior','KZ / Shifter','Superkart','Simracing','Algemeen'];
+function bouwGroepCheckGrid(id, opties) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = opties.map(o => `<label><input type="checkbox" value="${esc(o)}"> ${esc(o)}</label>`).join('');
+}
+bouwGroepCheckGrid('groep-kwal-grid', KWALITEITEN_G);
+bouwGroepCheckGrid('groep-spec-grid', SPECIALISATIES_G);
 
 // Toon Mijn groepsvragen als rijder is ingelogd
 const gebruikerG = JSON.parse(localStorage.getItem('kcf_gebruiker') || 'null');
