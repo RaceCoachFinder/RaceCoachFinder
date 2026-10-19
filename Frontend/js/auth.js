@@ -131,6 +131,17 @@ function updateNav() {
     var bestaandRn = navLinks.querySelector('a[href="trainingen.html"]');
     if (bestaandRn) bestaandRn.closest('li').remove();
 
+    // Taalwissel (NL / EN)
+    if (!navLinks.querySelector('.taal-toggle')) {
+        var actieveTaal = (window.I18N && window.I18N.taal) || localStorage.getItem('kcf_taal') || 'nl';
+        navLinks.innerHTML +=
+            '<li class="nav-auth" style="display:flex;align-items:center">' +
+            '<div class="taal-toggle">' +
+            '<button type="button" class="taal-optie' + (actieveTaal === 'nl' ? ' actief' : '') + '" id="taal-nl-btn" onclick="window.I18N&&window.I18N.setTaal(\'nl\')">NL</button>' +
+            '<button type="button" class="taal-optie' + (actieveTaal === 'en' ? ' actief' : '') + '" id="taal-en-btn" onclick="window.I18N&&window.I18N.setTaal(\'en\')">EN</button>' +
+            '</div></li>';
+    }
+
     if (gebruiker) {
         const rollen = (gebruiker.rol || '').split(',').map(function(r) { return r.trim(); });
         const heeftBeide = rollen.indexOf('Coach') !== -1 && rollen.indexOf('Rijder') !== -1;
