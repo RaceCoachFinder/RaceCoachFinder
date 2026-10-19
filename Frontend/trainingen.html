@@ -1195,10 +1195,35 @@ function verwijderCoachTag(id) {
 function updateCoachPercentage(id, val) {
     const c = uitgenodigdeCoaches.find(c => c.id === id);
     if (c) c.percentage = val === '' ? null : Math.min(100, Math.max(0, parseFloat(val) || 0));
+    _refreshPercTotaal();
+}
+
+function _refreshPercTotaal() {
+    const som = uitgenodigdeCoaches.reduce((s, c) => s + (c.percentage || 0), 0);
+    const jijRest = Math.max(0, 100 - som);
+    const heeftPerc = uitgenodigdeCoaches.some(c => c.percentage != null);
+
+    const jijEl = document.getElementById('coach-jij-perc');
+    const totaalEl = document.getElementById('coach-perc-totaal');
+    if (jijEl) jijEl.textContent = heeftPerc ? jijRest + '%' : '';
+    if (totaalEl) {
+        totaalEl.innerHTML = heeftPerc
+            ? `Verdeeld: <strong>${som}%</strong> &nbsp;•&nbsp; Jij houdt: <strong style="color:${jijRest < 0 ? '#c62828' : 'inherit'}">${jijRest}%</strong>`
+            : '';
+    }
 }
 
 function renderCoachTags() {
-    document.getElementById('coach-tags').innerHTML = uitgenodigdeCoaches.map(c =>
+    const som = uitgenodigdeCoaches.reduce((s, c) => s + (c.percentage || 0), 0);
+    const jijRest = Math.max(0, 100 - som);
+    const heeftPerc = uitgenodigdeCoaches.some(c => c.percentage != null);
+
+    const jijTag = `<span class="coach-tag" style="display:inline-flex;align-items:center;gap:0.35rem;background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7">
+        <span style="font-weight:700">👤 Jij</span>
+        <span id="coach-jij-perc" style="font-size:0.78rem">${heeftPerc ? jijRest + '%' : ''}</span>
+    </span>`;
+
+    const coachTags = uitgenodigdeCoaches.map(c =>
         `<span class="coach-tag" style="display:inline-flex;align-items:center;gap:0.35rem">
             <span>${esc(c.naam)}</span>
             <input type="number" min="0" max="100" step="1"
@@ -1212,6 +1237,12 @@ function renderCoachTags() {
             <button type="button" onclick="verwijderCoachTag('${esc(c.id)}')">×</button>
         </span>`
     ).join('');
+
+    const totaalBalk = `<div id="coach-perc-totaal" style="font-size:0.78rem;color:var(--kleur-subtekst);margin-top:0.4rem;width:100%">
+        ${heeftPerc ? `Verdeeld: <strong>${som}%</strong> &nbsp;•&nbsp; Jij houdt: <strong>${jijRest}%</strong>` : ''}
+    </div>`;
+
+    document.getElementById('coach-tags').innerHTML = jijTag + coachTags + totaalBalk;
 }
 
 function coachZoekKeydown(e) {

@@ -617,7 +617,7 @@ async function submitCoachAanbod(event) {
         prijsPerRijder: parseFloat(document.getElementById('c-prijs').value) || null,
         isGratis: document.getElementById('c-gratis').checked,
         isGroep: false,
-        uitgenodigdeCoaches: _uitgenodigdeCoaches.map(c => ({ uitgenodigdCoachId: c.id }))
+        uitgenodigdeCoaches: _uitgenodigdeCoaches.map(c => ({ id: c.id, percentage: null }))
     };
 
     const btn = event.target.querySelector('button[type="submit"]');
