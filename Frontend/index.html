@@ -6,6 +6,64 @@
     <title>RaceCoachFinder</title>
         <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* body is een flex-kolom: zonder width:100% worden secties zo smal als hun inhoud */
+        body > .container, .home-rollen-achtergrond { width: 100%; box-sizing: border-box; }
+        .home-stats { gap: 2.5rem; }
+        .home-stats .stat-label { font-size: 0.78rem; color: var(--kleur-subtekst); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+        .welkom-balk { margin-top: 1.75rem; background: #fff; border-radius: var(--rand); box-shadow: var(--schaduw); border-left: 5px solid var(--kleur-primair);
+            padding: 1.1rem 1.4rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+        .welkom-titel { font-size: 1.15rem; font-weight: 800; }
+        .welkom-sub { font-size: 0.85rem; color: var(--kleur-subtekst); }
+        .welkom-knoppen { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .welkom-knoppen .btn { padding: 0.5rem 1rem; font-size: 0.88rem; }
+        .welkom-knoppen .btn-licht { background: #f3f3f3; color: var(--kleur-tekst); }
+        .home-tegels { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.1rem; }
+        .home-tegel { background: #fff; border-radius: var(--rand); box-shadow: var(--schaduw); padding: 1.4rem 1.3rem; color: var(--kleur-tekst);
+            display: flex; flex-direction: column; border-top: 4px solid var(--kleur-primair); transition: transform 0.15s, box-shadow 0.15s; }
+        .home-tegel:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); text-decoration: none; }
+        .tegel-icoon { font-size: 2rem; margin-bottom: 0.5rem; }
+        .tegel-titel { font-size: 1.12rem; font-weight: 800; margin-bottom: 0.4rem; }
+        .home-tegel p { font-size: 0.9rem; color: var(--kleur-subtekst); line-height: 1.5; margin: 0 0 0.75rem; flex: 1; }
+        .tegel-teller { font-size: 0.82rem; font-weight: 700; color: #8a6d00; min-height: 1.2em; margin-bottom: 0.6rem; }
+        .tegel-link { font-weight: 700; font-size: 0.9rem; color: var(--kleur-tekst); }
+        .tegel-link::after { content: ' →'; color: var(--kleur-primair); }
+        .home-rollen-achtergrond { background: #fff; }
+        .home-rollen { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+        .rol-kaart { border: 1.5px solid #eee; border-radius: var(--rand); padding: 1.6rem; display: flex; flex-direction: column; }
+        .rol-kaart-donker { background: var(--kleur-donker); color: #fff; border-color: var(--kleur-donker); }
+        .rol-kop { font-size: 1.3rem; font-weight: 800; margin-bottom: 0.9rem; }
+        .rol-kaart ul { list-style: none; padding: 0; margin: 0 0 1.1rem; flex: 1; }
+        .rol-kaart li { padding: 0.35rem 0 0.35rem 1.6rem; position: relative; font-size: 0.95rem; line-height: 1.45; }
+        .rol-kaart li::before { content: '✓'; position: absolute; left: 0; color: var(--kleur-primair); font-weight: 800; }
+        .rol-prijs { font-weight: 700; margin-bottom: 1rem; font-size: 0.95rem; }
+        .rol-kaart-donker .rol-prijs { color: var(--kleur-primair); }
+        .rol-knop { align-self: flex-start; }
+        .training-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+        .training-kaart { background: #fff; border-radius: var(--rand); box-shadow: var(--schaduw); padding: 1.1rem 1.2rem; color: var(--kleur-tekst); display: block; }
+        .training-kaart:hover { text-decoration: none; box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+        .training-datum { display: inline-block; background: #fff3c4; color: #8a6d00; font-weight: 800; font-size: 0.78rem; border-radius: 6px; padding: 0.15rem 0.5rem; margin-bottom: 0.5rem; }
+        .training-titel { font-weight: 800; font-size: 1.02rem; margin-bottom: 0.3rem; }
+        .training-info { font-size: 0.86rem; color: var(--kleur-subtekst); line-height: 1.5; }
+        .home-stappen { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+        .home-stap { background: #fff; border-radius: var(--rand); box-shadow: var(--schaduw); padding: 1.3rem; }
+        .stap-nr { width: 34px; height: 34px; border-radius: 50%; background: var(--kleur-primair); font-weight: 800; display: flex; align-items: center; justify-content: center; margin-bottom: 0.6rem; }
+        .stap-titel { font-weight: 800; margin-bottom: 0.25rem; }
+        .home-stap p { font-size: 0.9rem; color: var(--kleur-subtekst); margin: 0; }
+        @media (max-width: 900px) {
+            .home-tegels { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .training-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media (max-width: 640px) {
+            .hero { padding: 3.5rem 1.25rem 3rem; }
+            .hero h1 { font-size: 2.1rem; }
+            .home-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; padding: 1.5rem 1rem; }
+            .home-tegels, .home-rollen, .training-grid, .home-stappen { grid-template-columns: 1fr; }
+            body > .container.pagina-sectie, .home-rollen-achtergrond .pagina-sectie { padding-top: 2rem; padding-bottom: 2rem; }
+            .sectie-titel { font-size: 1.35rem; margin-bottom: 1rem; }
+            .welkom-knoppen .btn { flex: 1 1 calc(50% - 0.5rem); text-align: center; }
+        }
+    </style>
 </head>
 <body>
 
@@ -20,26 +78,101 @@
 
 <section class="hero">
     <h1>Vind jouw <span>kartcoach</span></h1>
-    <p>Het platform om alles te regelen, van de perfecte coach vinden naar het boeken.</p>
-    <div class="hero-knoppen">
+    <p>Eén platform voor rijders en coaches: vind een coach, regel persoonlijke begeleiding of doe mee aan een groepstraining. Alles via chat.</p>
+    <div class="hero-knoppen" id="hero-knoppen">
         <a href="coaches.html" class="btn btn-primair">Zoek een coach</a>
         <a href="registreren.html" class="btn btn-secundair">Word coach</a>
     </div>
 </section>
 
-<div class="stats-balk">
-    <div style="text-align:center">
-        <div class="stat-label" style="margin-bottom:0.9rem">Totale leden</div>
-        <div style="display:flex;gap:3rem;justify-content:center">
-            <div class="stat">
-                <div class="stat-getal" id="stat-coaches">-</div>
-                <div class="stat-label">Coaches</div>
+<div class="stats-balk home-stats">
+    <div class="stat"><div class="stat-getal" id="stat-coaches">-</div><div class="stat-label">Coaches</div></div>
+    <div class="stat"><div class="stat-getal" id="stat-rijders">-</div><div class="stat-label">Rijders</div></div>
+    <div class="stat"><div class="stat-getal" id="stat-trainingen">-</div><div class="stat-label">Groepstrainingen</div></div>
+    <div class="stat"><div class="stat-getal" id="stat-aanvragen">-</div><div class="stat-label">Open aanvragen</div></div>
+</div>
+
+<!-- Alleen zichtbaar als je ingelogd bent -->
+<div class="container" id="welkom-blok" style="display:none">
+    <div class="welkom-balk">
+        <div>
+            <div class="welkom-titel" id="welkom-titel"></div>
+            <div class="welkom-sub">Snel naar:</div>
+        </div>
+        <div class="welkom-knoppen" id="welkom-knoppen"></div>
+    </div>
+</div>
+
+<div class="container pagina-sectie">
+    <h2 class="sectie-titel">Wat wil je doen?</h2>
+    <div class="home-tegels">
+        <a class="home-tegel" href="coaches.html">
+            <div class="tegel-icoon">🔍</div>
+            <div class="tegel-titel">Coach zoeken</div>
+            <p>Bekijk profielen, ervaring, prijzen en reviews van kartcoaches en neem direct contact op.</p>
+            <div class="tegel-teller" id="tegel-coaches"></div>
+            <span class="tegel-link">Naar coaches</span>
+        </a>
+        <a class="home-tegel" href="persoonlijk-coachen.html">
+            <div class="tegel-icoon">🎯</div>
+            <div class="tegel-titel">Persoonlijk coachen</div>
+            <p>Rijders plaatsen een aanvraag voor één-op-één begeleiding. Coaches bieden aan wanneer en waar ze beschikbaar zijn.</p>
+            <div class="tegel-teller" id="tegel-aanvragen"></div>
+            <span class="tegel-link">Naar persoonlijk coachen</span>
+        </a>
+        <a class="home-tegel" href="trainingen.html">
+            <div class="tegel-icoon">👥</div>
+            <div class="tegel-titel">Groepstraining</div>
+            <p>Doe mee met een training, wedstrijddag of evenement met meerdere rijders, soms met meerdere coaches.</p>
+            <div class="tegel-teller" id="tegel-trainingen"></div>
+            <span class="tegel-link">Naar groepstrainingen</span>
+        </a>
+        <a class="home-tegel" href="berichten.html" id="tegel-berichten">
+            <div class="tegel-icoon">💬</div>
+            <div class="tegel-titel">Berichten</div>
+            <p>Chat één-op-één of in een groep, ontvang uitnodigingen en betaal facturen veilig online.</p>
+            <div class="tegel-teller" id="tegel-berichten-teller"></div>
+            <span class="tegel-link">Naar berichten</span>
+        </a>
+    </div>
+</div>
+
+<div class="home-rollen-achtergrond">
+    <div class="container pagina-sectie">
+        <div class="home-rollen">
+            <div class="rol-kaart">
+                <div class="rol-kop"><span>🏎️</span> Voor rijders</div>
+                <ul>
+                    <li>Zoek en vergelijk coaches op locatie, discipline en prijs</li>
+                    <li>Plaats een aanvraag als je een coach zoekt voor een training of wedstrijd</li>
+                    <li>Sluit je aan bij groepstrainingen</li>
+                    <li>Chat met coaches en betaal facturen veilig online</li>
+                    <li>Laat na je coaching een review achter</li>
+                </ul>
+                <div class="rol-prijs">Gratis voor rijders</div>
+                <a href="registreren.html" class="btn btn-primair rol-knop" id="rol-knop-rijder">Gratis account maken</a>
             </div>
-            <div class="stat">
-                <div class="stat-getal" id="stat-rijders">-</div>
-                <div class="stat-label">Rijders</div>
+            <div class="rol-kaart rol-kaart-donker">
+                <div class="rol-kop"><span>🏁</span> Voor coaches</div>
+                <ul>
+                    <li>Maak een profiel met je ervaring, specialisaties en prijzen</li>
+                    <li>Reageer op rijders die een coach zoeken</li>
+                    <li>Organiseer groepstrainingen, ook samen met andere coaches</li>
+                    <li>Stuur betaalverzoeken en facturen vanuit de chat</li>
+                    <li>Houd je afspraken bij in je eigen agenda</li>
+                </ul>
+                <div class="rol-prijs">€10 per maand · maandelijks opzegbaar</div>
+                <a href="registreren.html" class="btn btn-primair rol-knop" id="rol-knop-coach">Word coach</a>
             </div>
         </div>
+    </div>
+</div>
+
+<div class="container pagina-sectie" id="sectie-trainingen" style="display:none">
+    <h2 class="sectie-titel">Komende groepstrainingen</h2>
+    <div class="training-grid" id="komende-trainingen"></div>
+    <div style="text-align:center;margin-top:1.75rem">
+        <a href="trainingen.html" class="btn btn-donker">Alle groepstrainingen</a>
     </div>
 </div>
 
@@ -65,6 +198,18 @@
     </div>
 </div>
 
+<div class="container pagina-sectie">
+    <h2 class="sectie-titel">Zo werkt het</h2>
+    <div class="home-stappen">
+        <div class="home-stap"><div class="stap-nr">1</div><div class="stap-titel">Maak een account</div><p>Kies of je rijder of coach bent en vul je profiel in.</p></div>
+        <div class="home-stap"><div class="stap-nr">2</div><div class="stap-titel">Vind elkaar</div><p>Zoek een coach, plaats een aanvraag of meld je aan voor een groepstraining.</p></div>
+        <div class="home-stap"><div class="stap-nr">3</div><div class="stap-titel">Regel alles via chat</div><p>Spreek af, ontvang de factuur en betaal veilig online.</p></div>
+    </div>
+    <div style="text-align:center;margin-top:1.5rem">
+        <a href="hoe-werkt-het.html">Meer uitleg over hoe het werkt</a>
+    </div>
+</div>
+
 <footer>
     <div class="footer-inhoud">
         <div class="footer-links">
@@ -83,33 +228,110 @@
 <script src="js/auth.js"></script>
 <script src="js/api.js"></script>
 <script>
+const API_BASIS = 'https://racecoachfinder-production.up.railway.app/api';
+
+function zetTeller(id, tekst) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = tekst;
+}
+
+// Getal en tekst apart, zodat de tekst vertaald kan worden (NL/EN)
+function zetTegelTeller(id, n, enkelvoud, meervoud) {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = `<strong>${n}</strong> <span>${n === 1 ? enkelvoud : meervoud}</span>`;
+}
+
 async function laadHome() {
+    toonWelkom();
     try {
         const coaches = await CoachAPI.haalAlleOp();
-        document.getElementById('stat-coaches').textContent = coaches.length;
-
+        zetTeller('stat-coaches', coaches.length);
+        zetTegelTeller('tegel-coaches', coaches.length, 'coach beschikbaar', 'coaches beschikbaar');
         const grid = document.getElementById('recente-coaches');
-
         if (coaches.length === 0) {
             grid.innerHTML = `<div class="geen-resultaten">
                 <p>Nog geen coaches beschikbaar.</p>
                 <a href="registreren.html" class="btn btn-primair" style="margin-top:1rem">Word de eerste coach</a>
             </div>`;
         } else {
-            const recente = coaches.slice(-6).reverse();
-            grid.innerHTML = recente.map(coachKaartHTML).join('');
+            grid.innerHTML = coaches.slice(-6).reverse().map(coachKaartHTML).join('');
         }
-
         await laadAanbevolen(coaches);
     } catch (e) {
         document.getElementById('recente-coaches').innerHTML =
-            `<div class="melding melding-fout">Kan backend niet bereiken. Zorg dat de API draait op poort 5000.</div>`;
+            `<div class="melding melding-fout">Coaches konden niet geladen worden. Probeer het later opnieuw.</div>`;
     }
+    fetch(API_BASIS + '/rijder/aantal').then(r => r.json()).then(n => zetTeller('stat-rijders', n)).catch(() => {});
+    laadTrainingen();
+    laadAanvragen();
+}
 
+async function laadTrainingen() {
     try {
-        const aantalRijders = await fetch('https://racecoachfinder-production.up.railway.app/api/rijder/aantal').then(r => r.json());
-        document.getElementById('stat-rijders').textContent = aantalRijders;
+        const lijst = await fetch(API_BASIS + '/coachaanbod?groep=true').then(r => r.json());
+        zetTeller('stat-trainingen', lijst.length);
+        zetTegelTeller('tegel-trainingen', lijst.length, 'komende training', 'komende trainingen');
+        if (!lijst.length) return;
+        const komend = [...lijst].sort((a, b) => new Date(a.datum) - new Date(b.datum)).slice(0, 3);
+        document.getElementById('komende-trainingen').innerHTML = komend.map(t => {
+            const taal = (window.I18N && window.I18N.taal === 'en') ? 'en-GB' : 'nl-NL';
+            const datum = new Date(t.datum).toLocaleDateString(taal, { weekday: 'short', day: 'numeric', month: 'long' });
+            const prijs = t.isGratis ? 'Gratis' : (t.prijsPerRijder != null ? `€${t.prijsPerRijder} p.p.` : '');
+            return `<a class="training-kaart" href="trainingen.html">
+                <div class="training-datum">📅 ${escapeHtml(datum)}</div>
+                <div class="training-titel">${escapeHtml(t.titel)}</div>
+                <div class="training-info">📍 ${escapeHtml(t.locatie || '—')}${prijs ? ' · ' + escapeHtml(prijs) : ''}<br>🏁 ${escapeHtml(t.coachNaam || '')}</div>
+            </a>`;
+        }).join('');
+        document.getElementById('sectie-trainingen').style.display = '';
     } catch {}
+}
+
+async function laadAanvragen() {
+    try {
+        const lijst = await fetch(API_BASIS + '/aanvragen').then(r => r.json());
+        const open = lijst.filter(a => !a.isGesloten && !a.coachGevonden).length;
+        zetTeller('stat-aanvragen', open);
+        zetTegelTeller('tegel-aanvragen', open, 'rijder zoekt een coach', 'rijders zoeken een coach');
+    } catch {}
+}
+
+function toonWelkom() {
+    const g = getGebruiker();
+    const tegelBerichten = document.getElementById('tegel-berichten');
+    if (!g) {
+        tegelBerichten.href = 'inloggen.html';
+        zetTeller('tegel-berichten-teller', 'Log in om je berichten te zien');
+        return;
+    }
+    const rollen = (g.rol || '').split(',').map(r => r.trim());
+    const isCoach = rollen.includes('Coach') && (!rollen.includes('Rijder') || getActieveRol() !== 'Rijder');
+    const dashboard = isCoach ? 'dashboard-coach.html' : 'dashboard-rijder.html';
+    const voornaam = (g.naam || '').split(' ')[0];
+
+    document.getElementById('welkom-titel').innerHTML = `<span>Welkom terug,</span> ${escapeHtml(voornaam)}!`;
+    document.getElementById('welkom-knoppen').innerHTML = (isCoach
+        ? `<a href="${dashboard}" class="btn btn-primair">Mijn dashboard</a>
+           <a href="berichten.html" class="btn btn-licht">💬 Berichten</a>
+           <a href="trainingen.html" class="btn btn-licht">👥 Training aanmaken</a>
+           <a href="persoonlijk-coachen.html" class="btn btn-licht">🎯 Rijders zoeken een coach</a>`
+        : `<a href="${dashboard}" class="btn btn-primair">Mijn dashboard</a>
+           <a href="berichten.html" class="btn btn-licht">💬 Berichten</a>
+           <a href="persoonlijk-coachen.html" class="btn btn-licht">🎯 Aanvraag plaatsen</a>
+           <a href="trainingen.html" class="btn btn-licht">👥 Groepstrainingen</a>`);
+    document.getElementById('welkom-blok').style.display = '';
+
+    // Registreer-knoppen zijn niet nodig als je al een account hebt
+    document.getElementById('hero-knoppen').innerHTML = isCoach
+        ? `<a href="${dashboard}" class="btn btn-primair">Naar mijn dashboard</a><a href="persoonlijk-coachen.html" class="btn btn-secundair">Rijders zoeken een coach</a>`
+        : `<a href="coaches.html" class="btn btn-primair">Zoek een coach</a><a href="trainingen.html" class="btn btn-secundair">Groepstrainingen</a>`;
+    document.getElementById('rol-knop-rijder').style.display = 'none';
+    document.getElementById('rol-knop-coach').style.display = 'none';
+
+    authVerzoek('/chat/ongelezen').then(n => {
+        if (n > 0) zetTegelTeller('tegel-berichten-teller', n, 'ongelezen bericht', 'ongelezen berichten');
+        else zetTeller('tegel-berichten-teller', 'Geen ongelezen berichten');
+    }).catch(() => {});
 }
 
 async function laadAanbevolen(alleCoaches) {
