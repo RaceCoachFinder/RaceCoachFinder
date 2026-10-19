@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Persoonlijk Coachen – RaceCoachFinder</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .pagina-hero {
+            background: linear-gradient(135deg, var(--kleur-donker), #1a1a2e);
+            color: var(--kleur-wit);
+            padding: 2.5rem 0 2rem;
+            text-align: center;
+        }
+        .pagina-hero h1 { font-size: 2rem; font-weight: 900; margin-bottom: 0.5rem; }
+        .pagina-hero p { color: #bbb; font-size: 1rem; max-width: 560px; margin: 0 auto; }
+
+        /* Tabs */
+        .tab-balk {
+            display: flex;
+            border-bottom: 2px solid #eee;
+            margin-bottom: 2rem;
+            background: var(--kleur-wit);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .tab-knop {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            border: none;
+            background: none;
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--kleur-subtekst);
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: color 0.15s, border-color 0.15s;
+        }
+        .tab-knop.actief {
+            color: var(--kleur-tekst);
+            border-bottom-color: var(--kleur-primair);
+        }
+        .tab-knop:hover:not(.actief) { color: var(--kleur-tekst); background: #fafafa; }
+
+        /* Formulier kaart */
+        .formulier-kaart {
+            background: var(--kleur-wit);
+            border-radius: var(--rand);
+            box-shadow: var(--schaduw);
+            padding: 1.75rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Type selector */
+        .type-selector { display: flex; gap: 0.75rem; margin-bottom: 0.25rem; }
+        .type-optie {
+            flex: 1; padding: 0.75rem 1rem; border-radius: 8px;
+            border: 2px solid #e8e8e8; cursor: pointer;
+            font-family: inherit; font-size: 0.9rem; font-weight: 600;
+            background: var(--kleur-wit); color: var(--kleur-subtekst);
+            transition: all 0.15s; text-align: center;
+        }
+        .type-optie.actief {
+            border-color: var(--kleur-primair);
+            background: #fff8e0;
+            color: var(--kleur-donker);
+        }
+
+        /* Aanvraag kaarten */
+        .aanvraag-kaart {
+            background: var(--kleur-wit);
+            border-radius: var(--rand);
+            box-shadow: var(--schaduw);
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .aanvraag-meta { font-size: 0.83rem; color: var(--kleur-subtekst); margin: 0.3rem 0; }
+        .aanvraag-beschrijving { font-size: 0.9rem; color: var(--kleur-tekst); margin: 0.5rem 0; line-height: 1.5; }
+        .chips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.5rem; }
+        .chip { font-size: 0.74rem; font-weight: 600; padding: 0.2rem 0.6rem; border-radius: 20px; background: #f0f0f0; color: #555; }
+        .chip-primair { background: #fff8e0; color: #9a7800; }
+        .chip-wedstrijd { background: #fde8ea; color: #c62828; }
+        .chip-training { background: #e3f0ff; color: #1565c0; }
+        .chip-groep { background: #e8f5e9; color: #2e7d32; }
+
+        /* Coach aanbod kaarten */
+        .aanbod-kaart {
+            background: var(--kleur-wit);
+            border-radius: var(--rand);
+            box-shadow: var(--schaduw);
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+        .aanbod-datum-blok {
+            background: var(--kleur-primair);
+            color: var(--kleur-donker);
+            border-radius: 8px;
+            padding: 0.5rem 0.75rem;
+            text-align: center;
+            min-width: 48px;
+            flex-shrink: 0;
+        }
+        .aanbod-datum-dag { font-size: 1.4rem; font-weight: 900; line-height: 1; }
+        .aanbod-datum-mnd { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .multi-check-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+            gap: 0.35rem; margin-top: 0.35rem;
+        }
+        .multi-check-grid label {
+            display: flex; align-items: center; gap: 0.45rem;
+            font-size: 0.84rem; font-weight: 400; text-transform: none;
+            letter-spacing: 0; cursor: pointer; padding: 0.35rem 0.55rem;
+            border-radius: 6px; border: 1px solid #e8e8e8; transition: background 0.1s;
+        }
+        .multi-check-grid label:hover { background: #fafafa; }
+        .multi-check-grid input[type="checkbox"] { width: auto; accent-color: var(--kleur-primair); }
+
+        .coach-mention-wrapper { position: relative; }
+        .coach-dropdown {
+            position: absolute; top: 100%; left: 0; right: 0; z-index: 200;
+            background: #fff; border: 1.5px solid #e0e0e0;
+            border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+            margin-top: 2px; overflow: hidden;
+        }
+        .coach-suggestie {
+            padding: 0.6rem 0.9rem; cursor: pointer;
+            font-size: 0.88rem; border-bottom: 1px solid #f5f5f5;
+        }
+        .coach-suggestie:last-child { border-bottom: none; }
+        .coach-suggestie:hover { background: #f0f7ff; }
+        .coach-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.4rem; }
+        .coach-tag {
+            display: inline-flex; align-items: center; gap: 0.3rem;
+            background: #e3f0ff; color: #1565c0;
+            font-size: 0.78rem; font-weight: 600;
+            padding: 0.22rem 0.6rem; border-radius: 20px;
+        }
+        .coach-tag button {
+            background: none; border: none; cursor: pointer;
+            color: #1565c0; font-size: 0.85rem; line-height: 1;
+            padding: 0; margin: 0; opacity: 0.7;
+        }
+        .coach-tag button:hover { opacity: 1; }
+
+        .mijn-kaart {
+            background: var(--kleur-wit);
+            border-radius: var(--rand);
+            box-shadow: var(--schaduw);
+            padding: 1rem 1.4rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .mijn-kaart-titel { font-size: 0.95rem; font-weight: 700; }
+        .mijn-kaart-sub { font-size: 0.82rem; color: var(--kleur-subtekst); margin-top: 0.15rem; }
+
+        .sectie-kop {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;
+        }
+    </style>
+</head>
+<body>
+
+<nav>
+    <span class="nav-logo">Race<span>Coach</span>Finder</span>
+    <ul class="nav-links" id="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="coaches.html">Coaches</a></li>
+    </ul>
+</nav>
+
+<div class="pagina-hero">
+    <div class="container">
+        <h1>🎯 Persoonlijk Coachen</h1>
+        <p>Rijders en coaches vinden elkaar voor één-op-één begeleiding op training of wedstrijd.</p>
+    </div>
+</div>
+
+<div class="tab-balk">
+    <button class="tab-knop actief" id="tab-btn-rijder" onclick="toonTab('rijder')">🙋 Rijder zoekt coach</button>
+    <button class="tab-knop" id="tab-btn-coach" onclick="toonTab('coach')">🏁 Coach biedt aan</button>
+</div>
+
+<div class="container">
+
+    <!-- ========================= TAB 1: RIJDER ZOEKT ========================= -->
+    <div id="tab-rijder">
+
+        <div id="rijder-form-sectie" style="display:none">
+            <div class="formulier-kaart">
+                <div class="sectie-kop">
+                    <h2 style="font-size:1.1rem;margin:0">Aanvraag plaatsen</h2>
+                    <button onclick="toggleRijderFormulier()" id="rijder-form-toggle" class="btn btn-donker" style="font-size:0.85rem">+ Aanvraag plaatsen</button>
+                </div>
+
+                <div id="rijder-formulier" style="display:none">
+                    <div id="melding-rijder"></div>
+                    <form onsubmit="submitRijderAanvraag(event)">
+
+                        <div class="formulier-groep">
+                            <label>Soort opdracht</label>
+                            <div class="type-selector">
+                                <button type="button" class="type-optie actief" id="type-training-btn" onclick="setRijderType('Training')">🎯 Training</button>
+                                <button type="button" class="type-optie" id="type-wedstrijd-btn" onclick="setRijderType('Wedstrijd')">🏁 Wedstrijd</button>
+                            </div>
+                            <input type="hidden" id="rijder-soort-opdracht" value="Training">
+                        </div>
+
+                        <!-- Wedstrijd velden -->
+                        <div id="wedstrijd-velden" style="display:none">
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+                                <div class="formulier-groep">
+                                    <label for="wedstrijd-organisatie">Organisatie / competitie *</label>
+                                    <input type="text" id="wedstrijd-organisatie" placeholder="bijv. Rotax Max Euro Challenge">
+                                </div>
+                                <div class="formulier-groep">
+                                    <label for="wedstrijd-naam">Wedstrijd / circuit *</label>
+                                    <input type="text" id="wedstrijd-naam" placeholder="bijv. Ronde 3 – Genk">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+                            <div class="formulier-groep">
+                                <label for="locatie">Locatie / kartbaan <span id="locatie-req-label" style="color:var(--kleur-subtekst);font-weight:400">(optioneel)</span></label>
+                                <input type="text" id="locatie" placeholder="bijv. Karting Genk, Mariembourg...">
+                            </div>
+                            <div class="formulier-groep">
+                                <label for="datum">Datum <span id="datum-req-label" style="color:var(--kleur-subtekst);font-weight:400">(optioneel)</span></label>
+                                <input type="date" id="datum">
+                            </div>
+                        </div>
+
+                        <div class="formulier-groep">
+                            <label for="maxprijs">Maximaal budget (€) <span style="color:var(--kleur-subtekst);font-weight:400">(optioneel)</span></label>
+                            <input type="number" id="maxprijs" placeholder="excl. reiskosten" min="0" step="5">
+                        </div>
+
+                        <div class="formulier-groep">
+                            <label for="beschrijving">Beschrijving *</label>
+                            <textarea id="beschrijving" rows="3" placeholder="Wat verwacht je van de coach? Wat is je niveau?..." required></textarea>
+                        </div>
+
+                        <!-- Training: wat wil je aanpakken -->
+                        <div id="training-aanpak-velden">
+                            <div class="formulier-groep">
+                                <label>Wat wil je aanpakken? <span style="color:var(--kleur-subtekst);font-weight:400">(optioneel)</span></label>
+                                <div class="multi-check-grid" id="kwal-grid"></div>
+                            </div>
+                            <div class="formulier-groep">
+                                <label>Categorie kart <span style="color:var(--kleur-subtekst);font-weight:400">(optioneel)</span></label>
+                                <div class="multi-check-grid" id="spec-grid"></div>
+                            </div>
+                        </div>
+
+                        <div style="display:flex;gap:0.75rem;justify-content:flex-end;margin-top:0.5rem">
+                            <button type="button" onclick="toggleRijderFormulier()" class="btn btn-secundair" style="color:#555;border-color:#ccc">Annuleren</button>
+                            <button type="submit" class="btn btn-primair">Aanvraag plaatsen</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <h2 style="font-size:1.05rem;font-weight:800;margin:0 0 0.75rem">Mijn aanvragen</h2>
+            <div id="mijn-rijder-aanvragen"></div>
+            <hr style="margin:2rem 0;border:none;border-top:1px solid #ebebeb">
+        </div>
+
+        <!-- Publieke lijst -->
+        <div>
+            <div class="sectie-kop">
+                <h2 style="font-size:1.1rem;margin:0">Rijders die een coach zoeken</h2>
+                <span id="rijder-teller" style="font-size:0.85rem;color:var(--kleur-subtekst)"></span>
+            </div>
+            <div id="rijder-aanvragen-lijst"><div class="laden"><div class="spinner"></div><p>Laden...</p></div></div>
+        </div>
+    </div>
+
+    <!-- ========================= TAB 2: COACH BIEDT ========================= -->
+    <div id="tab-coach" style="display:none">
+
+        <div id="coach-form-sectie" style="display:none">
+            <div class="formulier-kaart">
+                <div class="sectie-kop">
+                    <h2 style="font-size:1.1rem;margin:0">Aanbieding plaatsen</h2>
+                    <button onclick="toggleCoachFormulier()" id="coach-form-toggle" class="btn btn-donker" style="font-size:0.85rem">+ Aanbieding toevoegen</button>
+                </div>
+
+                <div id="coach-formulier" style="display:none">
+                    <div id="melding-coach"></div>
+                    <form onsubmit="submitCoachAanbod(event)">
+
+                        <div class="formulier-groep">
+                            <label>Soort aanbieding</label>
+                            <div class="type-selector">
+                                <button type="button" class="type-optie actief" id="ctype-training-btn" onclick="setCoachType('Training')">🎯 Training</button>
+                                <button type="button" class="type-optie" id="ctype-wedstrijd-btn" onclick="setCoachType('Wedstrijd')">🏁 Wedstrijd</button>
+                            </div>
+                            <input type="hidden" id="coach-soort-type" value="Training">
+                        </div>
+
+                        <div class="formulier-groep">
+                            <label for="c-titel">Titel *</label>
+                            <input type="text" id="c-titel" placeholder="bijv. Persoonlijke coaching Rotax Max – trainingssessie" required>
+                        </div>
+
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+                            <div class="formulier-groep">
+                                <label for="c-locatie">Locatie / baan *</label>
+                                <input type="text" id="c-locatie" placeholder="bijv. Karting Genk" required>
+                            </div>
+                            <div class="formulier-groep">
+                                <label for="c-datum">Datum *</label>
+                                <input type="date" id="c-datum" required>
+                            </div>
+                        </div>
+
+                        <div class="formulier-groep">
+                            <label>Disciplines <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel)</span></label>
+                            <div class="multi-check-grid" id="c-disc-grid"></div>
+                        </div>
+
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+                            <div class="formulier-groep">
+                                <label for="c-prijs">Prijs (€) <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel)</span></label>
+                                <input type="number" id="c-prijs" placeholder="bijv. 200" min="0" step="5">
+                            </div>
+                            <div class="formulier-groep" style="display:flex;align-items:flex-end;padding-bottom:0.25rem">
+                                <label style="display:flex;align-items:center;gap:0.5rem;font-weight:400;text-transform:none;letter-spacing:0;cursor:pointer">
+                                    <input type="checkbox" id="c-gratis" style="width:auto;accent-color:var(--kleur-primair)">
+                                    Gratis
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="formulier-groep">
+                            <label for="c-beschrijving">Beschrijving *</label>
+                            <textarea id="c-beschrijving" rows="3" placeholder="Beschrijf wat je biedt, je aanpak, wat inbegrepen is..." required></textarea>
+                        </div>
+
+                        <div style="display:flex;gap:0.75rem;justify-content:flex-end;margin-top:0.5rem">
+                            <button type="button" onclick="toggleCoachFormulier()" class="btn btn-secundair" style="color:#555;border-color:#ccc">Annuleren</button>
+                            <button type="submit" class="btn btn-primair">Aanbieding plaatsen</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <h2 style="font-size:1.05rem;font-weight:800;margin:0 0 0.75rem">Mijn aanbiedingen</h2>
+            <div id="mijn-coach-aanbod"></div>
+            <hr style="margin:2rem 0;border:none;border-top:1px solid #ebebeb">
+        </div>
+
+        <!-- Publieke lijst coach aanbod -->
+        <div>
+            <div class="sectie-kop">
+                <h2 style="font-size:1.1rem;margin:0">Coaches die beschikbaar zijn</h2>
+                <span id="coach-teller" style="font-size:0.85rem;color:var(--kleur-subtekst)"></span>
+            </div>
+            <div id="coach-aanbod-lijst"><div class="laden"><div class="spinner"></div><p>Laden...</p></div></div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Sluit-aanvraag modal -->
+<div id="sluit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:16px;padding:2rem;max-width:380px;width:calc(100% - 2rem);box-shadow:0 8px 32px rgba(0,0,0,0.2)">
+        <h3 style="margin:0 0 0.5rem">Aanvraag verwijderen</h3>
+        <p style="color:var(--kleur-subtekst);margin:0 0 1.5rem;font-size:0.92rem">Heb je een coach gevonden via RaceCoachFinder?</p>
+        <div style="display:flex;flex-direction:column;gap:0.65rem">
+            <button class="btn btn-primair" onclick="sluitAanvraag(true)">✅ Ja, ik heb een coach gevonden!</button>
+            <button class="btn btn-donker" onclick="sluitAanvraag(false)">Nee, verwijder gewoon</button>
+            <button class="btn btn-secundair" onclick="document.getElementById('sluit-modal').style.display='none'" style="color:#888;border-color:#ddd">Annuleren</button>
+        </div>
+    </div>
+</div>
+
+<footer>
+    <div class="footer-inhoud">
+        <div class="footer-links">
+            <a href="hoe-werkt-het.html">Hoe werkt het</a>
+            <a href="tips.html">Tips</a>
+            <a href="contact.html">Contact</a>
+            <a href="privacybeleid.html">Privacybeleid</a>
+            <a href="algemene-voorwaarden.html">Voorwaarden</a>
+            <a href="disclaimer.html">Disclaimer</a>
+        </div>
+        <p>&copy; 2026 RaceCoachFinder</p>
+    </div>
+</footer>
+
+<script src="js/auth.js"></script>
+<script>
+const API = 'https://racecoachfinder-production.up.railway.app/api';
+
+const KWALITEITEN = ['Sprint','Endurance','Regenrijden','Snelheid','Basis','Inhalen','Verdedigen','Kwalificatie','Race brain','Rijstijl','Rempunten','Algemeen'];
+const SPECIALISATIES = ['Huurkart','Rotax Max','OK / Junior','KZ / Shifter','Superkart','Simracing','Algemeen'];
+const DISCIPLINES = ['Huurkart','Rotax Max','OK / Junior','KZ / Shifter','Superkart','Endurance','Simracing','Algemeen'];
+
+function bouwCheckGrid(containerId, opties) {
+    const el = document.getElementById(containerId);
+    el.innerHTML = opties.map(o =>
+        `<label><input type="checkbox" value="${esc(o)}"> ${esc(o)}</label>`
+    ).join('');
+}
+
+bouwCheckGrid('kwal-grid', KWALITEITEN);
+bouwCheckGrid('spec-grid', SPECIALISATIES);
+bouwCheckGrid('c-disc-grid', DISCIPLINES);
+
+document.getElementById('datum').min = new Date().toISOString().split('T')[0];
+document.getElementById('c-datum').min = new Date().toISOString().split('T')[0];
+
+// ======== TAB LOGICA ========
+
+function toonTab(welke) {
+    document.getElementById('tab-rijder').style.display = welke === 'rijder' ? '' : 'none';
+    document.getElementById('tab-coach').style.display = welke === 'coach' ? '' : 'none';
+    document.getElementById('tab-btn-rijder').classList.toggle('actief', welke === 'rijder');
+    document.getElementById('tab-btn-coach').classList.toggle('actief', welke === 'coach');
+
+    if (welke === 'coach' && !window._coachAanbodGeladen) {
+        laadCoachAanbod();
+        window._coachAanbodGeladen = true;
+    }
+}
+
+// ======== RIJDER TYPE SELECTOR ========
+
+let rijderType = 'Training';
+
+function setRijderType(type) {
+    rijderType = type;
+    document.getElementById('rijder-soort-opdracht').value = type;
+    document.getElementById('type-training-btn').classList.toggle('actief', type === 'Training');
+    document.getElementById('type-wedstrijd-btn').classList.toggle('actief', type === 'Wedstrijd');
+
+    const wedstrijdVelden = document.getElementById('wedstrijd-velden');
+    const trainAanpak = document.getElementById('training-aanpak-velden');
+    const datumLabel = document.getElementById('datum-req-label');
+    const locatieLabel = document.getElementById('locatie-req-label');
+    const datumInput = document.getElementById('datum');
+    const locatieInput = document.getElementById('locatie');
+    const wedOrgInput = document.getElementById('wedstrijd-organisatie');
+    const wedNaamInput = document.getElementById('wedstrijd-naam');
+
+    if (type === 'Wedstrijd') {
+        wedstrijdVelden.style.display = '';
+        trainAanpak.style.display = 'none';
+        datumLabel.textContent = '*';
+        locatieLabel.textContent = '*';
+        datumInput.required = true;
+        locatieInput.required = true;
+        wedOrgInput.required = true;
+        wedNaamInput.required = true;
+    } else {
+        wedstrijdVelden.style.display = 'none';
+        trainAanpak.style.display = '';
+        datumLabel.textContent = '(optioneel)';
+        locatieLabel.textContent = '(optioneel)';
+        datumInput.required = false;
+        locatieInput.required = false;
+        wedOrgInput.required = false;
+        wedNaamInput.required = false;
+    }
+}
+
+// ======== COACH TYPE SELECTOR ========
+
+let coachType = 'Training';
+
+function setCoachType(type) {
+    coachType = type;
+    document.getElementById('coach-soort-type').value = type;
+    document.getElementById('ctype-training-btn').classList.toggle('actief', type === 'Training');
+    document.getElementById('ctype-wedstrijd-btn').classList.toggle('actief', type === 'Wedstrijd');
+    document.getElementById('c-titel').placeholder = type === 'Wedstrijd'
+        ? 'bijv. Coach beschikbaar bij NK Karting Genk'
+        : 'bijv. Persoonlijke coaching Rotax Max – trainingssessie';
+}
+
+// ======== FORMULIER TOGGLE ========
+
+function toggleRijderFormulier() {
+    const form = document.getElementById('rijder-formulier');
+    const btn = document.getElementById('rijder-form-toggle');
+    const open = form.style.display !== 'none';
+    form.style.display = open ? 'none' : '';
+    btn.textContent = open ? '+ Aanvraag plaatsen' : '✕ Sluiten';
+}
+
+function toggleCoachFormulier() {
+    const form = document.getElementById('coach-formulier');
+    const btn = document.getElementById('coach-form-toggle');
+    const open = form.style.display !== 'none';
+    form.style.display = open ? 'none' : '';
+    btn.textContent = open ? '+ Aanbieding toevoegen' : '✕ Sluiten';
+}
+
+// ======== RIJDER AANVRAAG INDIENEN ========
+
+function getGekozen(id) {
+    return [...document.querySelectorAll(`#${id} input:checked`)].map(c => c.value);
+}
+
+async function submitRijderAanvraag(event) {
+    event.preventDefault();
+    const melding = document.getElementById('melding-rijder');
+    melding.innerHTML = '';
+
+    const datumVal = document.getElementById('datum').value;
+    const body = {
+        locatie: document.getElementById('locatie').value.trim(),
+        datum: datumVal ? new Date(datumVal).toISOString() : null,
+        maxPrijs: parseFloat(document.getElementById('maxprijs').value) || null,
+        beschrijving: document.getElementById('beschrijving').value.trim(),
+        specialisaties: getGekozen('spec-grid').join(','),
+        kwaliteiten: getGekozen('kwal-grid').join(','),
+        soortOpdracht: rijderType,
+        isGroep: false,
+        wedstrijdOrganisatie: document.getElementById('wedstrijd-organisatie').value.trim(),
+        wedstrijdNaam: document.getElementById('wedstrijd-naam').value.trim()
+    };
+
+    try {
+        await authVerzoek('/aanvragen', 'POST', body);
+        melding.innerHTML = '<div class="melding melding-succes">Aanvraag geplaatst!</div>';
+        event.target.reset();
+        setRijderType('Training');
+        document.querySelectorAll('#spec-grid input, #kwal-grid input').forEach(c => c.checked = false);
+        toggleRijderFormulier();
+        laadMijnRijderAanvragen();
+        laadRijderAanvragen();
+    } catch (e) {
+        melding.innerHTML = `<div class="melding melding-fout">${esc(e.message)}</div>`;
+    }
+}
+
+// ======== COACH AANBIEDING INDIENEN ========
+
+async function submitCoachAanbod(event) {
+    event.preventDefault();
+    const melding = document.getElementById('melding-coach');
+    melding.innerHTML = '';
+
+    const body = {
+        titel: document.getElementById('c-titel').value.trim(),
+        korteOmschrijving: '',
+        beschrijving: document.getElementById('c-beschrijving').value.trim(),
+        datum: new Date(document.getElementById('c-datum').value).toISOString(),
+        locatie: document.getElementById('c-locatie').value.trim(),
+        categorieen: coachType,
+        disciplines: getGekozen('c-disc-grid').join(','),
+        maxRijders: 1,
+        prijsPerRijder: parseFloat(document.getElementById('c-prijs').value) || null,
+        isGratis: document.getElementById('c-gratis').checked,
+        isGroep: false
+    };
+
+    const btn = event.target.querySelector('button[type="submit"]');
+    btn.disabled = true; btn.textContent = 'Bezig...';
+
+    try {
+        const token = localStorage.getItem('kcf_token');
+        const resp = await fetch(`${API}/coachaanbod`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify(body)
+        });
+        if (!resp.ok) throw new Error(await resp.text());
+        melding.innerHTML = '<div class="melding melding-succes">Aanbieding geplaatst!</div>';
+        event.target.reset();
+        setCoachType('Training');
+        toggleCoachFormulier();
+        laadMijnCoachAanbod();
+        laadCoachAanbod();
+    } catch (e) {
+        melding.innerHTML = `<div class="melding melding-fout">${esc(e.message)}</div>`;
+    } finally {
+        btn.disabled = false; btn.textContent = 'Aanbieding plaatsen';
+    }
+}
+
+// ======== RIJDER AANVRAGEN LADEN ========
+
+async function laadRijderAanvragen() {
+    const container = document.getElementById('rijder-aanvragen-lijst');
+    const teller = document.getElementById('rijder-teller');
+    try {
+        const resp = await fetch(`${API}/aanvragen?groep=false`);
+        const lijst = await resp.json();
+        teller.textContent = lijst.length === 0 ? 'Geen aanvragen' : `${lijst.length} open aanvra${lijst.length === 1 ? 'ag' : 'gen'}`;
+        container.innerHTML = lijst.length === 0
+            ? '<div style="text-align:center;padding:3rem 0;color:var(--kleur-subtekst)"><div style="font-size:2.5rem;margin-bottom:0.75rem">🔍</div><p>Nog geen aanvragen geplaatst.</p></div>'
+            : lijst.map(a => rijderKaartHTML(a)).join('');
+    } catch {
+        container.innerHTML = '<div class="melding melding-fout">Kon aanvragen niet laden.</div>';
+    }
+}
+
+function rijderKaartHTML(a) {
+    const datum = a.datum ? new Date(a.datum).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' }) : null;
+    const specs = (a.specialisaties || '').split(',').filter(Boolean);
+    const kwals = (a.kwaliteiten || '').split(',').filter(Boolean);
+    const soort = a.soortOpdracht || 'Training';
+
+    const soortChip = soort === 'Wedstrijd'
+        ? '<span class="chip chip-wedstrijd">🏁 Wedstrijd</span>'
+        : '<span class="chip chip-training">🎯 Training</span>';
+
+    let wedstrijdInfo = '';
+    if (soort === 'Wedstrijd' && (a.wedstrijdOrganisatie || a.wedstrijdNaam)) {
+        wedstrijdInfo = `<div class="aanvraag-meta">🏆 ${esc(a.wedstrijdOrganisatie || '')}${a.wedstrijdOrganisatie && a.wedstrijdNaam ? ' — ' : ''}${esc(a.wedstrijdNaam || '')}</div>`;
+    }
+
+    return `
+    <div class="aanvraag-kaart">
+        <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem;flex-wrap:wrap">
+            ${soortChip}
+            <span style="font-size:0.85rem;font-weight:700">${esc(a.rijderNaam || 'Rijder')}</span>
+        </div>
+        ${wedstrijdInfo}
+        <div class="aanvraag-meta">
+            ${a.locatie ? `📍 ${esc(a.locatie)}` : ''}
+            ${datum ? `  •  📅 ${datum}` : ''}
+            ${a.maxPrijs ? `  •  💶 Max €${a.maxPrijs}` : ''}
+        </div>
+        <div class="aanvraag-beschrijving">${esc(a.beschrijving)}</div>
+        <div class="chips">
+            ${specs.map(s => `<span class="chip chip-primair">${esc(s)}</span>`).join('')}
+            ${kwals.map(k => `<span class="chip">${esc(k)}</span>`).join('')}
+        </div>
+    </div>`;
+}
+
+// ======== MIJN RIJDER AANVRAGEN ========
+
+let huidigSluitId = null;
+
+async function laadMijnRijderAanvragen() {
+    const container = document.getElementById('mijn-rijder-aanvragen');
+    try {
+        const lijst = await authVerzoek('/aanvragen/mijn');
+        const persoonlijk = (lijst || []).filter(a => !a.isGroep);
+        if (persoonlijk.length === 0) {
+            container.innerHTML = '<p style="color:var(--kleur-subtekst);font-size:0.9rem">Je hebt nog geen persoonlijke aanvragen geplaatst.</p>';
+            return;
+        }
+        container.innerHTML = persoonlijk.map(a => mijnAanvraagKaart(a)).join('');
+    } catch {
+        container.innerHTML = '<p style="color:var(--kleur-subtekst);font-size:0.9rem">Aanvragen kunnen niet worden geladen.</p>';
+    }
+}
+
+function mijnAanvraagKaart(a) {
+    const datum = a.datum ? new Date(a.datum).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' }) : '—';
+    const verlopen = a.datum && new Date(a.datum) < new Date(new Date().setHours(0,0,0,0));
+    const soort = a.soortOpdracht || 'Training';
+
+    let badge = '';
+    if (a.isGesloten) {
+        badge = a.coachGevonden
+            ? '<span style="background:#d4edda;color:#155724;font-size:0.72rem;font-weight:700;padding:0.2rem 0.6rem;border-radius:20px">✓ Coach gevonden</span>'
+            : '<span style="background:#e9ecef;color:#555;font-size:0.72rem;font-weight:700;padding:0.2rem 0.6rem;border-radius:20px">Verwijderd</span>';
+    } else if (verlopen) {
+        badge = '<span style="background:#fff3cd;color:#856404;font-size:0.72rem;font-weight:700;padding:0.2rem 0.6rem;border-radius:20px">Verlopen</span>';
+    } else {
+        badge = '<span style="background:#e8f5e9;color:#2e7d32;font-size:0.72rem;font-weight:700;padding:0.2rem 0.6rem;border-radius:20px">Actief</span>';
+    }
+
+    const soortChip = soort === 'Wedstrijd'
+        ? '<span class="chip chip-wedstrijd" style="font-size:0.72rem">🏁 Wedstrijd</span>'
+        : '<span class="chip chip-training" style="font-size:0.72rem">🎯 Training</span>';
+
+    return `
+    <div class="mijn-kaart">
+        <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.2rem;flex-wrap:wrap">
+                ${badge} ${soortChip}
+                <span class="mijn-kaart-titel">${a.locatie ? esc(a.locatie) : esc(a.beschrijving).substring(0, 50)}</span>
+            </div>
+            <div class="mijn-kaart-sub">
+                ${datum !== '—' ? `📅 ${datum}` : ''}
+                ${a.maxPrijs ? ` &nbsp;•&nbsp; Max €${a.maxPrijs}` : ''}
+            </div>
+        </div>
+        ${!a.isGesloten ? `<button onclick="openSluitModal(${a.id})" class="btn btn-gevaar" style="font-size:0.8rem;padding:0.3rem 0.7rem;white-space:nowrap">Verwijderen</button>` : ''}
+    </div>`;
+}
+
+function openSluitModal(id) {
+    huidigSluitId = id;
+    document.getElementById('sluit-modal').style.display = 'flex';
+}
+
+async function sluitAanvraag(coachGevonden) {
+    document.getElementById('sluit-modal').style.display = 'none';
+    if (!huidigSluitId) return;
+    try {
+        await authVerzoek('/aanvragen/' + huidigSluitId + '/sluit?coachGevonden=' + coachGevonden, 'PUT');
+        laadMijnRijderAanvragen();
+        laadRijderAanvragen();
+    } catch (e) {
+        alert('Verwijderen mislukt: ' + e.message);
+    }
+    huidigSluitId = null;
+}
+
+// ======== COACH AANBOD LADEN ========
+
+async function laadCoachAanbod() {
+    const container = document.getElementById('coach-aanbod-lijst');
+    const teller = document.getElementById('coach-teller');
+    try {
+        const resp = await fetch(`${API}/coachaanbod?groep=false`);
+        const lijst = await resp.json();
+        teller.textContent = lijst.length === 0 ? 'Geen aanbiedingen' : `${lijst.length} beschikbaar`;
+        container.innerHTML = lijst.length === 0
+            ? '<div style="text-align:center;padding:3rem 0;color:var(--kleur-subtekst)"><div style="font-size:2.5rem;margin-bottom:0.75rem">🔍</div><p>Nog geen persoonlijke coachingaanbiedingen.</p></div>'
+            : lijst.map(a => coachKaartHTML(a)).join('');
+    } catch {
+        container.innerHTML = '<div class="melding melding-fout">Kon aanbiedingen niet laden.</div>';
+    }
+}
+
+function coachKaartHTML(a) {
+    const d = new Date(a.datum);
+    const dag = d.toLocaleDateString('nl-NL', { day: 'numeric' });
+    const mnd = d.toLocaleDateString('nl-NL', { month: 'short' });
+    const volledigeDatum = d.toLocaleDateString('nl-NL', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    const discs = (a.disciplines || '').split(',').filter(Boolean);
+    const soortLabel = (a.categorieen || '').includes('Wedstrijd') ? '🏁 Wedstrijd' : '🎯 Training';
+
+    const prijsTag = a.isGratis
+        ? '<span class="chip chip-groep">Gratis</span>'
+        : a.prijsPerRijder ? `<span class="chip" style="background:#f3e5f5;color:#6a1b9a">€${a.prijsPerRijder}</span>` : '';
+
+    return `
+    <div class="aanbod-kaart">
+        <div class="aanbod-datum-blok">
+            <div class="aanbod-datum-dag">${dag}</div>
+            <div class="aanbod-datum-mnd">${mnd}</div>
+        </div>
+        <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.3rem;flex-wrap:wrap">
+                <span class="chip ${soortLabel.includes('Wedstrijd') ? 'chip-wedstrijd' : 'chip-training'}" style="font-size:0.72rem">${soortLabel}</span>
+                <span style="font-size:0.82rem;color:var(--kleur-subtekst)">${esc(a.coachNaam)}</span>
+            </div>
+            <div style="font-size:1rem;font-weight:800;margin-bottom:0.25rem">${esc(a.titel)}</div>
+            <div style="font-size:0.82rem;color:var(--kleur-subtekst);margin-bottom:0.5rem">
+                📍 ${esc(a.locatie)} &nbsp;•&nbsp; 📅 ${volledigeDatum}
+            </div>
+            ${a.beschrijving ? `<div style="font-size:0.87rem;color:var(--kleur-tekst);line-height:1.5;margin-bottom:0.5rem">${esc(a.beschrijving.substring(0,180))}${a.beschrijving.length > 180 ? '...' : ''}</div>` : ''}
+            <div class="chips">
+                ${discs.map(d => `<span class="chip chip-training">${esc(d)}</span>`).join('')}
+                ${prijsTag}
+            </div>
+        </div>
+        <div style="flex-shrink:0">
+            ${a.coachProfielId ? `<a href="coach-detail.html?id=${a.coachProfielId}" class="btn btn-primair btn-sm" style="white-space:nowrap;font-size:0.82rem">Coach bekijken</a>` : ''}
+        </div>
+    </div>`;
+}
+
+// ======== MIJN COACH AANBOD ========
+
+async function laadMijnCoachAanbod() {
+    const container = document.getElementById('mijn-coach-aanbod');
+    try {
+        const token = localStorage.getItem('kcf_token');
+        const resp = await fetch(`${API}/coachaanbod/mijn`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const lijst = await resp.json();
+        const persoonlijk = (lijst || []).filter(a => !a.isGroep);
+        if (persoonlijk.length === 0) {
+            container.innerHTML = '<p style="color:var(--kleur-subtekst);font-size:0.9rem">Nog geen persoonlijke aanbiedingen geplaatst.</p>';
+            return;
+        }
+        container.innerHTML = persoonlijk.map(a => {
+            const d = new Date(a.datum);
+            const datum = d.toLocaleDateString('nl-NL', { day:'numeric', month:'long', year:'numeric' });
+            return `
+            <div class="mijn-kaart">
+                <div style="flex:1;min-width:0">
+                    <div class="mijn-kaart-titel">${esc(a.titel)}</div>
+                    <div class="mijn-kaart-sub">📅 ${datum} &nbsp;•&nbsp; 📍 ${esc(a.locatie)}</div>
+                </div>
+                <button onclick="verwijderCoachAanbod(${a.id})" class="btn btn-gevaar" style="font-size:0.8rem;padding:0.3rem 0.7rem;white-space:nowrap">Verwijderen</button>
+            </div>`;
+        }).join('');
+    } catch {
+        container.innerHTML = '<p style="color:var(--kleur-subtekst);font-size:0.9rem">Aanbiedingen kunnen niet worden geladen.</p>';
+    }
+}
+
+async function verwijderCoachAanbod(id) {
+    if (!confirm('Deze aanbieding verwijderen?')) return;
+    try {
+        const token = localStorage.getItem('kcf_token');
+        await fetch(`${API}/coachaanbod/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        laadMijnCoachAanbod();
+        laadCoachAanbod();
+    } catch (e) {
+        alert('Verwijderen mislukt: ' + e.message);
+    }
+}
+
+function esc(str) {
+    const d = document.createElement('div');
+    d.textContent = String(str ?? '');
+    return d.innerHTML;
+}
+
+// ======== INIT ========
+
+updateNav();
+laadRijderAanvragen();
+
+const gebruiker = JSON.parse(localStorage.getItem('kcf_gebruiker') || 'null');
+if (gebruiker) {
+    const rollen = (gebruiker.rol || '').split(',').map(r => r.trim());
+    const isRijder = rollen.includes('Rijder');
+    const isCoach = rollen.includes('Coach');
+
+    if (isRijder) {
+        document.getElementById('rijder-form-sectie').style.display = '';
+        laadMijnRijderAanvragen();
+    }
+    if (isCoach) {
+        document.getElementById('coach-form-sectie').style.display = '';
+    }
+}
+
+// Laad coach-tab op achtergrond pas wanneer de tab geopend wordt
+</script>
+</body>
+</html>

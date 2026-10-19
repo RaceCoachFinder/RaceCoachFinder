@@ -18,19 +18,24 @@ public class AanvragenController : ControllerBase
         _context = context;
     }
 
-    // Publiek: actieve, niet-verlopen aanvragen voor coaches
+    // Publiek: actieve, niet-verlopen aanvragen
     [HttpGet]
-    public async Task<IActionResult> GetAlle()
+    public async Task<IActionResult> GetAlle([FromQuery] bool? groep = null)
     {
         var vandaag = DateTime.Today;
-        var aanvragen = await _context.RijderAanvragen
-            .Where(a => !a.IsGesloten && a.Datum.Date >= vandaag)
+        var query = _context.RijderAanvragen
+            .Where(a => !a.IsGesloten && (!a.Datum.HasValue || a.Datum.Value.Date >= vandaag));
+
+        if (groep.HasValue)
+            query = query.Where(a => a.IsGroep == groep.Value);
+
+        var aanvragen = await query
             .OrderByDescending(a => a.AangemaaktOp)
             .ToListAsync();
         return Ok(aanvragen);
     }
 
-    // Rijder: eigen aanvragen (inclusief gesloten)
+    // Eigen aanvragen (inclusief gesloten)
     [HttpGet("mijn")]
     [Authorize]
     public async Task<IActionResult> GetMijn()
@@ -59,7 +64,6 @@ public class AanvragenController : ControllerBase
         return Ok(aanvraag);
     }
 
-    // Aanvraag sluiten (coach gevonden of niet)
     [HttpPut("{id:int}/sluit")]
     [Authorize]
     public async Task<IActionResult> Sluit(int id, [FromQuery] bool coachGevonden = false)

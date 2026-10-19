@@ -18,4 +18,5 @@ public class CoachAanbod
     public DateTime AangemaaktOp { get; set; } = DateTime.UtcNow;
     public bool IsActief { get; set; } = true;
     public bool WachtOpCoaches { get; set; } = false; // true zolang niet alle uitgenodigde coaches geaccepteerd hebben
+    public bool IsGroep { get; set; } = true; // false = persoonlijk coachen, true = groepstraining
 }

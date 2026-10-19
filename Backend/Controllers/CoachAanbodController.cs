@@ -28,11 +28,15 @@ public class CoachAanbodController : ControllerBase
         [FromQuery] string? discipline,
         [FromQuery] string? locatie,
         [FromQuery] DateTime? datumVan,
-        [FromQuery] bool? gratis)
+        [FromQuery] bool? gratis,
+        [FromQuery] bool? groep = null)
     {
         var nu = DateTime.UtcNow.Date;
         var query = _context.CoachAanboden
             .Where(a => a.IsActief && a.Datum.Date >= nu);
+
+        if (groep.HasValue)
+            query = query.Where(a => a.IsGroep == groep.Value);
 
         if (!string.IsNullOrWhiteSpace(categorie))
             query = query.Where(a => a.Categorieen.Contains(categorie));
@@ -229,6 +233,7 @@ public class CoachAanbodController : ControllerBase
             MaxRijders = verzoek.MaxRijders,
             PrijsPerRijder = verzoek.PrijsPerRijder,
             IsGratis = verzoek.IsGratis,
+            IsGroep = verzoek.IsGroep,
             AangemaaktOp = DateTime.UtcNow,
             IsActief = !heeftUitnodigingen,
             WachtOpCoaches = heeftUitnodigingen
@@ -483,6 +488,7 @@ public record CoachAanbodVerzoek(
     int? MaxRijders,
     decimal? PrijsPerRijder,
     bool IsGratis,
+    bool IsGroep = true,
     List<UitgenodigdeCoachVerzoek>? UitgenodigdeCoaches = null
 );
 

@@ -127,7 +127,7 @@
     <ul class="nav-links">
         <li><a href="index.html">Home</a></li>
         <li><a href="coaches.html">Coaches</a></li>
-            <li><a href="trainingen.html">Trainingen</a></li>
+            <li><a href="trainingen.html">Groepstraining</a></li>
     </ul>
 </nav>
 
@@ -153,10 +153,10 @@
 
     <!-- Overzicht sectie (snelkoppelingen) -->
     <div id="rijder-overzicht-sectie" style="display:none">
-        <a href="coach-nodig.html" class="snelkoppeling-kaart" style="border-left:4px solid var(--kleur-primair)">
+        <a href="persoonlijk-coachen.html" class="snelkoppeling-kaart" style="border-left:4px solid var(--kleur-primair)">
             <div class="snelkoppeling-icoon">📋</div>
             <div class="snelkoppeling-tekst">
-                <strong>Coach nodig?</strong>
+                <strong>Persoonlijk coachen</strong>
                 <span>Zet een aanvraag online — coaches nemen contact op</span>
             </div>
             <span style="margin-left:auto;color:var(--kleur-subtekst)">→</span>
@@ -295,7 +295,7 @@
         <div style="max-width:750px;margin:0 auto">
             <div class="dashboard-kaart">
                 <h3>Mijn aanvragen
-                    <a href="coach-nodig.html" class="btn btn-primair" style="float:right;font-size:0.8rem;padding:0.3rem 0.9rem">+ Nieuwe aanvraag</a>
+                    <a href="persoonlijk-coachen.html" class="btn btn-primair" style="float:right;font-size:0.8rem;padding:0.3rem 0.9rem">+ Nieuwe aanvraag</a>
                 </h3>
                 <div id="dashboard-aanvragen"><p style="color:var(--kleur-subtekst);font-size:0.88rem">Laden...</p></div>
             </div>
@@ -528,7 +528,7 @@ async function laadDashboardAanvragen() {
     try {
         const lijst = await authVerzoek('/aanvragen/mijn');
         if (!lijst || lijst.length === 0) {
-            container.innerHTML = '<p style="color:var(--kleur-subtekst);font-size:0.88rem">Nog geen aanvragen geplaatst. <a href="coach-nodig.html">Aanvraag plaatsen →</a></p>';
+            container.innerHTML = '<p style="color:var(--kleur-subtekst);font-size:0.88rem">Nog geen aanvragen geplaatst. <a href="persoonlijk-coachen.html">Aanvraag plaatsen →</a></p>';
             return;
         }
         const actief = lijst.filter(a => !a.isGesloten);
