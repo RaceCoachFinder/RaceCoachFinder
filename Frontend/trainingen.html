@@ -524,6 +524,17 @@
                         <textarea id="groep-beschrijving" rows="3" placeholder="Beschrijf de groep: niveau, wat jullie willen leren of bereiken..." required></textarea>
                     </div>
 
+                    <!-- Rijders uitnodigen -->
+                    <div class="formulier-groep">
+                        <label>Rijders uitnodigen <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel)</span></label>
+                        <div style="position:relative">
+                            <input type="text" id="groep-rijder-zoek" placeholder="Naam rijder zoeken..." autocomplete="off"
+                                oninput="zoekGroepRijder(this.value)" style="width:100%;box-sizing:border-box">
+                            <div id="groep-rijder-sugg" class="groep-zoek-resultaten" style="position:absolute;top:100%;left:0;right:0;z-index:10;background:#fff;border:1px solid #ddd;border-radius:8px;display:none;max-height:220px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.1)"></div>
+                        </div>
+                        <div id="groep-rijder-chips" class="groep-chips" style="margin-top:0.45rem"></div>
+                    </div>
+
                     <div style="display:flex;gap:0.75rem;justify-content:flex-end;margin-top:0.5rem">
                         <button type="button" onclick="toggleGroepRijderForm()" class="btn btn-secundair" style="color:#555;border-color:#ccc">Annuleren</button>
                         <button type="submit" class="btn btn-primair">Verzoek plaatsen</button>
@@ -1363,12 +1374,15 @@ async function submitGroepRijder(event) {
         isGroep: true,
         groepGrootte: parseInt(document.getElementById('groep-grootte').value) || null,
         wedstrijdOrganisatie: document.getElementById('groep-org').value.trim(),
-        wedstrijdNaam: document.getElementById('groep-wnaam').value.trim()
+        wedstrijdNaam: document.getElementById('groep-wnaam').value.trim(),
+        uitgenodigdeRijders: JSON.stringify(groepUitgenodigdeRijders)
     };
     try {
         await authVerzoek('/aanvragen', 'POST', body);
         melding.innerHTML = '<div class="melding melding-succes">Verzoek geplaatst!</div>';
         event.target.reset();
+        groepUitgenodigdeRijders = [];
+        renderGroepRijderChips();
         document.querySelectorAll('#groep-kwal-grid input, #groep-spec-grid input').forEach(c => c.checked = false);
         setGroepType('Training');
         toggleGroepRijderForm();
@@ -1418,6 +1432,8 @@ function groepAanvraagKaartHTML(a) {
             ${groepInfo}${a.locatie ? `📍 ${esc(a.locatie)}  •  ` : ''}${datum ? `📅 ${datum}` : ''}${a.maxPrijs ? `  •  💶 Max €${a.maxPrijs} p.p.` : ''}
         </div>
         <div style="font-size:0.9rem;color:var(--kleur-tekst);line-height:1.5">${esc(a.beschrijving)}</div>
+        ${uitgenodigdeRijdersHtml(a)}
+        ${coachReageerKnop(a)}
     </div>`;
 }
 
@@ -1473,6 +1489,86 @@ async function groepSluitAanvraag(id) {
         laadGroepAanvragen();
     } catch (e) {
         alert('Verwijderen mislukt: ' + e.message);
+    }
+}
+
+// ========================= RIJDER UITNODIGEN (groepstraining form) =========================
+
+let groepUitgenodigdeRijders = []; // [{id, naam, fotoUrl}]
+
+async function zoekGroepRijder(q) {
+    const sugg = document.getElementById('groep-rijder-sugg');
+    if (q.trim().length < 2) { sugg.style.display = 'none'; return; }
+    try {
+        const res = await authVerzoek(`/chat/zoek?q=${encodeURIComponent(q.trim())}`);
+        const al = new Set(groepUitgenodigdeRijders.map(r => r.id));
+        const rijders = res.filter(u => u.rol === 'Rijder' && !al.has(u.id));
+        if (rijders.length === 0) { sugg.innerHTML = '<div style="padding:0.6rem 0.75rem;font-size:0.85rem;color:#999">Geen rijders gevonden</div>'; sugg.style.display = 'block'; return; }
+        sugg.innerHTML = rijders.slice(0, 8).map(u => {
+            const foto = u.fotoUrl ? `<img src="${esc(u.fotoUrl)}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0">` : `<div style="width:28px;height:28px;border-radius:50%;background:var(--kleur-primair);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.75rem;color:#fff;flex-shrink:0">${esc(u.naam.charAt(0).toUpperCase())}</div>`;
+            return `<div class="groep-zoek-rij" onclick="voegGroepRijderToe('${esc(u.id)}','${esc(u.naam)}','${esc(u.fotoUrl || '')}')">
+                ${foto}
+                <span style="font-size:0.88rem">${esc(u.naam)}</span>
+            </div>`;
+        }).join('');
+        sugg.style.display = 'block';
+    } catch { sugg.style.display = 'none'; }
+}
+
+function voegGroepRijderToe(id, naam, fotoUrl) {
+    const sugg = document.getElementById('groep-rijder-sugg');
+    const inp = document.getElementById('groep-rijder-zoek');
+    sugg.style.display = 'none';
+    inp.value = '';
+    if (groepUitgenodigdeRijders.some(r => r.id === id)) return;
+    groepUitgenodigdeRijders.push({ id, naam, fotoUrl });
+    renderGroepRijderChips();
+}
+
+function verwijderGroepRijder(id) {
+    groepUitgenodigdeRijders = groepUitgenodigdeRijders.filter(r => r.id !== id);
+    renderGroepRijderChips();
+}
+
+function renderGroepRijderChips() {
+    const el = document.getElementById('groep-rijder-chips');
+    el.innerHTML = groepUitgenodigdeRijders.map(r => {
+        const foto = r.fotoUrl ? `<img src="${esc(r.fotoUrl)}" style="width:20px;height:20px;border-radius:50%;object-fit:cover">` : `<span style="width:20px;height:20px;border-radius:50%;background:var(--kleur-primair);display:inline-flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;color:#fff">${esc(r.naam.charAt(0).toUpperCase())}</span>`;
+        return `<span class="groep-chip">${foto} ${esc(r.naam)} <button type="button" onclick="verwijderGroepRijder('${esc(r.id)}')" title="Verwijderen">&times;</button></span>`;
+    }).join('');
+}
+
+document.addEventListener('click', e => {
+    const sugg = document.getElementById('groep-rijder-sugg');
+    if (sugg && !sugg.contains(e.target) && e.target.id !== 'groep-rijder-zoek') {
+        sugg.style.display = 'none';
+    }
+});
+
+function uitgenodigdeRijdersHtml(a) {
+    let rijders = [];
+    try { rijders = JSON.parse(a.uitgenodigdeRijders || '[]'); } catch {}
+    if (!rijders.length) return '';
+    const chips = rijders.map(r => {
+        const foto = r.fotoUrl ? `<img src="${esc(r.fotoUrl)}" style="width:22px;height:22px;border-radius:50%;object-fit:cover">` : `<span style="width:22px;height:22px;border-radius:50%;background:#cce5ff;display:inline-flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;color:#004085">${esc(r.naam.charAt(0).toUpperCase())}</span>`;
+        return `<span style="display:inline-flex;align-items:center;gap:0.3rem;background:#e8f5e9;color:#2e7d32;font-size:0.78rem;font-weight:600;padding:0.2rem 0.55rem;border-radius:999px">${foto} ${esc(r.naam)}</span>`;
+    }).join('');
+    return `<div style="margin-top:0.5rem;display:flex;flex-wrap:wrap;gap:0.35rem;align-items:center"><span style="font-size:0.75rem;color:var(--kleur-subtekst)">👥 Rijders:</span>${chips}</div>`;
+}
+
+function coachReageerKnop(a) {
+    if (typeof gebruiker === 'undefined' || gebruiker.rol !== 'Coach') return '';
+    return `<div style="margin-top:0.75rem">
+        <button class="btn btn-primair" style="font-size:0.83rem;padding:0.4rem 0.9rem" onclick="reageerOpGroepAanvraag(${a.id})">💬 Reageer als coach</button>
+    </div>`;
+}
+
+async function reageerOpGroepAanvraag(id) {
+    try {
+        const res = await authVerzoek(`/aanvragen/${id}/groepschat`, 'POST');
+        window.location.href = `berichten.html?groep=${res.groepsgesprekId}`;
+    } catch (e) {
+        alert('Reageren mislukt: ' + e.message);
     }
 }
 

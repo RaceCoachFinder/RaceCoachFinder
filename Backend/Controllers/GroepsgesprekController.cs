@@ -61,6 +61,7 @@ public class GroepsgesprekController : ControllerBase
                 GroepsId = g.Id,
                 g.Naam,
                 g.CoachAanbodId,
+                g.RijderAanvraagId,
                 Leden = leden.Select(l => l.GebruikerNaam).ToList(),
                 LedenLijst = leden.Select(l => new { l.GebruikerId, l.GebruikerNaam }).ToList(),
                 IsBeheerder = g.AangemaaktDoorId == mijnId,
@@ -362,6 +363,33 @@ public class GroepsgesprekController : ControllerBase
 
         await _context.SaveChangesAsync();
         return Ok(new { aantalVerstuurd });
+    }
+
+    // Geeft de uitgenodigde rijders terug van de aanvraag waarmee deze chat gekoppeld is
+    [HttpGet("{id}/uitgenodigde-rijders")]
+    public async Task<IActionResult> GetUitgenodigdeRijders(int id)
+    {
+        var mijnId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var lid = await _context.GroepsgesprekLeden
+            .FirstOrDefaultAsync(l => l.GroepsgesprekId == id && l.GebruikerId == mijnId);
+        if (lid == null) return Forbid();
+
+        var groep = await _context.Groepsgesprekken.FindAsync(id);
+        if (groep?.RijderAanvraagId == null) return Ok(Array.Empty<object>());
+
+        var aanvraag = await _context.RijderAanvragen.FindAsync(groep.RijderAanvraagId.Value);
+        if (aanvraag == null) return Ok(Array.Empty<object>());
+
+        try
+        {
+            var rijders = System.Text.Json.JsonSerializer.Deserialize<List<System.Text.Json.JsonElement>>(
+                aanvraag.UitgenodigdeRijders);
+            return Ok(rijders ?? new List<System.Text.Json.JsonElement>());
+        }
+        catch
+        {
+            return Ok(Array.Empty<object>());
+        }
     }
 
     [HttpPost("deelnemen/{aanbodId}")]

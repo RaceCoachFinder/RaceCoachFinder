@@ -251,29 +251,17 @@
             margin: 0.5rem 0;
         }
 
-        /* Bericht actie-knoppen (hover) */
-        .bericht-bel-wrap { display: flex; align-items: flex-end; gap: 0.3rem; margin-bottom: 0.1rem; }
-        .bericht-bel-wrap.van-mij { justify-content: flex-end; }
-        .bericht-bel-wrap.van-ander { justify-content: flex-start; }
-        .bericht-acties { display: none; flex-direction: column; gap: 0.2rem; }
-        .bericht-bel-wrap:hover .bericht-acties { display: flex; }
-        .bericht-actie-btn {
-            background: none; border: 1px solid rgba(0,0,0,0.12); border-radius: 6px;
-            cursor: pointer; padding: 0.18rem 0.35rem; font-size: 0.72rem;
-            color: var(--kleur-subtekst); line-height: 1;
-            transition: background 0.15s, color 0.15s;
+        /* Bericht verwijder-knop (zichtbaar bij hover) */
+        .bericht-bel.van-mij { position: relative; }
+        .bericht-verwijder {
+            position: absolute; top: 0.2rem; right: 0.3rem;
+            background: none; border: none; cursor: pointer;
+            color: rgba(255,255,255,0.4); font-size: 0.75rem; line-height: 1;
+            padding: 0.15rem 0.3rem; border-radius: 4px;
+            opacity: 0; transition: opacity 0.15s;
         }
-        .bericht-actie-btn:hover { background: var(--kleur-bg); color: var(--kleur-tekst); }
-        .bericht-actie-btn.verwijder:hover { background: #fdecea; color: #c62828; border-color: #c62828; }
-
-        /* Edit-modus banner */
-        #bewerk-banner {
-            display: none; background: #fff8e0; border-top: 2px solid var(--kleur-primair);
-            padding: 0.5rem 1.5rem; flex-shrink: 0;
-            font-size: 0.8rem; color: #9a7800; font-weight: 600;
-            align-items: center; justify-content: space-between; gap: 0.5rem;
-        }
-        #bewerk-banner.zichtbaar { display: flex; }
+        .bericht-bel.van-mij:hover .bericht-verwijder { opacity: 1; }
+        .bericht-verwijder:hover { color: #fff; background: rgba(255,50,50,0.5); opacity: 1; }
 
         .gesprek-invoer {
             padding: 1rem 1.5rem;
@@ -655,11 +643,6 @@
                 </div>
             </div>
 
-            <div id="bewerk-banner">
-                <span>✏ Berichting bewerken</span>
-                <button onclick="annuleerBewerk()" style="background:none;border:none;cursor:pointer;color:#9a7800;font-size:1rem;padding:0;line-height:1">✕</button>
-            </div>
-
             <div class="gesprek-invoer">
                 <button class="btn-betaalverzoek" id="btn-betaalverzoek" onclick="toggleVerzoekFormulier()" style="display:none">€<span class="betaalverzoek-tekst"> Betaalverzoek</span></button>
                 <textarea id="bericht-invoer" placeholder="Typ een bericht..." rows="1"
@@ -704,6 +687,9 @@
         <h3 style="margin:0 0 0.75rem;font-size:1.1rem">👥 Groepsleden</h3>
         <div id="leden-lijst"></div>
         <div id="leden-toevoegen" style="display:none;margin-top:1rem;padding-top:0.85rem;border-top:1px solid #eee">
+            <div id="alle-rijders-wrap" style="display:none;margin-bottom:0.75rem">
+                <button class="btn btn-primair" style="width:100%;font-size:0.85rem" onclick="voegAlleUitgenodigdeRijdersToe()">👥 Alle uitgenodigde rijders toevoegen</button>
+            </div>
             <label style="font-size:0.84rem;font-weight:700;display:block;margin-bottom:0.35rem">➕ Lid toevoegen</label>
             <input class="groep-input" id="leden-zoek" type="text" placeholder="🔍 Zoek op naam..." autocomplete="off" oninput="zoekNieuwLid()" style="margin-bottom:0.4rem">
             <div class="groep-zoek-resultaten" id="leden-zoek-resultaten"></div>
@@ -1062,10 +1048,43 @@ function focusInvoer() {
 function openLedenPopup() {
     renderLedenLijst();
     const g = _groepCache[huidigGroepsId];
-    document.getElementById('leden-toevoegen').style.display = g && g.isBeheerder ? '' : 'none';
+    const isBeheerder = g && g.isBeheerder;
+    document.getElementById('leden-toevoegen').style.display = isBeheerder ? '' : 'none';
+    document.getElementById('alle-rijders-wrap').style.display = (isBeheerder && g.rijderAanvraagId) ? '' : 'none';
     document.getElementById('leden-zoek').value = '';
     document.getElementById('leden-zoek-resultaten').innerHTML = '';
     document.getElementById('leden-popup').style.display = 'flex';
+}
+
+async function voegAlleUitgenodigdeRijdersToe() {
+    const g = _groepCache[huidigGroepsId];
+    if (!g || !g.rijderAanvraagId) return;
+    try {
+        const uitgenodigden = await authVerzoek(`/groepsgesprek/${g.groepsId}/uitgenodigde-rijders`);
+        if (!uitgenodigden || uitgenodigden.length === 0) {
+            alert('Er zijn geen uitgenodigde rijders bij deze aanvraag.');
+            return;
+        }
+        const huidigeleden = new Set((g.ledenLijst || []).map(l => l.gebruikerId));
+        const nieuwen = uitgenodigden.filter(r => !huidigeleden.has(r.id));
+        if (nieuwen.length === 0) {
+            alert('Alle uitgenodigde rijders zitten al in de groep.');
+            return;
+        }
+        if (!confirm(`${nieuwen.length} rijder${nieuwen.length === 1 ? '' : 's'} toevoegen aan de groep?`)) return;
+        for (const r of nieuwen) {
+            try {
+                await authVerzoek(`/groepsgesprek/${g.groepsId}/leden`, 'POST', { gebruikerId: r.id });
+            } catch {}
+        }
+        await laadGesprekken();
+        const bijgewerkt = _groepCache[g.groepsId];
+        if (bijgewerkt) document.getElementById('partner-rol').textContent = 'Groepsgesprek · ' + (bijgewerkt.leden || []).join(', ');
+        renderLedenLijst();
+        laadGroepsBerichten(g.groepsId);
+    } catch (e) {
+        alert('Toevoegen mislukt: ' + e.message);
+    }
 }
 
 function sluitLedenPopup() {
@@ -1351,17 +1370,11 @@ function renderBericht(b) {
         </div>`;
     }
 
-    const actieTekst = esc(b.tekst.replace(/\n/g, ' ').slice(0, 200));
     return `
-    <div class="bericht-bel-wrap van-mij">
-        <div class="bericht-acties">
-            <button class="bericht-actie-btn" onclick="bewerkBericht(${b.id}, ${JSON.stringify(b.tekst)})" title="Bewerken">✏</button>
-            <button class="bericht-actie-btn verwijder" onclick="verwijderBericht(${b.id})" title="Verwijderen">🗑</button>
-        </div>
-        <div class="bericht-bel van-mij" data-id="${b.id}">
-            ${tekstHtml}
-            <div class="bericht-tijd">${tijd}${bewerktLabel}</div>
-        </div>
+    <div class="bericht-bel van-mij" data-id="${b.id}">
+        <button class="bericht-verwijder" onclick="verwijderBericht(${b.id})" title="Verwijderen">✕</button>
+        ${tekstHtml}
+        <div class="bericht-tijd">${tijd}${bewerktLabel}</div>
     </div>`;
 }
 
@@ -1445,15 +1458,10 @@ function renderGroepsBericht(b) {
 
     if (vanMij) {
         return `
-        <div class="bericht-bel-wrap van-mij">
-            <div class="bericht-acties">
-                <button class="bericht-actie-btn" onclick="bewerkGroepsBericht(${b.id}, ${JSON.stringify(b.tekst)})" title="Bewerken">✏</button>
-                <button class="bericht-actie-btn verwijder" onclick="verwijderGroepsBericht(${b.id})" title="Verwijderen">🗑</button>
-            </div>
-            <div class="bericht-bel van-mij" data-id="${b.id}">
-                ${tekstHtml}
-                <div class="bericht-tijd">${tijd}${bewerktLabel}</div>
-            </div>
+        <div class="bericht-bel van-mij" data-id="${b.id}">
+            <button class="bericht-verwijder" onclick="verwijderGroepsBericht(${b.id})" title="Verwijderen">✕</button>
+            ${tekstHtml}
+            <div class="bericht-tijd">${tijd}${bewerktLabel}</div>
         </div>`;
     }
     return `
@@ -1468,35 +1476,6 @@ function renderGroepsBericht(b) {
     </div>`;
 }
 
-let _bewerkId = null;       // id van bericht dat bewerkt wordt
-let _bewerkIsGroep = false; // true = groepsbericht
-
-function bewerkBericht(id, tekst) {
-    _bewerkId = id;
-    _bewerkIsGroep = false;
-    const invoer = document.getElementById('bericht-invoer');
-    invoer.value = tekst;
-    invoer.style.height = 'auto';
-    invoer.style.height = invoer.scrollHeight + 'px';
-    invoer.focus();
-    document.getElementById('bewerk-banner').classList.add('zichtbaar');
-    document.getElementById('btn-stuur').textContent = '✓';
-}
-
-function bewerkGroepsBericht(id, tekst) {
-    bewerkBericht(id, tekst);
-    _bewerkIsGroep = true;
-}
-
-function annuleerBewerk() {
-    _bewerkId = null;
-    _bewerkIsGroep = false;
-    const invoer = document.getElementById('bericht-invoer');
-    invoer.value = '';
-    invoer.style.height = 'auto';
-    document.getElementById('bewerk-banner').classList.remove('zichtbaar');
-    document.getElementById('btn-stuur').textContent = '➤';
-}
 
 async function verwijderBericht(id) {
     try {
@@ -1527,21 +1506,6 @@ async function stuurBericht() {
     btn.disabled = true;
 
     try {
-        // Edit-modus: bericht bijwerken
-        if (_bewerkId !== null) {
-            if (_bewerkIsGroep) {
-                await authVerzoek(`/groepsgesprek/${huidigGroepsId}/bericht/${_bewerkId}`, 'PUT', { tekst });
-                annuleerBewerk();
-                await laadGroepsBerichten(huidigGroepsId);
-            } else {
-                await authVerzoek(`/chat/bericht/${_bewerkId}`, 'PUT', { tekst });
-                annuleerBewerk();
-                await laadBerichten(huidigPartnerId);
-                await laadGesprekken();
-            }
-            return;
-        }
-
         // Aanvraag-context meesturen zodat de rijder het ook ziet
         const contextEl = document.getElementById('aanvraag-context');
         if (contextEl.style.display !== 'none') {
@@ -1575,7 +1539,6 @@ async function stuurBericht() {
 }
 
 function handleInvoerKeydown(e) {
-    if (e.key === 'Escape' && _bewerkId !== null) { annuleerBewerk(); return; }
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         stuurBericht();

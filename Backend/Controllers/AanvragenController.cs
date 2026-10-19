@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
@@ -12,10 +13,12 @@ namespace Backend.Controllers;
 public class AanvragenController : ControllerBase
 {
     private readonly AppDbContext _context;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    public AanvragenController(AppDbContext context)
+    public AanvragenController(AppDbContext context, UserManager<ApplicationUser> userManager)
     {
         _context = context;
+        _userManager = userManager;
     }
 
     // Publiek: actieve, niet-verlopen aanvragen
@@ -89,5 +92,89 @@ public class AanvragenController : ControllerBase
         _context.RijderAanvragen.Remove(aanvraag);
         await _context.SaveChangesAsync();
         return Ok(new { success = true });
+    }
+
+    // Coach reageert op een groepstraining-aanvraag: vindt of maakt een groepsgesprek
+    [HttpPost("{id:int}/groepschat")]
+    [Authorize(Roles = "Coach")]
+    public async Task<IActionResult> MaakGroepschat(int id)
+    {
+        var coachId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var aanvraag = await _context.RijderAanvragen.FindAsync(id);
+        if (aanvraag == null) return NotFound();
+
+        var coach = await _userManager.FindByIdAsync(coachId);
+        var rijder = await _userManager.FindByIdAsync(aanvraag.RijderId);
+
+        // Bestaat er al een chat voor deze aanvraag?
+        var bestaand = await _context.Groepsgesprekken
+            .FirstOrDefaultAsync(g => g.RijderAanvraagId == id);
+
+        if (bestaand != null)
+        {
+            // Voeg de coach toe als die er nog niet in zit
+            if (!await _context.GroepsgesprekLeden.AnyAsync(l => l.GroepsgesprekId == bestaand.Id && l.GebruikerId == coachId))
+            {
+                _context.GroepsgesprekLeden.Add(new GroepsgesprekLid
+                {
+                    GroepsgesprekId = bestaand.Id,
+                    GebruikerId = coachId,
+                    GebruikerNaam = coach?.Naam ?? "Coach",
+                    ToegetreedOp = DateTime.UtcNow
+                });
+                _context.Groepsberichten.Add(new Groepsbericht
+                {
+                    GroepsgesprekId = bestaand.Id,
+                    VanGebruikerId = coachId,
+                    VanNaam = coach?.Naam ?? "Coach",
+                    Tekst = $"➕ {coach?.Naam ?? "Coach"} heeft gereageerd op de aanvraag.",
+                    AangemaaktOp = DateTime.UtcNow
+                });
+                await _context.SaveChangesAsync();
+            }
+            return Ok(new { groepsgesprekId = bestaand.Id });
+        }
+
+        // Nieuw groepsgesprek aanmaken
+        var korteBeschrijving = aanvraag.Beschrijving?.Length > 40
+            ? aanvraag.Beschrijving[..40] + "…"
+            : aanvraag.Beschrijving ?? "Groepstraining";
+
+        var groep = new Groepsgesprek
+        {
+            CoachAanbodId = 0,
+            RijderAanvraagId = id,
+            Naam = $"Groepstraining: {korteBeschrijving}",
+            AangemaaktDoorId = coachId,
+            AangemaaktOp = DateTime.UtcNow
+        };
+        _context.Groepsgesprekken.Add(groep);
+        await _context.SaveChangesAsync();
+
+        var nu = DateTime.UtcNow;
+        _context.GroepsgesprekLeden.Add(new GroepsgesprekLid
+        {
+            GroepsgesprekId = groep.Id, GebruikerId = coachId,
+            GebruikerNaam = coach?.Naam ?? "Coach", ToegetreedOp = nu, LaatstGelezen = nu
+        });
+        if (rijder != null)
+        {
+            _context.GroepsgesprekLeden.Add(new GroepsgesprekLid
+            {
+                GroepsgesprekId = groep.Id, GebruikerId = rijder.Id,
+                GebruikerNaam = rijder.Naam, ToegetreedOp = nu
+            });
+        }
+        _context.Groepsberichten.Add(new Groepsbericht
+        {
+            GroepsgesprekId = groep.Id,
+            VanGebruikerId = coachId,
+            VanNaam = coach?.Naam ?? "Coach",
+            Tekst = $"👥 {coach?.Naam ?? "Coach"} heeft een groepschat aangemaakt voor deze aanvraag.",
+            AangemaaktOp = nu
+        });
+        await _context.SaveChangesAsync();
+
+        return Ok(new { groepsgesprekId = groep.Id });
     }
 }

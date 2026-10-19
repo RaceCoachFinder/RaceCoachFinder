@@ -19,4 +19,5 @@ public class RijderAanvraag
     public int? GroepGrootte { get; set; }
     public string WedstrijdNaam { get; set; } = string.Empty;
     public string WedstrijdOrganisatie { get; set; } = string.Empty;
+    public string UitgenodigdeRijders { get; set; } = "[]";
 }
