@@ -8,4 +8,5 @@ public class Groepsbericht
     public string VanNaam { get; set; } = string.Empty;
     public string Tekst { get; set; } = string.Empty;
     public DateTime AangemaaktOp { get; set; } = DateTime.UtcNow;
+    public DateTime? BewerktOp { get; set; }
 }

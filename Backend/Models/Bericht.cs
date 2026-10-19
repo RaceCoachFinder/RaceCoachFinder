@@ -8,4 +8,5 @@ public class Bericht
     public string Tekst { get; set; } = string.Empty;
     public DateTime AangemaaktOp { get; set; } = DateTime.UtcNow;
     public bool Gelezen { get; set; } = false;
+    public DateTime? BewerktOp { get; set; }
 }

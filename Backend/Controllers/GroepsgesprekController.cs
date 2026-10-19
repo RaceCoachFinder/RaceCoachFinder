@@ -189,6 +189,36 @@ public class GroepsgesprekController : ControllerBase
         return Ok(bericht);
     }
 
+    // Verwijder eigen groepsbericht
+    [HttpDelete("{id}/bericht/{berichtId:int}")]
+    public async Task<IActionResult> VerwijderGroepsBericht(int id, int berichtId)
+    {
+        var mijnId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var bericht = await _context.Groepsberichten.FindAsync(berichtId);
+        if (bericht == null || bericht.GroepsgesprekId != id) return NotFound();
+        if (bericht.VanGebruikerId != mijnId) return Forbid();
+
+        _context.Groepsberichten.Remove(bericht);
+        await _context.SaveChangesAsync();
+        return NoContent();
+    }
+
+    // Bewerk eigen groepsbericht
+    [HttpPut("{id}/bericht/{berichtId:int}")]
+    public async Task<IActionResult> BewerkGroepsBericht(int id, int berichtId, [FromBody] GroepsBerichtVerzoek verzoek)
+    {
+        var mijnId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var bericht = await _context.Groepsberichten.FindAsync(berichtId);
+        if (bericht == null || bericht.GroepsgesprekId != id) return NotFound();
+        if (bericht.VanGebruikerId != mijnId) return Forbid();
+        if (string.IsNullOrWhiteSpace(verzoek.Tekst)) return BadRequest("Bericht mag niet leeg zijn.");
+
+        bericht.Tekst = verzoek.Tekst.Trim();
+        bericht.BewerktOp = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+        return Ok(bericht);
+    }
+
     // Beheerder (aanmaker van de groep) verwijdert een lid uit de groep
     [HttpDelete("{id}/leden/{gebruikerId}")]
     public async Task<IActionResult> VerwijderLid(int id, string gebruikerId)

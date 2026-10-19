@@ -202,6 +202,36 @@ public class ChatController : ControllerBase
         }));
     }
 
+    // Verwijder één eigen bericht
+    [HttpDelete("bericht/{id:int}")]
+    public async Task<IActionResult> VerwijderBericht(int id)
+    {
+        var mijnId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var bericht = await _context.Berichten.FindAsync(id);
+        if (bericht == null) return NotFound();
+        if (bericht.VanGebruikerId != mijnId) return Forbid();
+
+        _context.Berichten.Remove(bericht);
+        await _context.SaveChangesAsync();
+        return NoContent();
+    }
+
+    // Bewerk één eigen bericht
+    [HttpPut("bericht/{id:int}")]
+    public async Task<IActionResult> BewerkBericht(int id, [FromBody] BerichtVerzoek verzoek)
+    {
+        var mijnId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var bericht = await _context.Berichten.FindAsync(id);
+        if (bericht == null) return NotFound();
+        if (bericht.VanGebruikerId != mijnId) return Forbid();
+        if (string.IsNullOrWhiteSpace(verzoek.Tekst)) return BadRequest("Bericht mag niet leeg zijn.");
+
+        bericht.Tekst = verzoek.Tekst.Trim();
+        bericht.BewerktOp = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+        return Ok(bericht);
+    }
+
     // Aantal ongelezen berichten (voor nav badge)
     [HttpGet("ongelezen")]
     public async Task<IActionResult> GetAantalOngelezen()

@@ -251,6 +251,30 @@
             margin: 0.5rem 0;
         }
 
+        /* Bericht actie-knoppen (hover) */
+        .bericht-bel-wrap { display: flex; align-items: flex-end; gap: 0.3rem; margin-bottom: 0.1rem; }
+        .bericht-bel-wrap.van-mij { justify-content: flex-end; }
+        .bericht-bel-wrap.van-ander { justify-content: flex-start; }
+        .bericht-acties { display: none; flex-direction: column; gap: 0.2rem; }
+        .bericht-bel-wrap:hover .bericht-acties { display: flex; }
+        .bericht-actie-btn {
+            background: none; border: 1px solid rgba(0,0,0,0.12); border-radius: 6px;
+            cursor: pointer; padding: 0.18rem 0.35rem; font-size: 0.72rem;
+            color: var(--kleur-subtekst); line-height: 1;
+            transition: background 0.15s, color 0.15s;
+        }
+        .bericht-actie-btn:hover { background: var(--kleur-bg); color: var(--kleur-tekst); }
+        .bericht-actie-btn.verwijder:hover { background: #fdecea; color: #c62828; border-color: #c62828; }
+
+        /* Edit-modus banner */
+        #bewerk-banner {
+            display: none; background: #fff8e0; border-top: 2px solid var(--kleur-primair);
+            padding: 0.5rem 1.5rem; flex-shrink: 0;
+            font-size: 0.8rem; color: #9a7800; font-weight: 600;
+            align-items: center; justify-content: space-between; gap: 0.5rem;
+        }
+        #bewerk-banner.zichtbaar { display: flex; }
+
         .gesprek-invoer {
             padding: 1rem 1.5rem;
             background: var(--kleur-wit);
@@ -629,6 +653,11 @@
                     </div>
                     <button onclick="sluitAanvraagContext()" style="background:none;border:none;cursor:pointer;color:#9a7800;font-size:1.1rem;padding:0;line-height:1;flex-shrink:0;margin-top:0.1rem">✕</button>
                 </div>
+            </div>
+
+            <div id="bewerk-banner">
+                <span>✏ Berichting bewerken</span>
+                <button onclick="annuleerBewerk()" style="background:none;border:none;cursor:pointer;color:#9a7800;font-size:1rem;padding:0;line-height:1">✕</button>
             </div>
 
             <div class="gesprek-invoer">
@@ -1312,10 +1341,27 @@ function renderBericht(b) {
         tekstHtml = esc(b.tekst).replace(/\n/g, '<br>');
     }
 
+    const bewerktLabel = b.bewerktOp ? ' · <em style="opacity:0.65;font-style:italic">bewerkt</em>' : '';
+
+    if (!vanMij) {
+        return `
+        <div class="bericht-bel van-ander">
+            ${tekstHtml}
+            <div class="bericht-tijd">${tijd}${bewerktLabel}</div>
+        </div>`;
+    }
+
+    const actieTekst = esc(b.tekst.replace(/\n/g, ' ').slice(0, 200));
     return `
-    <div class="bericht-bel ${vanMij ? 'van-mij' : 'van-ander'}">
-        ${tekstHtml}
-        <div class="bericht-tijd">${tijd}</div>
+    <div class="bericht-bel-wrap van-mij">
+        <div class="bericht-acties">
+            <button class="bericht-actie-btn" onclick="bewerkBericht(${b.id}, ${JSON.stringify(b.tekst)})" title="Bewerken">✏</button>
+            <button class="bericht-actie-btn verwijder" onclick="verwijderBericht(${b.id})" title="Verwijderen">🗑</button>
+        </div>
+        <div class="bericht-bel van-mij" data-id="${b.id}">
+            ${tekstHtml}
+            <div class="bericht-tijd">${tijd}${bewerktLabel}</div>
+        </div>
     </div>`;
 }
 
@@ -1395,11 +1441,19 @@ function renderGroepsBericht(b) {
     const tijd = new Date(_ts).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
     const tekstHtml = esc(b.tekst).replace(/\n/g, '<br>');
 
+    const bewerktLabel = b.bewerktOp ? ' · <em style="opacity:0.65;font-style:italic">bewerkt</em>' : '';
+
     if (vanMij) {
         return `
-        <div class="bericht-bel van-mij">
-            ${tekstHtml}
-            <div class="bericht-tijd">${tijd}</div>
+        <div class="bericht-bel-wrap van-mij">
+            <div class="bericht-acties">
+                <button class="bericht-actie-btn" onclick="bewerkGroepsBericht(${b.id}, ${JSON.stringify(b.tekst)})" title="Bewerken">✏</button>
+                <button class="bericht-actie-btn verwijder" onclick="verwijderGroepsBericht(${b.id})" title="Verwijderen">🗑</button>
+            </div>
+            <div class="bericht-bel van-mij" data-id="${b.id}">
+                ${tekstHtml}
+                <div class="bericht-tijd">${tijd}${bewerktLabel}</div>
+            </div>
         </div>`;
     }
     return `
@@ -1409,9 +1463,58 @@ function renderGroepsBericht(b) {
         </div>
         <div class="bericht-bel van-ander">
             ${tekstHtml}
-            <div class="bericht-tijd">${tijd}</div>
+            <div class="bericht-tijd">${tijd}${bewerktLabel}</div>
         </div>
     </div>`;
+}
+
+let _bewerkId = null;       // id van bericht dat bewerkt wordt
+let _bewerkIsGroep = false; // true = groepsbericht
+
+function bewerkBericht(id, tekst) {
+    _bewerkId = id;
+    _bewerkIsGroep = false;
+    const invoer = document.getElementById('bericht-invoer');
+    invoer.value = tekst;
+    invoer.style.height = 'auto';
+    invoer.style.height = invoer.scrollHeight + 'px';
+    invoer.focus();
+    document.getElementById('bewerk-banner').classList.add('zichtbaar');
+    document.getElementById('btn-stuur').textContent = '✓';
+}
+
+function bewerkGroepsBericht(id, tekst) {
+    bewerkBericht(id, tekst);
+    _bewerkIsGroep = true;
+}
+
+function annuleerBewerk() {
+    _bewerkId = null;
+    _bewerkIsGroep = false;
+    const invoer = document.getElementById('bericht-invoer');
+    invoer.value = '';
+    invoer.style.height = 'auto';
+    document.getElementById('bewerk-banner').classList.remove('zichtbaar');
+    document.getElementById('btn-stuur').textContent = '➤';
+}
+
+async function verwijderBericht(id) {
+    try {
+        await authVerzoek(`/chat/bericht/${id}`, 'DELETE');
+        await laadBerichten(huidigPartnerId);
+        await laadGesprekken();
+    } catch (e) {
+        alert('Verwijderen mislukt: ' + e.message);
+    }
+}
+
+async function verwijderGroepsBericht(id) {
+    try {
+        await authVerzoek(`/groepsgesprek/${huidigGroepsId}/bericht/${id}`, 'DELETE');
+        await laadGroepsBerichten(huidigGroepsId);
+    } catch (e) {
+        alert('Verwijderen mislukt: ' + e.message);
+    }
 }
 
 async function stuurBericht() {
@@ -1420,21 +1523,36 @@ async function stuurBericht() {
     let tekst = invoer.value.trim();
     if (!tekst) return;
 
-    // Aanvraag-context meesturen zodat de rijder het ook ziet
-    const contextEl = document.getElementById('aanvraag-context');
-    if (contextEl.style.display !== 'none') {
-        const ctxTekst = document.getElementById('aanvraag-context-tekst').textContent.trim();
-        const ctxMeta  = document.getElementById('aanvraag-context-meta').textContent.trim();
-        let prefix = `📋 Als reactie op aanvraag:\n"${ctxTekst}"`;
-        if (ctxMeta) prefix += `\n${ctxMeta}`;
-        tekst = prefix + '\n\n' + tekst;
-        sluitAanvraagContext();
-    }
-
     const btn = document.getElementById('btn-stuur');
     btn.disabled = true;
 
     try {
+        // Edit-modus: bericht bijwerken
+        if (_bewerkId !== null) {
+            if (_bewerkIsGroep) {
+                await authVerzoek(`/groepsgesprek/${huidigGroepsId}/bericht/${_bewerkId}`, 'PUT', { tekst });
+                annuleerBewerk();
+                await laadGroepsBerichten(huidigGroepsId);
+            } else {
+                await authVerzoek(`/chat/bericht/${_bewerkId}`, 'PUT', { tekst });
+                annuleerBewerk();
+                await laadBerichten(huidigPartnerId);
+                await laadGesprekken();
+            }
+            return;
+        }
+
+        // Aanvraag-context meesturen zodat de rijder het ook ziet
+        const contextEl = document.getElementById('aanvraag-context');
+        if (contextEl.style.display !== 'none') {
+            const ctxTekst = document.getElementById('aanvraag-context-tekst').textContent.trim();
+            const ctxMeta  = document.getElementById('aanvraag-context-meta').textContent.trim();
+            let prefix = `📋 Als reactie op aanvraag:\n"${ctxTekst}"`;
+            if (ctxMeta) prefix += `\n${ctxMeta}`;
+            tekst = prefix + '\n\n' + tekst;
+            sluitAanvraagContext();
+        }
+
         if (huidigGroepsId) {
             await authVerzoek(`/groepsgesprek/${huidigGroepsId}/bericht`, 'POST', { tekst });
             invoer.value = '';
@@ -1457,6 +1575,7 @@ async function stuurBericht() {
 }
 
 function handleInvoerKeydown(e) {
+    if (e.key === 'Escape' && _bewerkId !== null) { annuleerBewerk(); return; }
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         stuurBericht();
