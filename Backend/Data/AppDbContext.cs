@@ -24,4 +24,6 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<GroepsgesprekLid> GroepsgesprekLeden { get; set; }
     public DbSet<Groepsbericht> Groepsberichten { get; set; }
     public DbSet<GroepsgesprekVerwijdering> GroepsgesprekVerwijderingen { get; set; }
+    public DbSet<PushAbonnement> PushAbonnementen { get; set; }
+    public DbSet<AppInstelling> AppInstellingen { get; set; }
 }

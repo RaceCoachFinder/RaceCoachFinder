@@ -30,6 +30,13 @@
         @media (max-width: 500px) { .form-rij { grid-template-columns: 1fr; } }
         textarea { resize: vertical; min-height: 130px; }
     </style>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+    <meta name="theme-color" content="#111111">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="RaceCoachFinder">
 </head>
 <body>
 
@@ -106,6 +113,7 @@
 
 <script src="js/i18n.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/push.js"></script>
 <script>
 updateNav();
 

@@ -111,6 +111,14 @@
             color: #8a6a00;
         }
 
+        .push-inhoud { padding: 0.25rem 0 0.5rem; font-size: 0.9rem; line-height: 1.55; }
+        .push-status { display: inline-block; font-weight: 700; border-radius: 999px; padding: 0.2rem 0.7rem; font-size: 0.82rem; margin-bottom: 0.75rem; }
+        .push-aan { background: #e8f5e9; color: #2e7d32; } .push-uit { background: #f3f3f3; color: #555; } .push-fout { background: #fde8ea; color: #c62828; }
+        .push-knoppen { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; }
+        .push-knoppen .btn { font-size: 0.88rem; padding: 0.5rem 1rem; }
+        .push-stappen { margin: 0.5rem 0 0; padding-left: 1.25rem; }
+        .push-stappen li { margin-bottom: 0.35rem; }
+        .push-melding { margin-top: 0.6rem; font-size: 0.85rem; }
         .email-uitgeschakeld { opacity: 0.4; pointer-events: none; }
 
         .acc-rij {
@@ -140,6 +148,13 @@
         }
         .opslaan-status { font-size: 0.88rem; color: var(--kleur-subtekst); }
     </style>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+    <meta name="theme-color" content="#111111">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="RaceCoachFinder">
 </head>
 <body>
 <nav class="navbar">
@@ -160,6 +175,18 @@
 <div class="container">
     <div id="melding" style="max-width:680px;margin:0 auto 1rem"></div>
     <div class="inst-inhoud">
+
+        <!-- Pushmeldingen op telefoon -->
+        <div class="inst-sectie" id="sectie-push">
+            <div class="inst-sectie-titel">Meldingen op je telefoon</div>
+            <div class="inst-rij" style="align-items:flex-start">
+                <div class="inst-rij-label">
+                    <strong>📱 Pushmeldingen</strong>
+                    <span>Krijg een melding van RaceCoachFinder op je telefoon of computer bij een nieuw bericht, groepsbericht of uitnodiging. Je hebt geen app of telefoonnummer nodig.</span>
+                </div>
+            </div>
+            <div id="push-inhoud" class="push-inhoud">Laden…</div>
+        </div>
 
         <!-- Notificaties -->
         <div class="inst-sectie">
@@ -315,7 +342,62 @@
 
 <script src="js/i18n.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/push.js"></script>
 <script>
+// ── Pushmeldingen ──
+async function toonPushInstellingen(melding, fout) {
+    const el = document.getElementById('push-inhoud');
+    if (!window.Push) { el.textContent = 'Meldingen zijn op dit apparaat niet beschikbaar.'; return; }
+    const status = await Push.status();
+    const extra = melding ? `<div class="push-melding" style="color:${fout ? '#c62828' : '#2e7d32'}">${melding}</div>` : '';
+
+    if (status === 'aan') {
+        el.innerHTML = `<span class="push-status push-aan">✓ Meldingen staan aan op dit apparaat</span>
+            <div class="push-knoppen">
+                <button class="btn btn-primair" onclick="pushTest()">Testmelding sturen</button>
+                <button class="btn" style="background:#f3f3f3" onclick="pushUit()">Uitzetten</button>
+            </div>${extra}`;
+    } else if (status === 'uit') {
+        el.innerHTML = `<span class="push-status push-uit">Meldingen staan uit op dit apparaat</span>
+            <div class="push-knoppen"><button class="btn btn-primair" onclick="pushAan()">🔔 Meldingen aanzetten</button></div>
+            <div style="font-size:0.82rem;color:var(--kleur-subtekst);margin-top:0.5rem">Je telefoon vraagt daarna om toestemming. Kies <strong>Sta toe</strong>.</div>${extra}`;
+    } else if (status === 'ios-beginscherm') {
+        el.innerHTML = `<span class="push-status push-uit">Eerst op je beginscherm zetten</span>
+            <div>Op een iPhone werken meldingen alleen als je RaceCoachFinder op je beginscherm zet:</div>
+            <ol class="push-stappen">
+                <li>Tik onderaan in Safari op <strong>Deel</strong> (het vierkantje met pijl omhoog).</li>
+                <li>Kies <strong>Zet op beginscherm</strong> en tik op <strong>Voeg toe</strong>.</li>
+                <li>Open RaceCoachFinder via het nieuwe icoon op je beginscherm en log in.</li>
+                <li>Ga naar <strong>Instellingen</strong> (⚙) en tik op <strong>Meldingen aanzetten</strong>.</li>
+            </ol>${extra}`;
+    } else if (status === 'geweigerd') {
+        el.innerHTML = `<span class="push-status push-fout">Meldingen zijn geblokkeerd</span>
+            <div>Je hebt eerder geen toestemming gegeven. Zet meldingen voor RaceCoachFinder weer aan in de instellingen van je telefoon of browser (bij iPhone: Instellingen → Meldingen → RaceCoachFinder) en kom dan hier terug.</div>${extra}`;
+    } else {
+        el.innerHTML = `<span class="push-status push-uit">Niet beschikbaar</span>
+            <div>Deze browser ondersteunt geen pushmeldingen. Probeer Chrome, Edge, Firefox of Safari (iPhone: via het beginscherm).</div>${extra}`;
+    }
+}
+
+async function pushAan() {
+    try {
+        await Push.aanzetten();
+        await toonPushInstellingen('Gelukt! Je krijgt nu meldingen op dit apparaat.');
+    } catch (e) { toonPushInstellingen(e.message || 'Aanzetten is niet gelukt.', true); }
+}
+
+async function pushUit() {
+    try { await Push.uitzetten(); await toonPushInstellingen('Meldingen staan uit op dit apparaat.'); }
+    catch (e) { toonPushInstellingen(e.message || 'Uitzetten is niet gelukt.', true); }
+}
+
+async function pushTest() {
+    try { await Push.test(); await toonPushInstellingen('Testmelding verstuurd. Je ziet hem zo verschijnen.'); }
+    catch (e) { toonPushInstellingen(e.message || 'Testmelding mislukt.', true); }
+}
+
+toonPushInstellingen();
+
 if (!vereisAuth()) throw new Error();
 
 const gebruiker = getGebruiker();

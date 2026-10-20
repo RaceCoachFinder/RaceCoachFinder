@@ -22,6 +22,20 @@ function wisselRol() {
 }
 
 function uitloggen() {
+    // Dit apparaat geen meldingen meer laten krijgen voor het account dat uitlogt
+    try {
+        const t = localStorage.getItem(TOKEN_KEY);
+        if (t && navigator.serviceWorker) {
+            navigator.serviceWorker.getRegistration().then(reg => reg && reg.pushManager.getSubscription()).then(abo => {
+                if (abo) fetch('https://racecoachfinder-production.up.railway.app/api/push/afmelden', {
+                    method: 'POST', keepalive: true,
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + t },
+                    body: JSON.stringify({ endpoint: abo.endpoint })
+                });
+            }).catch(() => {});
+        }
+        sessionStorage.removeItem('kcf_push_gesynct');
+    } catch (e) {}
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(GEBRUIKER_KEY);
     location.href = 'index.html';

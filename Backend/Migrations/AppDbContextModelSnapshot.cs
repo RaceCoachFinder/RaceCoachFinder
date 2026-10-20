@@ -45,6 +45,25 @@ namespace Backend.Migrations
                     b.ToTable("AgendaItems");
                 });
 
+            modelBuilder.Entity("Backend.Models.AppInstelling", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Sleutel")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Waarde")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AppInstellingen");
+                });
+
             modelBuilder.Entity("Backend.Models.ApplicationUser", b =>
                 {
                     b.Property<string>("Id")
@@ -145,6 +164,9 @@ namespace Backend.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("AangemaaktOp")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("BewerktOp")
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("Gelezen")
@@ -362,6 +384,9 @@ namespace Backend.Migrations
                     b.Property<bool>("IsGratis")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsGroep")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("KorteOmschrijving")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -507,6 +532,9 @@ namespace Backend.Migrations
                     b.Property<DateTime>("AangemaaktOp")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("BewerktOp")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("GroepsgesprekId")
                         .HasColumnType("INTEGER");
 
@@ -546,6 +574,9 @@ namespace Backend.Migrations
                     b.Property<string>("Naam")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<int?>("RijderAanvraagId")
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
@@ -599,6 +630,36 @@ namespace Backend.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("GroepsgesprekVerwijderingen");
+                });
+
+            modelBuilder.Entity("Backend.Models.PushAbonnement", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("AangemaaktOp")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Auth")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Endpoint")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("GebruikerId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("P256dh")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PushAbonnementen");
                 });
 
             modelBuilder.Entity("Backend.Models.Review", b =>
@@ -715,10 +776,16 @@ namespace Backend.Migrations
                     b.Property<bool>("CoachGevonden")
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTime>("Datum")
+                    b.Property<DateTime?>("Datum")
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("GroepGrootte")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("IsGesloten")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsGroep")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Kwaliteiten")
@@ -740,7 +807,23 @@ namespace Backend.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("SoortOpdracht")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Specialisaties")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UitgenodigdeRijders")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("WedstrijdNaam")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("WedstrijdOrganisatie")
                         .IsRequired()
                         .HasColumnType("TEXT");
 

@@ -14,8 +14,14 @@ builder.Services.AddControllers();
 var dbPath = Environment.GetEnvironmentVariable("DB_PATH") ?? "coachfinder.db";
 var dbDir = Path.GetDirectoryName(dbPath);
 if (!string.IsNullOrEmpty(dbDir)) Directory.CreateDirectory(dbDir);
-builder.Services.AddDbContext<AppDbContext>(options =>
+// Pushmeldingen: elk nieuw (groeps)bericht gaat via de wachtrij naar de telefoons van de ontvangers
+builder.Services.AddSingleton<PushWachtrij>();
+builder.Services.AddSingleton<PushMeldingInterceptor>();
+builder.Services.AddScoped<PushService>();
+builder.Services.AddHostedService<PushVerzender>();
+builder.Services.AddDbContext<AppDbContext>((sp, options) =>
     options.UseSqlite($"Data Source={dbPath}")
+           .AddInterceptors(sp.GetRequiredService<PushMeldingInterceptor>())
            .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)));
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
