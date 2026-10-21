@@ -151,8 +151,9 @@
         .coach-link { font-size: 0.8rem; font-weight: 600; color: var(--kleur-tekst); background: #f1f1f1; border-radius: 999px; padding: 0.1rem 0.55rem; }
         .coach-link:hover { background: #fff3c4; text-decoration: none; }
         .coach-link-geen { color: var(--kleur-subtekst); }
-        .meer-info-knop { background: none; border: none; padding: 0; margin-bottom: 0.5rem; color: #8a6d00; font-weight: 700; font-size: 0.85rem; cursor: pointer; font-family: inherit; }
-        .meer-info { font-size: 0.87rem; color: var(--kleur-tekst); line-height: 1.5; margin-bottom: 0.6rem; background: #fafafa; border-radius: 8px; padding: 0.6rem 0.75rem; }
+        .aanbod-knoppen { flex-shrink: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+        .aanbod-knoppen .btn { text-align: center; }
+        @media (max-width: 700px) { .aanbod-knoppen { flex-direction: row; flex-wrap: wrap; width: 100%; } .aanbod-knoppen .btn { flex: 1; } }
         .aandeel-input { width: 46px; border: 1px solid rgba(0,0,0,0.18); border-radius: 5px; padding: 0.1rem 0.3rem; font-size: 0.78rem; text-align: center; font-family: inherit; background: rgba(255,255,255,0.8); }
         @media (max-width: 700px) { .aandeel-input { font-size: 16px; width: 54px; } }
         .verdeling-balk { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; font-size: 0.85rem; }
@@ -498,6 +499,22 @@
         <p>&copy; 2026 RaceCoachFinder</p>
     </div>
 </footer>
+
+<!-- Pop-up met alle informatie van een aanbod -->
+<div id="aanbod-popup" style="display:none;position:fixed;inset:0;z-index:9000;align-items:center;justify-content:center">
+    <div onclick="sluitAanbodPopup()" style="position:absolute;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px)"></div>
+    <div style="position:relative;z-index:1;background:#fff;border-radius:14px;box-shadow:0 8px 40px rgba(0,0,0,0.25);max-width:560px;width:90%;max-height:80vh;overflow-y:auto;padding:2rem 2rem 1.5rem;box-sizing:border-box">
+        <button onclick="sluitAanbodPopup()" style="position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.4rem;cursor:pointer;color:#888;line-height:1" title="Sluiten">✕</button>
+        <div id="pm-coaches" class="coach-links" style="margin-bottom:0.5rem"></div>
+        <h2 id="pm-titel" style="font-size:1.2rem;font-weight:800;margin:0 0 0.75rem"></h2>
+        <div id="pm-meta" style="display:flex;gap:1rem;flex-wrap:wrap;font-size:0.85rem;color:var(--kleur-subtekst);margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1px solid #eee"></div>
+        <div id="pm-beschrijving" style="font-size:0.92rem;color:var(--kleur-tekst);line-height:1.7;white-space:pre-line"></div>
+        <div id="pm-chips" class="chips" style="margin-top:1.25rem"></div>
+        <div style="margin-top:1.5rem;text-align:right">
+            <a id="pm-coach-link" href="#" class="btn btn-primair" style="font-size:0.88rem">Coach bekijken</a>
+        </div>
+    </div>
+</div>
 
 <script src="js/i18n.js"></script>
 <script src="js/auth.js"></script>
@@ -893,14 +910,14 @@ function coachKaartHTML(a) {
             <div style="font-size:0.82rem;color:var(--kleur-subtekst);margin-bottom:0.5rem">
                 📍 ${esc(a.locatie)} &nbsp;•&nbsp; 📅 ${volledigeDatum}
             </div>
-            ${a.beschrijving ? `<button type="button" class="meer-info-knop" onclick="toggleMeerInfo(this)">Meer informatie ▾</button>
-                <div class="meer-info" style="display:none">${esc(a.beschrijving).replace(/\n/g, '<br>')}</div>` : ''}
+
             <div class="chips">
                 ${discs.map(d => `<span class="chip chip-training">${esc(d)}</span>`).join('')}
                 ${prijsTag}
             </div>
         </div>
-        <div style="flex-shrink:0">
+        <div class="aanbod-knoppen">
+            <button type="button" onclick="toonAanbodPopup(${a.id})" class="btn btn-secundair btn-sm" style="white-space:nowrap;font-size:0.82rem;color:#555;border-color:#ccc">Meer info</button>
             ${a.coachProfielId ? `<a href="coach-detail.html?id=${a.coachProfielId}" class="btn btn-primair btn-sm" style="white-space:nowrap;font-size:0.82rem">Coach bekijken</a>` : ''}
         </div>
     </div>`;
@@ -942,12 +959,35 @@ function coachLinksHtml(a) {
         : `<span class="coach-link coach-link-geen">${esc(c.naam)}</span>`).join('');
 }
 
-function toggleMeerInfo(knop) {
-    const info = knop.nextElementSibling;
-    const open = info.style.display === 'none';
-    info.style.display = open ? '' : 'none';
-    knop.textContent = open ? 'Minder informatie ▴' : 'Meer informatie ▾';
+// Pop-up met alle informatie van een aanbod (zelfde opzet als bij groepstraining)
+function toonAanbodPopup(id) {
+    const a = (window._coachAanbodCache || []).find(x => x.id === id);
+    if (!a) return;
+    const datum = new Date(a.datum).toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const prijs = a.isGratis ? 'Gratis' : (a.prijsPerRijder ? `€${a.prijsPerRijder}` : '');
+    document.getElementById('pm-coaches').innerHTML = coachLinksHtml(a);
+    document.getElementById('pm-titel').textContent = a.titel;
+    document.getElementById('pm-meta').innerHTML =
+        `<span>📍 ${esc(a.locatie)}</span><span>📅 ${datum}</span>${prijs ? `<span>💶 ${prijs}</span>` : ''}`;
+    document.getElementById('pm-beschrijving').textContent = a.beschrijving || 'Geen beschrijving.';
+    const cats = (a.categorieen || '').split(',').filter(Boolean);
+    const discs = (a.disciplines || '').split(',').filter(Boolean);
+    document.getElementById('pm-chips').innerHTML =
+        cats.map(c => `<span class="chip chip-training">${esc(c)}</span>`).join('') +
+        discs.map(d => `<span class="chip chip-training">${esc(d)}</span>`).join('') +
+        (prijs ? `<span class="chip" style="background:#f3e5f5;color:#6a1b9a">${prijs}</span>` : '');
+    const link = document.getElementById('pm-coach-link');
+    link.style.display = a.coachProfielId ? '' : 'none';
+    link.href = a.coachProfielId ? `coach-detail.html?id=${a.coachProfielId}` : '#';
+    document.getElementById('aanbod-popup').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
 }
+
+function sluitAanbodPopup() {
+    document.getElementById('aanbod-popup').style.display = 'none';
+    document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') sluitAanbodPopup(); });
 
 // ======== MIJN COACH AANBOD ========
 
