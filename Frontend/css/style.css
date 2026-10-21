@@ -31,7 +31,10 @@ body {
     min-height: 100vh;
 }
 
-footer { margin-top: auto; }
+/* Footer altijd onderaan het scherm: een rekbare tussenruimte (minimaal 3rem) duwt hem omlaag
+   bij weinig inhoud. Pop-ups en scripts na de footer nemen geen ruimte in, dus die mogen ervoor. */
+body:has(> footer)::after { content: ''; order: 1; flex: 1 0 3rem; }
+footer { order: 2; }
 
 a { color: var(--kleur-primair); text-decoration: none; }
 a:hover { text-decoration: underline; }
@@ -609,7 +612,6 @@ footer {
     color: #888;
     padding: 1.5rem 2rem;
     font-size: 0.85rem;
-    margin-top: 3rem;
 }
 .footer-inhoud {
     max-width: 1100px; margin: 0 auto;

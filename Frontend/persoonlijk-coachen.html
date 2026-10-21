@@ -144,9 +144,30 @@
             font-size: 0.78rem; font-weight: 600;
             padding: 0.22rem 0.6rem; border-radius: 20px;
         }
-        .filter-balk-coach { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.25rem; align-items: flex-end; background: var(--kleur-wit); border-radius: var(--rand); box-shadow: var(--schaduw); padding: 1rem 1.25rem; }
-        .filter-balk-coach input[type=date] { padding: 0.5rem 0.6rem; font-size: 0.9rem; border: 1.5px solid #e0e0e0; border-radius: 8px; font-family: inherit; }
-        @media (max-width: 700px) { .filter-balk-coach > div { flex: 1 1 calc(50% - 0.75rem); } .filter-balk-coach input, .filter-balk-coach select { width: 100%; box-sizing: border-box; font-size: 16px !important; } }
+        /* Lijst met filters links (zelfde opzet als groepstraining) */
+        .pagina-container { width: 100%; }
+        .pagina-inhoud { display: flex; gap: 1.75rem; align-items: flex-start; }
+        .filter-kolom { width: 240px; flex-shrink: 0; position: sticky; top: 4.5rem; }
+        .resultaten-kolom { flex: 1; min-width: 0; }
+        .filter-paneel { background: var(--kleur-wit); border-radius: var(--rand); box-shadow: var(--schaduw); padding: 1.1rem 1.5rem; }
+        .filter-kop { display: flex; align-items: center; justify-content: space-between; width: 100%; background: none; border: none; padding: 0.3rem 0; cursor: pointer; font-family: inherit; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--kleur-subtekst); }
+        .filter-kop .pijl { transition: transform 0.2s; font-size: 0.9rem; }
+        .filter-paneel.ingeklapt .filter-kop .pijl { transform: rotate(-90deg); }
+        .filter-paneel.ingeklapt .filter-inhoud { display: none; }
+        .filter-inhoud { margin-top: 1rem; }
+        .filter-groep { margin-bottom: 1.25rem; }
+        .filter-groep label.filter-label { font-size: 0.82rem; font-weight: 700; display: block; margin-bottom: 0.45rem; color: var(--kleur-tekst); text-transform: none; letter-spacing: 0; }
+        .filter-groep input[type="text"], .filter-groep input[type="date"] { width: 100%; padding: 0.45rem 0.65rem; font-size: 0.85rem; border: 1px solid #ddd; border-radius: 6px; font-family: inherit; margin: 0; }
+        .filter-check-lijst { display: flex; flex-direction: column; gap: 0.3rem; }
+        .filter-check-lijst label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.84rem; cursor: pointer; font-weight: 400; text-transform: none; letter-spacing: 0; padding: 0.15rem 0; }
+        .filter-check-lijst input[type="checkbox"], .filter-check-lijst input[type="radio"] { width: auto; margin: 0; accent-color: var(--kleur-primair); }
+        .filter-reset { font-size: 0.8rem; color: var(--kleur-subtekst); background: none; border: none; cursor: pointer; padding: 0; text-decoration: underline; font-family: inherit; }
+        .filter-reset:hover { color: var(--kleur-primair); }
+        @media (max-width: 720px) {
+            .pagina-inhoud { flex-direction: column; gap: 1rem; }
+            .filter-kolom { width: 100%; position: static; }
+            .filter-groep input[type="text"], .filter-groep input[type="date"] { font-size: 16px; }
+        }
         .coach-links { display: inline-flex; flex-wrap: wrap; gap: 0.3rem; }
         .coach-link { font-size: 0.8rem; font-weight: 600; color: var(--kleur-tekst); background: #f1f1f1; border-radius: 999px; padding: 0.1rem 0.55rem; }
         .coach-link:hover { background: #fff3c4; text-decoration: none; }
@@ -216,7 +237,7 @@
     <button class="tab-knop" id="tab-btn-coach" onclick="toonTab('coach')">🏁 Coach biedt aan</button>
 </div>
 
-<div class="container">
+<div class="container pagina-container">
 
     <!-- ========================= TAB 1: RIJDER ZOEKT ========================= -->
     <div id="tab-rijder">
@@ -309,28 +330,42 @@
         </div>
 
         <!-- Publieke lijst -->
-        <div>
+        <div class="pagina-inhoud">
+            <div class="filter-kolom">
+                <div class="filter-paneel" id="rf-paneel">
+                    <button type="button" class="filter-kop" onclick="toggleFilterPaneel('rf-paneel')"><span>Filteren</span><span class="pijl">▾</span></button>
+                    <div class="filter-inhoud">
+                        <div class="filter-groep">
+                            <label class="filter-label">Locatie</label>
+                            <input type="text" id="rf-locatie" placeholder="bijv. Genk" oninput="filterRijderAanvragen()">
+                        </div>
+                        <div class="filter-groep">
+                            <label class="filter-label">Datum vanaf</label>
+                            <input type="date" id="rf-datum" onchange="filterRijderAanvragen()">
+                        </div>
+                        <div class="filter-groep">
+                            <label class="filter-label">Soort</label>
+                            <div class="filter-check-lijst" id="rf-soort"></div>
+                        </div>
+                        <div class="filter-groep">
+                            <label class="filter-label">Categorie kart</label>
+                            <div class="filter-check-lijst" id="rf-kart"></div>
+                        </div>
+                        <div class="filter-groep">
+                            <label class="filter-label">Wil werken aan</label>
+                            <div class="filter-check-lijst" id="rf-kwal"></div>
+                        </div>
+                        <button type="button" class="filter-reset" onclick="resetFilter()">Filters wissen</button>
+                    </div>
+                </div>
+            </div>
+            <div class="resultaten-kolom">
             <div class="sectie-kop">
                 <h2 style="font-size:1.1rem;margin:0">Rijders die een coach zoeken</h2>
                 <span id="rijder-teller" style="font-size:0.85rem;color:var(--kleur-subtekst)"></span>
             </div>
-            <!-- Filter balk -->
-            <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:1.25rem;align-items:flex-end;background:var(--kleur-wit);border-radius:var(--rand);box-shadow:var(--schaduw);padding:1rem 1.25rem">
-                <div style="flex:1;min-width:150px">
-                    <label style="font-size:0.76rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--kleur-subtekst);display:block;margin-bottom:0.3rem">Locatie</label>
-                    <input type="text" id="filter-locatie" placeholder="Filteren op locatie..." oninput="filterRijderAanvragen()" style="margin:0">
-                </div>
-                <div>
-                    <label style="font-size:0.76rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--kleur-subtekst);display:block;margin-bottom:0.3rem">Soort</label>
-                    <select id="filter-soort" onchange="filterRijderAanvragen()" style="margin:0;padding:0.55rem 0.75rem;font-size:0.9rem;border:1.5px solid #e0e0e0;border-radius:8px;font-family:inherit;background:var(--kleur-wit);color:var(--kleur-tekst)">
-                        <option value="">Alle</option>
-                        <option value="Training">Training</option>
-                        <option value="Wedstrijd">Wedstrijd</option>
-                    </select>
-                </div>
-                <button type="button" onclick="resetFilter()" class="btn btn-secundair" style="font-size:0.83rem;padding:0.5rem 1rem;color:#555;border-color:#ccc;white-space:nowrap;align-self:flex-end">Reset</button>
-            </div>
             <div id="rijder-aanvragen-lijst"><div class="laden"><div class="spinner"></div><p>Laden...</p></div></div>
+            </div>
         </div>
     </div>
 
@@ -434,40 +469,46 @@
         </div>
 
         <!-- Publieke lijst coach aanbod -->
-        <div>
+        <div class="pagina-inhoud">
+            <div class="filter-kolom">
+                <div class="filter-paneel" id="cf-paneel">
+                    <button type="button" class="filter-kop" onclick="toggleFilterPaneel('cf-paneel')"><span>Filteren</span><span class="pijl">▾</span></button>
+                    <div class="filter-inhoud">
+                        <div class="filter-groep">
+                            <label class="filter-label">Locatie</label>
+                            <input type="text" id="cf-locatie" placeholder="bijv. Genk" oninput="filterCoachAanbod()">
+                        </div>
+                        <div class="filter-groep">
+                            <label class="filter-label">Datum vanaf</label>
+                            <input type="date" id="cf-datum" onchange="filterCoachAanbod()">
+                        </div>
+                        <div class="filter-groep">
+                            <label class="filter-label">Soort</label>
+                            <div class="filter-check-lijst" id="cf-soort"></div>
+                        </div>
+                        <div class="filter-groep">
+                            <label class="filter-label">Discipline</label>
+                            <div class="filter-check-lijst" id="cf-disc"></div>
+                        </div>
+                        <div class="filter-groep">
+                            <label class="filter-label">Prijs</label>
+                            <div class="filter-check-lijst">
+                                <label><input type="radio" name="cf-prijs" value="" checked onchange="filterCoachAanbod()"> Alle</label>
+                                <label><input type="radio" name="cf-prijs" value="gratis" onchange="filterCoachAanbod()"> Gratis</label>
+                                <label><input type="radio" name="cf-prijs" value="betaald" onchange="filterCoachAanbod()"> Betaald</label>
+                            </div>
+                        </div>
+                        <button type="button" class="filter-reset" onclick="resetCoachFilter()">Filters wissen</button>
+                    </div>
+                </div>
+            </div>
+            <div class="resultaten-kolom">
             <div class="sectie-kop">
                 <h2 style="font-size:1.1rem;margin:0">Coaches die beschikbaar zijn</h2>
                 <span id="coach-teller" style="font-size:0.85rem;color:var(--kleur-subtekst)"></span>
             </div>
-            <!-- Filter balk coach-aanbod -->
-            <div class="filter-balk-coach">
-                <div style="flex:1;min-width:150px">
-                    <label style="font-size:0.76rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--kleur-subtekst);display:block;margin-bottom:0.3rem">Locatie</label>
-                    <input type="text" id="cf-locatie" placeholder="Filteren op locatie..." oninput="filterCoachAanbod()" style="margin:0">
-                </div>
-                <div>
-                    <label style="font-size:0.76rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--kleur-subtekst);display:block;margin-bottom:0.3rem">Soort</label>
-                    <select id="cf-soort" onchange="filterCoachAanbod()" style="margin:0;padding:0.55rem 0.75rem;font-size:0.9rem;border:1.5px solid #e0e0e0;border-radius:8px;font-family:inherit;background:var(--kleur-wit);color:var(--kleur-tekst)">
-                        <option value="">Alle</option>
-                        <option value="Training">Training</option>
-                        <option value="Wedstrijd">Wedstrijd</option>
-                    </select>
-                </div>
-                <div>
-                    <label style="font-size:0.76rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--kleur-subtekst);display:block;margin-bottom:0.3rem">Vanaf datum</label>
-                    <input type="date" id="cf-datum" onchange="filterCoachAanbod()" style="margin:0">
-                </div>
-                <div>
-                    <label style="font-size:0.76rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--kleur-subtekst);display:block;margin-bottom:0.3rem">Prijs</label>
-                    <select id="cf-prijs" onchange="filterCoachAanbod()" style="margin:0;padding:0.55rem 0.75rem;font-size:0.9rem;border:1.5px solid #e0e0e0;border-radius:8px;font-family:inherit;background:var(--kleur-wit);color:var(--kleur-tekst)">
-                        <option value="">Alle</option>
-                        <option value="gratis">Gratis</option>
-                        <option value="betaald">Betaald</option>
-                    </select>
-                </div>
-                <button type="button" onclick="resetCoachFilter()" class="btn btn-secundair" style="font-size:0.83rem;padding:0.5rem 1rem;color:#555;border-color:#ccc;white-space:nowrap;align-self:flex-end">Reset</button>
-            </div>
             <div id="coach-aanbod-lijst"><div class="laden"><div class="spinner"></div><p>Laden...</p></div></div>
+            </div>
         </div>
     </div>
 
@@ -534,6 +575,34 @@ function bouwCheckGrid(containerId, opties) {
 bouwCheckGrid('kwal-grid', KWALITEITEN);
 bouwCheckGrid('spec-grid', SPECIALISATIES);
 bouwCheckGrid('c-disc-grid', DISCIPLINES);
+
+// Filterpanelen (links naast de lijsten)
+function bouwFilterChecks(id, opties, onChange) {
+    document.getElementById(id).innerHTML = opties.map(o =>
+        `<label><input type="checkbox" value="${esc(o)}" onchange="${onChange}"> ${esc(o)}</label>`).join('');
+}
+bouwFilterChecks('rf-soort', ['Training', 'Wedstrijd'], 'filterRijderAanvragen()');
+bouwFilterChecks('rf-kart', SPECIALISATIES, 'filterRijderAanvragen()');
+bouwFilterChecks('rf-kwal', KWALITEITEN, 'filterRijderAanvragen()');
+bouwFilterChecks('cf-soort', ['Training', 'Wedstrijd'], 'filterCoachAanbod()');
+bouwFilterChecks('cf-disc', DISCIPLINES, 'filterCoachAanbod()');
+
+function toggleFilterPaneel(id) {
+    document.getElementById(id).classList.toggle('ingeklapt');
+}
+// Op de telefoon beginnen de filters ingeklapt, zodat de lijst meteen zichtbaar is
+if (window.matchMedia('(max-width: 720px)').matches) {
+    document.querySelectorAll('.filter-paneel').forEach(p => p.classList.add('ingeklapt'));
+}
+
+// Gekozen waarden van een filtergroep; een kaart past als hij minstens één ervan heeft
+function gekozenFilter(id) {
+    return [...document.querySelectorAll(`#${id} input:checked`)].map(c => c.value);
+}
+function lijstBevat(tekst, gekozen) {
+    const waarden = (tekst || '').split(',').map(w => w.trim());
+    return gekozen.length === 0 || gekozen.some(g => waarden.includes(g));
+}
 
 document.getElementById('datum').min = new Date().toISOString().split('T')[0];
 document.getElementById('c-datum').min = new Date().toISOString().split('T')[0];
@@ -727,33 +796,39 @@ async function laadRijderAanvragen() {
         const resp = await fetch(`${API}/aanvragen?groep=false`);
         const lijst = await resp.json();
         window._rijderAanvragenCache = lijst;
-        teller.textContent = lijst.length === 0 ? 'Geen aanvragen' : `${lijst.length} open aanvra${lijst.length === 1 ? 'ag' : 'gen'}`;
-        container.innerHTML = lijst.length === 0
-            ? '<div style="text-align:center;padding:3rem 0;color:var(--kleur-subtekst)"><div style="font-size:2.5rem;margin-bottom:0.75rem">🔍</div><p>Nog geen aanvragen geplaatst.</p></div>'
-            : lijst.map(a => rijderKaartHTML(a)).join('');
+        filterRijderAanvragen();
     } catch {
         container.innerHTML = '<div class="melding melding-fout">Kon aanvragen niet laden.</div>';
     }
 }
 
 function filterRijderAanvragen() {
-    const locatie = (document.getElementById('filter-locatie').value || '').trim().toLowerCase();
-    const soort = document.getElementById('filter-soort').value;
-    const alle = window._rijderAanvragenCache || [];
-    let gefilterd = alle;
-    if (locatie) gefilterd = gefilterd.filter(a => (a.locatie || '').toLowerCase().includes(locatie));
-    if (soort) gefilterd = gefilterd.filter(a => (a.soortOpdracht || 'Training') === soort);
-    const container = document.getElementById('rijder-aanvragen-lijst');
+    const alle = window._rijderAanvragenCache;
+    if (!alle) return;
+    const locatie = document.getElementById('rf-locatie').value.trim().toLowerCase();
+    const vanaf = document.getElementById('rf-datum').value;
+    const soorten = gekozenFilter('rf-soort');
+    const karts = gekozenFilter('rf-kart');
+    const kwals = gekozenFilter('rf-kwal');
+    const lijst = alle.filter(a =>
+        (!locatie || (a.locatie || '').toLowerCase().includes(locatie)) &&
+        (!vanaf || !a.datum || a.datum.substring(0, 10) >= vanaf) &&
+        (soorten.length === 0 || soorten.includes(a.soortOpdracht || 'Training')) &&
+        lijstBevat(a.specialisaties, karts) &&
+        lijstBevat(a.kwaliteiten, kwals));
     const teller = document.getElementById('rijder-teller');
-    teller.textContent = gefilterd.length === 0 ? 'Geen resultaten' : `${gefilterd.length} aanvra${gefilterd.length === 1 ? 'ag' : 'gen'}`;
-    container.innerHTML = gefilterd.length === 0
-        ? '<div style="text-align:center;padding:3rem 0;color:var(--kleur-subtekst)"><div style="font-size:2.5rem;margin-bottom:0.75rem">🔍</div><p>Geen aanvragen gevonden.</p></div>'
-        : gefilterd.map(a => rijderKaartHTML(a)).join('');
+    teller.textContent = alle.length === 0 ? 'Geen aanvragen'
+        : lijst.length === alle.length ? `${alle.length} open aanvra${alle.length === 1 ? 'ag' : 'gen'}` : `${lijst.length} van ${alle.length}`;
+    document.getElementById('rijder-aanvragen-lijst').innerHTML = alle.length === 0
+        ? '<div style="text-align:center;padding:3rem 0;color:var(--kleur-subtekst)"><div style="font-size:2.5rem;margin-bottom:0.75rem">🔍</div><p>Nog geen aanvragen geplaatst.</p></div>'
+        : lijst.length === 0
+            ? '<div style="text-align:center;padding:2rem 0;color:var(--kleur-subtekst)"><p>Geen aanvragen die passen bij je filter.</p></div>'
+            : lijst.map(a => rijderKaartHTML(a)).join('');
 }
 
 function resetFilter() {
-    document.getElementById('filter-locatie').value = '';
-    document.getElementById('filter-soort').value = '';
+    ['rf-locatie', 'rf-datum'].forEach(id => document.getElementById(id).value = '');
+    document.querySelectorAll('#rf-paneel input[type=checkbox]').forEach(c => c.checked = false);
     filterRijderAanvragen();
 }
 
@@ -983,12 +1058,14 @@ function filterCoachAanbod() {
     const alles = window._coachAanbodCache;
     if (!alles) return;
     const locatie = document.getElementById('cf-locatie').value.trim().toLowerCase();
-    const soort = document.getElementById('cf-soort').value;
+    const soorten = gekozenFilter('cf-soort');
+    const discs = gekozenFilter('cf-disc');
     const vanaf = document.getElementById('cf-datum').value;
-    const prijs = document.getElementById('cf-prijs').value;
+    const prijs = document.querySelector('input[name="cf-prijs"]:checked')?.value || '';
     const lijst = alles.filter(a =>
         (!locatie || (a.locatie || '').toLowerCase().includes(locatie)) &&
-        (!soort || ((a.categorieen || '').includes('Wedstrijd') ? 'Wedstrijd' : 'Training') === soort) &&
+        (soorten.length === 0 || soorten.includes((a.categorieen || '').includes('Wedstrijd') ? 'Wedstrijd' : 'Training')) &&
+        lijstBevat(a.disciplines, discs) &&
         (!vanaf || (a.datum || '').substring(0, 10) >= vanaf) &&
         (!prijs || (prijs === 'gratis' ? a.isGratis : !a.isGratis)));
     const teller = document.getElementById('coach-teller');
@@ -1002,7 +1079,9 @@ function filterCoachAanbod() {
 }
 
 function resetCoachFilter() {
-    ['cf-locatie', 'cf-soort', 'cf-datum', 'cf-prijs'].forEach(id => document.getElementById(id).value = '');
+    ['cf-locatie', 'cf-datum'].forEach(id => document.getElementById(id).value = '');
+    document.querySelectorAll('#cf-paneel input[type=checkbox]').forEach(c => c.checked = false);
+    document.querySelector('input[name="cf-prijs"][value=""]').checked = true;
     filterCoachAanbod();
 }
 

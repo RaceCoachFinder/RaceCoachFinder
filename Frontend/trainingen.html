@@ -30,7 +30,11 @@
             position: sticky;
             top: 1rem;
         }
-        .filter-paneel h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--kleur-subtekst); margin-bottom: 1rem; }
+        .filter-kop { display: flex; align-items: center; justify-content: space-between; width: 100%; background: none; border: none; padding: 0.1rem 0; cursor: pointer; font-family: inherit; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--kleur-subtekst); }
+        .filter-kop .pijl { transition: transform 0.2s; font-size: 0.9rem; }
+        .filter-paneel.ingeklapt .filter-kop .pijl { transform: rotate(-90deg); }
+        .filter-paneel.ingeklapt .filter-inhoud { display: none; }
+        .filter-inhoud { margin-top: 1rem; }
         .filter-groep { margin-bottom: 1.25rem; }
         .filter-groep label.filter-label { font-size: 0.82rem; font-weight: 700; display: block; margin-bottom: 0.45rem; color: var(--kleur-tekst); }
         .filter-groep input[type="text"],
@@ -44,7 +48,7 @@
             font-size: 0.84rem; cursor: pointer; font-weight: 400;
             text-transform: none; letter-spacing: 0; padding: 0.15rem 0;
         }
-        .filter-check-lijst input[type="checkbox"] { width: auto; accent-color: var(--kleur-primair); }
+        .filter-check-lijst input[type="checkbox"], .filter-check-lijst input[type="radio"] { width: auto; margin: 0; accent-color: var(--kleur-primair); }
         .filter-reset { font-size: 0.8rem; color: var(--kleur-subtekst); background: none; border: none; cursor: pointer; padding: 0; text-decoration: underline; }
         .filter-reset:hover { color: var(--kleur-primair); }
 
@@ -144,14 +148,10 @@
         .tab-knop.actief { color: var(--kleur-tekst); border-bottom-color: var(--kleur-primair); }
         .tab-knop:hover:not(.actief) { color: var(--kleur-tekst); background: #fafafa; }
 
-        /* Mobiel filter toggle */
-        .filter-toggle-btn { display: none; }
         @media (max-width: 720px) {
             .pagina-inhoud { flex-direction: column; }
             .filter-kolom { width: 100%; }
             .filter-paneel { position: static; }
-            .filter-toggle-btn { display: block; width: 100%; margin-bottom: 0.75rem; }
-            .filter-paneel.verborgen { display: none; }
         }
 
         /* Rijder aanvraag stijlen */
@@ -375,11 +375,9 @@
 
         <!-- Filters -->
         <div class="filter-kolom">
-            <button class="btn btn-secundair filter-toggle-btn" onclick="toggleFilters()" style="color:#555;border-color:#ccc">
-                ⚙️ Filters tonen/verbergen
-            </button>
             <div class="filter-paneel" id="filter-paneel">
-                <h3>Filteren</h3>
+                <button type="button" class="filter-kop" onclick="toggleFilters()"><span>Filteren</span><span class="pijl">▾</span></button>
+                <div class="filter-inhoud">
 
                 <div class="filter-groep">
                     <label class="filter-label">Locatie</label>
@@ -411,6 +409,7 @@
                 </div>
 
                 <button class="filter-reset" onclick="resetFilters()">Filters wissen</button>
+                </div>
             </div>
         </div>
 
@@ -639,8 +638,10 @@ function resetFilters() {
 }
 
 function toggleFilters() {
-    document.getElementById('filter-paneel').classList.toggle('verborgen');
+    document.getElementById('filter-paneel').classList.toggle('ingeklapt');
 }
+// Op de telefoon beginnen de filters ingeklapt, zodat de lijst meteen zichtbaar is
+if (window.matchMedia('(max-width: 720px)').matches) document.getElementById('filter-paneel').classList.add('ingeklapt');
 
 // ===================== AANBOD LADEN =====================
 
