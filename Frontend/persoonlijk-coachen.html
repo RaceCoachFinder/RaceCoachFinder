@@ -249,8 +249,8 @@
                                     <input type="text" id="wedstrijd-organisatie" placeholder="bijv. Rotax Max Euro Challenge">
                                 </div>
                                 <div class="formulier-groep">
-                                    <label for="wedstrijd-naam">Wedstrijd / circuit <span style="color:var(--kleur-subtekst);font-weight:400">(optioneel)</span></label>
-                                    <input type="text" id="wedstrijd-naam" placeholder="bijv. Ronde 3 – Genk">
+                                    <label for="wedstrijd-naam">Wedstrijd <span style="color:var(--kleur-subtekst);font-weight:400">(optioneel)</span></label>
+                                    <input type="text" id="wedstrijd-naam" placeholder="bijv. Ronde 3">
                                 </div>
                             </div>
                             <div class="formulier-groep">
@@ -510,9 +510,7 @@
         <div id="pm-meta" style="display:flex;gap:1rem;flex-wrap:wrap;font-size:0.85rem;color:var(--kleur-subtekst);margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1px solid #eee"></div>
         <div id="pm-beschrijving" style="font-size:0.92rem;color:var(--kleur-tekst);line-height:1.7;white-space:pre-line"></div>
         <div id="pm-chips" class="chips" style="margin-top:1.25rem"></div>
-        <div style="margin-top:1.5rem;text-align:right">
-            <a id="pm-coach-link" href="#" class="btn btn-primair" style="font-size:0.88rem">Coach bekijken</a>
-        </div>
+        <div id="pm-knoppen" style="margin-top:1.5rem;display:flex;justify-content:flex-end"></div>
     </div>
 </div>
 
@@ -565,7 +563,6 @@ function setRijderType(type) {
     document.getElementById('type-wedstrijd-btn').classList.toggle('actief', type === 'Wedstrijd');
 
     const wedstrijdVelden = document.getElementById('wedstrijd-velden');
-    const trainAanpak = document.getElementById('training-aanpak-velden');
     const datumLabel = document.getElementById('datum-req-label');
     const locatieLabel = document.getElementById('locatie-req-label');
     const datumInput = document.getElementById('datum');
@@ -575,7 +572,6 @@ function setRijderType(type) {
 
     if (type === 'Wedstrijd') {
         wedstrijdVelden.style.display = '';
-        trainAanpak.style.display = 'none';
         datumLabel.textContent = '*';
         locatieLabel.textContent = '*';
         datumInput.required = true;
@@ -584,7 +580,6 @@ function setRijderType(type) {
         wedNaamInput.required = false;
     } else {
         wedstrijdVelden.style.display = 'none';
-        trainAanpak.style.display = '';
         datumLabel.textContent = '(optioneel)';
         locatieLabel.textContent = '(optioneel)';
         datumInput.required = false;
@@ -640,13 +635,14 @@ async function submitRijderAanvraag(event) {
 
     const datumVal = document.getElementById('datum').value;
     const wedSoort = document.querySelector('input[name="wed-soort"]:checked')?.value || 'Sprint';
-    const kwaliteiten = rijderType === 'Wedstrijd' ? wedSoort : getGekozen('kwal-grid').join(',');
+    // Bij een wedstrijd staat het soort (Sprint/Endurance) vooraan, gevolgd door wat de rijder wil aanpakken
+    const kwaliteiten = [...new Set([...(rijderType === 'Wedstrijd' ? [wedSoort] : []), ...getGekozen('kwal-grid')])].join(',');
     const body = {
         locatie: document.getElementById('locatie').value.trim(),
         datum: datumVal ? new Date(datumVal).toISOString() : null,
         maxPrijs: parseFloat(document.getElementById('maxprijs').value) || null,
         beschrijving: document.getElementById('beschrijving').value.trim(),
-        specialisaties: rijderType === 'Wedstrijd' ? '' : getGekozen('spec-grid').join(','),
+        specialisaties: getGekozen('spec-grid').join(','),
         kwaliteiten: kwaliteiten,
         soortOpdracht: rijderType,
         isGroep: false,
@@ -761,39 +757,91 @@ function resetFilter() {
     filterRijderAanvragen();
 }
 
+function aanvraagTitel(a) {
+    if ((a.soortOpdracht || 'Training') === 'Wedstrijd') {
+        const naam = [a.wedstrijdOrganisatie, a.wedstrijdNaam].filter(Boolean).join(' — ');
+        return naam || 'Coach gezocht voor een wedstrijd';
+    }
+    return 'Coach gezocht voor een training';
+}
+
+// Reageren = privéchat met de rijder, met de aanvraag als context bovenin
+function aanvraagReageerLink(a) {
+    return `berichten.html?partner=${encodeURIComponent(a.rijderId)}&naam=${encodeURIComponent(a.rijderNaam || 'Rijder')}&rol=Rijder`
+        + `&aanvraag=${encodeURIComponent(aanvraagTitel(a) + '\n' + (a.beschrijving || ''))}&alocatie=${encodeURIComponent(a.locatie || '')}`
+        + (a.datum ? '&adatum=' + encodeURIComponent(a.datum) : '');
+}
+
+function aanvraagReageerKnop(a, extraStijl = '') {
+    const ik = typeof getGebruiker === 'function' ? getGebruiker() : null;
+    if (ik && ik.id === a.rijderId) return '<span class="chip" style="align-self:center">Jouw aanvraag</span>';
+    const href = isIngelogd() ? aanvraagReageerLink(a) : 'inloggen.html';
+    return `<a href="${href}" class="btn btn-primair btn-sm" style="white-space:nowrap;font-size:0.82rem;${extraStijl}">Reageren</a>`;
+}
+
 function rijderKaartHTML(a) {
-    const datum = a.datum ? new Date(a.datum).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' }) : null;
+    const d = a.datum ? new Date(a.datum) : null;
+    const volledigeDatum = d ? d.toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : null;
     const specs = (a.specialisaties || '').split(',').filter(Boolean);
     const kwals = (a.kwaliteiten || '').split(',').filter(Boolean);
     const soort = a.soortOpdracht || 'Training';
-
     const soortChip = soort === 'Wedstrijd'
-        ? '<span class="chip chip-wedstrijd">🏁 Wedstrijd</span>'
-        : '<span class="chip chip-training">🎯 Training</span>';
-
-    let wedstrijdInfo = '';
-    if (soort === 'Wedstrijd' && (a.wedstrijdOrganisatie || a.wedstrijdNaam)) {
-        wedstrijdInfo = `<div class="aanvraag-meta">🏆 ${esc(a.wedstrijdOrganisatie || '')}${a.wedstrijdOrganisatie && a.wedstrijdNaam ? ' — ' : ''}${esc(a.wedstrijdNaam || '')}</div>`;
-    }
+        ? '<span class="chip chip-wedstrijd" style="font-size:0.72rem">🏁 Wedstrijd</span>'
+        : '<span class="chip chip-training" style="font-size:0.72rem">🎯 Training</span>';
+    const meta = [a.locatie ? `📍 ${esc(a.locatie)}` : '', volledigeDatum ? `📅 ${volledigeDatum}` : '📅 Datum in overleg']
+        .filter(Boolean).join(' &nbsp;•&nbsp; ');
 
     return `
-    <div class="aanvraag-kaart">
-        <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem;flex-wrap:wrap">
-            ${soortChip}
-            <span style="font-size:0.85rem;font-weight:700">${esc(a.rijderNaam || 'Rijder')}</span>
+    <div class="aanbod-kaart">
+        <div class="aanbod-datum-blok">
+            ${d ? `<div class="aanbod-datum-dag">${d.getDate()}</div>
+            <div class="aanbod-datum-mnd">${d.toLocaleDateString('nl-NL', { month: 'short' })}</div>`
+                : '<div class="aanbod-datum-dag" style="font-size:1.1rem">📅</div><div class="aanbod-datum-mnd">flexibel</div>'}
         </div>
-        ${wedstrijdInfo}
-        <div class="aanvraag-meta">
-            ${a.locatie ? `📍 ${esc(a.locatie)}` : ''}
-            ${datum ? `  •  📅 ${datum}` : ''}
-            ${a.maxPrijs ? `  •  💶 Max €${a.maxPrijs}` : ''}
+        <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.3rem;flex-wrap:wrap">
+                ${soortChip}
+                <span class="coach-links">${rijderLinkHtml(a)}</span>
+            </div>
+            <div style="font-size:1rem;font-weight:800;margin-bottom:0.25rem">${esc(aanvraagTitel(a))}</div>
+            <div style="font-size:0.82rem;color:var(--kleur-subtekst);margin-bottom:0.5rem">${meta}</div>
+            <div class="chips">
+                ${specs.map(s => `<span class="chip chip-primair">${esc(s)}</span>`).join('')}
+                ${kwals.map(k => `<span class="chip">${esc(k)}</span>`).join('')}
+                ${a.maxPrijs ? `<span class="chip" style="background:#f3e5f5;color:#6a1b9a">Max €${a.maxPrijs}</span>` : ''}
+            </div>
         </div>
-        <div class="aanvraag-beschrijving">${esc(a.beschrijving)}</div>
-        <div class="chips">
-            ${specs.map(s => `<span class="chip chip-primair">${esc(s)}</span>`).join('')}
-            ${kwals.map(k => `<span class="chip">${esc(k)}</span>`).join('')}
+        <div class="aanbod-knoppen">
+            <button type="button" onclick="toonAanvraagPopup(${a.id})" class="btn btn-secundair btn-sm" style="white-space:nowrap;font-size:0.82rem;color:#555;border-color:#ccc">Meer info</button>
+            ${aanvraagReageerKnop(a)}
         </div>
     </div>`;
+}
+
+function rijderLinkHtml(a) {
+    return a.rijderId
+        ? `<a href="rijder-detail.html?id=${encodeURIComponent(a.rijderId)}" class="coach-link">${esc(a.rijderNaam || 'Rijder')}</a>`
+        : `<span class="coach-link coach-link-geen">${esc(a.rijderNaam || 'Rijder')}</span>`;
+}
+
+// Zelfde pop-up als bij het coach-aanbod, maar met de gegevens van de rijder-aanvraag
+function toonAanvraagPopup(id) {
+    const a = (window._rijderAanvragenCache || []).find(x => x.id === id);
+    if (!a) return;
+    const datum = a.datum ? new Date(a.datum).toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : 'Datum in overleg';
+    document.getElementById('pm-coaches').innerHTML = rijderLinkHtml(a);
+    document.getElementById('pm-titel').textContent = aanvraagTitel(a);
+    document.getElementById('pm-meta').innerHTML =
+        `${a.locatie ? `<span>📍 ${esc(a.locatie)}</span>` : ''}<span>📅 ${datum}</span>${a.maxPrijs ? `<span>💶 Max €${a.maxPrijs}</span>` : ''}`;
+    document.getElementById('pm-beschrijving').textContent = a.beschrijving || 'Geen beschrijving.';
+    const specs = (a.specialisaties || '').split(',').filter(Boolean);
+    const kwals = (a.kwaliteiten || '').split(',').filter(Boolean);
+    document.getElementById('pm-chips').innerHTML =
+        specs.map(s => `<span class="chip chip-primair">${esc(s)}</span>`).join('') +
+        kwals.map(k => `<span class="chip">${esc(k)}</span>`).join('');
+    document.getElementById('pm-knoppen').innerHTML = aanvraagReageerKnop(a, 'font-size:0.88rem');
+    document.getElementById('aanbod-popup').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
 }
 
 // ======== MIJN RIJDER AANVRAGEN ========
@@ -985,9 +1033,8 @@ function toonAanbodPopup(id) {
         cats.map(c => `<span class="chip chip-training">${esc(c)}</span>`).join('') +
         discs.map(d => `<span class="chip chip-training">${esc(d)}</span>`).join('') +
         (prijs ? `<span class="chip" style="background:#f3e5f5;color:#6a1b9a">${prijs}</span>` : '');
-    const link = document.getElementById('pm-coach-link');
-    link.style.display = a.coachProfielId ? '' : 'none';
-    link.href = a.coachProfielId ? `coach-detail.html?id=${a.coachProfielId}` : '#';
+    document.getElementById('pm-knoppen').innerHTML = a.coachProfielId
+        ? `<a href="coach-detail.html?id=${a.coachProfielId}" class="btn btn-primair" style="font-size:0.88rem">Coach bekijken</a>` : '';
     document.getElementById('aanbod-popup').style.display = 'flex';
     document.body.style.overflow = 'hidden';
 }
