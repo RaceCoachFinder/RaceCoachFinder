@@ -457,7 +457,7 @@
 
 <!-- ========================= TAB 2: RIJDER ZOEKT GROEP ========================= -->
 <div id="groep-tab-rijder" style="display:none">
-<div class="container" style="padding-top:2rem;padding-bottom:3rem;max-width:960px;margin:0 auto;width:100%">
+<div class="container" style="padding-top:2rem;padding-bottom:3rem;margin:0 auto;width:100%">
 
     <div id="groep-rijder-form-sectie" style="display:none">
         <div class="formulier-kaart">
@@ -560,11 +560,43 @@
         <hr style="margin:2rem 0;border:none;border-top:1px solid #ebebeb">
     </div>
 
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
-        <h2 style="font-size:1.1rem;margin:0">Groepen die een coach zoeken</h2>
-        <span id="groep-teller" style="font-size:0.85rem;color:var(--kleur-subtekst)"></span>
+    <div class="pagina-inhoud" style="padding-top:0">
+        <div class="filter-kolom">
+            <div class="filter-paneel" id="gf-paneel">
+                <button type="button" class="filter-kop" onclick="document.getElementById('gf-paneel').classList.toggle('ingeklapt')"><span>Filteren</span><span class="pijl">▾</span></button>
+                <div class="filter-inhoud">
+                    <div class="filter-groep">
+                        <label class="filter-label">Locatie</label>
+                        <input type="text" id="gf-locatie" placeholder="bijv. Genk" oninput="filterGroepAanvragen()">
+                    </div>
+                    <div class="filter-groep">
+                        <label class="filter-label">Datum vanaf</label>
+                        <input type="date" id="gf-datum" onchange="filterGroepAanvragen()">
+                    </div>
+                    <div class="filter-groep">
+                        <label class="filter-label">Soort</label>
+                        <div class="filter-check-lijst" id="gf-soort"></div>
+                    </div>
+                    <div class="filter-groep">
+                        <label class="filter-label">Categorie kart</label>
+                        <div class="filter-check-lijst" id="gf-kart"></div>
+                    </div>
+                    <div class="filter-groep">
+                        <label class="filter-label">Wil werken aan</label>
+                        <div class="filter-check-lijst" id="gf-kwal"></div>
+                    </div>
+                    <button type="button" class="filter-reset" onclick="resetGroepFilters()">Filters wissen</button>
+                </div>
+            </div>
+        </div>
+        <div class="resultaten-kolom">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;gap:0.75rem;flex-wrap:wrap">
+                <h2 style="font-size:1.1rem;margin:0">Groepen die een coach zoeken</h2>
+                <span id="groep-teller" style="font-size:0.85rem;color:var(--kleur-subtekst)"></span>
+            </div>
+            <div id="groep-aanvragen-lijst"><div class="laden"><div class="spinner"></div><p>Laden...</p></div></div>
+        </div>
     </div>
-    <div id="groep-aanvragen-lijst"><div class="laden"><div class="spinner"></div><p>Laden...</p></div></div>
 
     <!-- Pop-up met alle informatie van een groepsverzoek -->
     <div id="ga-modal" style="display:none;position:fixed;inset:0;z-index:9000;align-items:center;justify-content:center">
@@ -1482,13 +1514,40 @@ async function laadGroepAanvragen() {
         const resp = await fetch(`${API}/aanvragen?groep=true`);
         const lijst = await resp.json();
         window._groepAanvragenCache = lijst;
-        teller.textContent = lijst.length === 0 ? 'Geen verzoeken' : `${lijst.length} verzoek${lijst.length === 1 ? '' : 'en'}`;
-        container.innerHTML = lijst.length === 0
-            ? '<div style="text-align:center;padding:3rem 0;color:var(--kleur-subtekst)"><div style="font-size:2.5rem;margin-bottom:0.75rem">🔍</div><p>Nog geen groepsverzoeken. Wees de eerste!</p></div>'
-            : lijst.map(a => groepAanvraagKaartHTML(a)).join('');
+        filterGroepAanvragen();
     } catch {
         container.innerHTML = '<div class="melding melding-fout">Kon verzoeken niet laden.</div>';
     }
+}
+
+// Filters voor de groepsverzoeken (in de browser, op de al geladen lijst)
+function filterGroepAanvragen() {
+    const alle = window._groepAanvragenCache;
+    if (!alle) return;
+    const gekozen = id => [...document.querySelectorAll(`#${id} input:checked`)].map(c => c.value);
+    const bevat = (tekst, keuzes) => keuzes.length === 0 || keuzes.some(k => (tekst || '').split(',').map(w => w.trim()).includes(k));
+    const locatie = document.getElementById('gf-locatie').value.trim().toLowerCase();
+    const vanaf = document.getElementById('gf-datum').value;
+    const soorten = gekozen('gf-soort');
+    const lijst = alle.filter(a =>
+        (!locatie || (a.locatie || '').toLowerCase().includes(locatie)) &&
+        (!vanaf || !a.datum || a.datum.substring(0, 10) >= vanaf) &&
+        (soorten.length === 0 || soorten.includes(a.soortOpdracht || 'Training')) &&
+        bevat(a.specialisaties, gekozen('gf-kart')) &&
+        bevat(a.kwaliteiten, gekozen('gf-kwal')));
+    document.getElementById('groep-teller').textContent = alle.length === 0 ? 'Geen verzoeken'
+        : lijst.length === alle.length ? `${alle.length} verzoek${alle.length === 1 ? '' : 'en'}` : `${lijst.length} van ${alle.length}`;
+    document.getElementById('groep-aanvragen-lijst').innerHTML = alle.length === 0
+        ? '<div style="text-align:center;padding:3rem 0;color:var(--kleur-subtekst)"><div style="font-size:2.5rem;margin-bottom:0.75rem">🔍</div><p>Nog geen groepsverzoeken. Wees de eerste!</p></div>'
+        : lijst.length === 0
+            ? '<div style="text-align:center;padding:2rem 0;color:var(--kleur-subtekst)"><p>Geen verzoeken die passen bij je filter.</p></div>'
+            : lijst.map(a => groepAanvraagKaartHTML(a)).join('');
+}
+
+function resetGroepFilters() {
+    ['gf-locatie', 'gf-datum'].forEach(id => document.getElementById(id).value = '');
+    document.querySelectorAll('#gf-paneel input[type=checkbox]').forEach(c => c.checked = false);
+    filterGroepAanvragen();
 }
 
 function groepAanvraagTitel(a) {
@@ -1712,6 +1771,10 @@ function bouwGroepCheckGrid(id, opties) {
 }
 bouwGroepCheckGrid('groep-kwal-grid', KWALITEITEN_G);
 bouwGroepCheckGrid('groep-spec-grid', SPECIALISATIES_G);
+bouwFilterCheckboxes('gf-soort', ['Training', 'Wedstrijd'], 'filterGroepAanvragen()');
+bouwFilterCheckboxes('gf-kart', SPECIALISATIES_G, 'filterGroepAanvragen()');
+bouwFilterCheckboxes('gf-kwal', KWALITEITEN_G, 'filterGroepAanvragen()');
+if (window.matchMedia('(max-width: 720px)').matches) document.getElementById('gf-paneel').classList.add('ingeklapt');
 
 // Toon Mijn groepsvragen als rijder is ingelogd
 const gebruikerG = JSON.parse(localStorage.getItem('kcf_gebruiker') || 'null');
