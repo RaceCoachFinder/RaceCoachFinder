@@ -364,8 +364,10 @@ public class BetalingController : ControllerBase
                     Interval = "1 month",
                     Description = "RaceCoachFinder maandelijks abonnement",
                     WebhookUrl = $"{BackendUrl}/api/betaling/webhook",
-                    // Bij een koppelbetaling: eerste €10 pas op de einddatum van de gratis periode
-                    StartDate = startOp
+                    // Zonder startdatum schrijft Mollie de eerste €10 dezelfde dag al af, bovenop de eerste
+                    // betaling. Dus: na een koppelbetaling op de einddatum van de gratis periode, anders
+                    // een maand na de eerste (introductie)betaling, die de eerste maand al dekt.
+                    StartDate = startOp ?? vandaag.AddMonths(1)
                 });
             }
 

@@ -148,6 +148,7 @@
         'Stuur betaalverzoeken en facturen vanuit de chat': 'Send payment requests and invoices from the chat',
         'Houd je afspraken bij in je eigen agenda': 'Keep track of your appointments in your own calendar',
         '€10 per maand · maandelijks opzegbaar': '€10 per month · cancel monthly',
+        'Eerste maand €5, daarna €10 per maand · maandelijks opzegbaar': 'First month €5, then €10 per month · cancel monthly',
         'Komende groepstrainingen': 'Upcoming group trainings',
         'Alle groepstrainingen': 'All group trainings',
         'Aanbevolen voor jou': 'Recommended for you',

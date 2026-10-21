@@ -1157,7 +1157,7 @@ async function laadAbonnementStatus() {
                     : `<span>🎁 Gratis periode actief — verloopt op ${datum}</span>`) + beherenKnop;
         } else {
             balk.className = 'abonnement-balk abonnement-verlopen';
-            balk.innerHTML = `<span>⚠️ Geen actief abonnement. Abonneer voor €10/maand om coach te blijven.</span>${beherenKnop}`;
+            balk.innerHTML = `<span>⚠️ Geen actief abonnement. Abonneer om coach te blijven: eerste maand €5, daarna €10/maand.</span>${beherenKnop}`;
         }
     } catch {}
 }
@@ -1228,9 +1228,9 @@ function renderAbonnementBeheer(a) {
             <div class="abo-knoppen">${sluitKnop}</div>`;
     } else {
         inhoud.innerHTML = `<div class="abo-blok">Je hebt nu <strong>geen actief abonnement</strong>.<br>
-                Met een abonnement van <strong>€10 per maand</strong> blijft je coachprofiel zichtbaar. Maandelijks opzegbaar.</div>
+                Met een abonnement blijft je coachprofiel zichtbaar. De <strong>eerste maand kost €5</strong>, daarna <strong>€10 per maand</strong>. Maandelijks opzegbaar.</div>
             <div class="abo-knoppen">
-                <button class="btn btn-primair" onclick="startAbonnement()">Abonnement nemen — €10/maand</button>
+                <button class="btn btn-primair" onclick="startAbonnement()">Abonnement nemen — eerste maand €5</button>
                 ${sluitKnop}
             </div>`;
     }
