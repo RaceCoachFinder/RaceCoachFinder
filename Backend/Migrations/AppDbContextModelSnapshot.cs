@@ -851,6 +851,69 @@ namespace Backend.Migrations
                     b.ToTable("RijderFavorieten");
                 });
 
+            modelBuilder.Entity("Backend.Models.TrainingVoorstel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Beschrijving")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("BijgewerktOp")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Categorieen")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CoachesJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("Datum")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Disciplines")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("GepubliceerdAanbodId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("GroepsgesprekId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsGratis")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Locatie")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("MaxRijders")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("OrganisatorId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal?>("PrijsPerRijder")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("RijderAanvraagId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Titel")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TrainingVoorstellen");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
                     b.Property<string>("Id")

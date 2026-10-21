@@ -521,8 +521,9 @@
                             <input type="date" id="groep-datum">
                         </div>
                         <div class="formulier-groep">
-                            <label for="groep-grootte">Aantal rijders <span style="color:var(--kleur-subtekst);font-weight:400">(optioneel)</span></label>
-                            <input type="number" id="groep-grootte" placeholder="bijv. 6" min="2" max="50">
+                            <label for="groep-grootte">Met hoeveel rijders ben je al? <span style="color:var(--kleur-subtekst);font-weight:400">(optioneel)</span></label>
+                            <input type="number" id="groep-grootte" placeholder="bijv. 4, jezelf meegerekend" min="1" max="50">
+                            <small style="color:var(--kleur-subtekst);font-size:0.78rem">De coach kan later kiezen of er nog meer rijders bij mogen.</small>
                         </div>
                     </div>
 
@@ -1591,7 +1592,7 @@ function groepAanvraagKaartHTML(a) {
             <div class="aanbod-meta">
                 ${a.locatie ? `<span>📍 ${esc(a.locatie)}</span>` : ''}
                 <span>📅 ${volledigeDatum}</span>
-                ${a.groepGrootte ? `<span>👥 ${a.groepGrootte} rijders</span>` : ''}
+                ${a.groepGrootte ? `<span>👥 Al ${a.groepGrootte === 1 ? '1 rijder' : a.groepGrootte + ' rijders'}</span>` : ''}
             </div>
             <div class="chips">${groepAanvraagChips(a)}</div>
             ${uitgenodigdeRijdersHtml(a)}
@@ -1611,7 +1612,7 @@ function toonGroepAanvraagPopup(id) {
     document.getElementById('ga-titel').textContent = groepAanvraagTitel(a);
     document.getElementById('ga-meta').innerHTML =
         `${a.locatie ? `<span>📍 ${esc(a.locatie)}</span>` : ''}<span>📅 ${datum}</span>`
-        + `${a.groepGrootte ? `<span>👥 ${a.groepGrootte} rijders</span>` : ''}${a.maxPrijs ? `<span>💶 Max €${a.maxPrijs} p.p.</span>` : ''}`;
+        + `${a.groepGrootte ? `<span>👥 Al ${a.groepGrootte === 1 ? '1 rijder' : a.groepGrootte + ' rijders'}</span>` : ''}${a.maxPrijs ? `<span>💶 Max €${a.maxPrijs} p.p.</span>` : ''}`;
     document.getElementById('ga-beschrijving').textContent = a.beschrijving || 'Geen beschrijving.';
     document.getElementById('ga-rijders').innerHTML = uitgenodigdeRijdersHtml(a);
     document.getElementById('ga-chips').innerHTML = groepAanvraagChips(a);
@@ -1659,7 +1660,7 @@ async function laadMijnGroepAanvragen() {
                     </div>
                     <div style="font-size:0.82rem;color:var(--kleur-subtekst)">
                         ${datum !== '—' ? `📅 ${datum}` : ''}
-                        ${a.groepGrootte ? ` &nbsp;•&nbsp; 👥 ${a.groepGrootte} rijders` : ''}
+                        ${a.groepGrootte ? ` &nbsp;•&nbsp; 👥 Al ${a.groepGrootte === 1 ? '1 rijder' : a.groepGrootte + ' rijders'}` : ''}
                     </div>
                 </div>
                 ${!a.isGesloten ? `<button onclick="groepSluitAanvraag(${a.id})" class="btn btn-gevaar" style="font-size:0.8rem;padding:0.3rem 0.7rem;white-space:nowrap">Verwijderen</button>` : ''}

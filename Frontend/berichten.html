@@ -127,6 +127,38 @@
             padding: 0.35rem 0.8rem; font-size: 0.82rem; font-weight: 600; cursor: pointer; white-space: nowrap;
         }
         .btn-groepsleden:hover { border-color: var(--kleur-primair); }
+        .kop-tekst { flex: 1; min-width: 0; }
+        .kop-tekst > * { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        @media (max-width: 700px) { .btn-groepsleden .knop-label { display: none; } .btn-groepsleden { padding: 0.35rem 0.6rem; } }
+        .btn-training { margin-left: auto; background: var(--kleur-primair); border-color: var(--kleur-primair); }
+        .btn-training + .btn-groepsleden { margin-left: 0.4rem; }
+        #tv-popup .popup-kaart { max-width: 560px; width: calc(100% - 2rem); max-height: 88vh; overflow-y: auto; }
+        .tv-status { display: inline-block; font-size: 0.74rem; font-weight: 700; padding: 0.15rem 0.6rem; border-radius: 999px; margin-bottom: 0.5rem; }
+        .tv-status.concept { background: #fff3c4; color: #7a5c00; }
+        .tv-status.live { background: #e8f5e9; color: #2e7d32; }
+        .tv-meta { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; font-size: 0.85rem; color: var(--kleur-subtekst); margin: 0.4rem 0 0.8rem; }
+        .tv-beschrijving { font-size: 0.9rem; line-height: 1.6; white-space: pre-line; margin-bottom: 0.8rem; }
+        .tv-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.9rem; }
+        .tv-chip { font-size: 0.74rem; font-weight: 600; padding: 0.15rem 0.6rem; border-radius: 999px; background: #e3f0ff; color: #1565c0; }
+        .tv-kop { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--kleur-subtekst); margin: 0.9rem 0 0.4rem; }
+        .tv-coach { display: flex; align-items: center; gap: 0.5rem; padding: 0.45rem 0; border-bottom: 1px solid #f2f2f2; font-size: 0.9rem; flex-wrap: wrap; }
+        .tv-coach:last-child { border-bottom: none; }
+        .tv-coach .naam { flex: 1; min-width: 120px; font-weight: 600; }
+        .tv-coach input { width: 64px; padding: 0.25rem 0.4rem; border: 1.5px solid #ddd; border-radius: 6px; font-family: inherit; font-size: 0.85rem; text-align: center; }
+        .tv-klein-btn { background: #fff; border: 1.5px solid #ddd; border-radius: 6px; padding: 0.25rem 0.6rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+        .tv-klein-btn:hover { border-color: var(--kleur-primair); }
+        .tv-veld { margin-bottom: 0.7rem; }
+        .tv-veld label { display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.25rem; }
+        .tv-veld .groep-input { margin-bottom: 0; }
+        .tv-rij { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+        .tv-checks { display: flex; flex-wrap: wrap; gap: 0.3rem 0.8rem; font-size: 0.85rem; }
+        .tv-checks label { display: flex; align-items: center; gap: 0.3rem; font-weight: 400; cursor: pointer; }
+        .tv-checks input { width: auto; accent-color: var(--kleur-primair); }
+        .tv-melding { font-size: 0.85rem; margin: 0.5rem 0; }
+        .tv-melding.fout { color: #c62828; }
+        .tv-melding.ok { color: #2e7d32; }
+        .tv-acties { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end; margin-top: 1rem; }
+        @media (max-width: 700px) { .tv-coach input, #tv-popup .groep-input { font-size: 16px; } .tv-rij { grid-template-columns: 1fr; } }
         .leden-rij { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0; border-bottom: 1px solid #f2f2f2; }
         .leden-rij:last-child { border-bottom: none; }
         .leden-naam { flex: 1; min-width: 0; font-size: 0.92rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -559,11 +591,12 @@
             <div class="gesprek-panel-header">
                 <button class="mobiel-terug-btn" onclick="mobieleTerug()">← Terug</button>
                 <div class="avatar-sm" id="partner-avatar"></div>
-                <div>
+                <div class="kop-tekst">
                     <strong id="partner-naam"></strong>
                     <div style="font-size:0.78rem;color:var(--kleur-subtekst)" id="partner-rol"></div>
                 </div>
-                <button class="btn-groepsleden" id="btn-groepsleden" onclick="openLedenPopup()" style="display:none">👥 Leden</button>
+                <button class="btn-groepsleden btn-training" id="btn-training" onclick="openTrainingVoorstel()" style="display:none" title="Training">🏁 <span class="knop-label">Training</span></button>
+                <button class="btn-groepsleden" id="btn-groepsleden" onclick="openLedenPopup()" style="display:none" title="Leden">👥 <span class="knop-label">Leden</span></button>
             </div>
 
             <div class="berichten-stroom" id="berichten-stroom"></div>
@@ -708,6 +741,14 @@
             <input class="groep-input" id="leden-zoek" type="text" placeholder="🔍 Zoek op naam..." autocomplete="off" oninput="zoekNieuwLid()" style="margin-bottom:0.4rem">
             <div class="groep-zoek-resultaten" id="leden-zoek-resultaten"></div>
         </div>
+    </div>
+</div>
+
+<!-- Trainingsvoorstel bij een groepsverzoek -->
+<div class="popup-overlay" id="tv-popup" style="display:none" onclick="if(event.target===this)sluitTrainingVoorstel()">
+    <div class="popup-kaart">
+        <button class="popup-sluiten" onclick="sluitTrainingVoorstel()">✕</button>
+        <div id="tv-inhoud"></div>
     </div>
 </div>
 
@@ -1149,6 +1190,228 @@ async function verwijderGroepslid(index) {
 let _ledenZoekTimer = null;
 let _ledenZoekResultaten = [];
 
+// ===================== TRAININGSVOORSTEL (groepsverzoek van rijders) =====================
+// De coach die reageerde werkt hier de training uit, voegt coaches toe (met percentage) en publiceert.
+// Rijders zien het voorstel en wie er coacht, maar geen percentages.
+
+const TV_CATEGORIEEN = ['Wedstrijddag', 'Trainingsdag', 'Testdag', 'Speciaal evenement', 'Groepscoaching', 'Beginners / Rookies'];
+const TV_DISCIPLINES = ['Huurkart', 'Rotax Max', 'OK / Junior', 'KZ / Shifter', 'Superkart', 'Endurance', 'Simracing', 'Algemeen'];
+let _tv = null;          // huidig voorstel van de server
+let _tvBewerken = false; // organisator heeft het formulier open
+let _tvZoekTimer = null;
+let _tvZoekResultaten = [];
+
+async function openTrainingVoorstel() {
+    _tvBewerken = false;
+    document.getElementById('tv-popup').style.display = 'flex';
+    document.getElementById('tv-inhoud').innerHTML = '<p style="color:var(--kleur-subtekst)">Laden...</p>';
+    try {
+        _tv = await authVerzoek(`/trainingvoorstel/groep/${huidigGroepsId}`);
+        renderTrainingVoorstel();
+    } catch (e) {
+        document.getElementById('tv-inhoud').innerHTML = `<p class="tv-melding fout">${esc(e.message)}</p>`;
+    }
+}
+
+function sluitTrainingVoorstel() {
+    document.getElementById('tv-popup').style.display = 'none';
+}
+
+function tvMelding(tekst, soort = 'fout') {
+    const el = document.getElementById('tv-melding');
+    if (el) { el.className = 'tv-melding ' + soort; el.textContent = tekst; }
+}
+
+async function tvVerzoek(pad, methode, body, okTekst) {
+    try {
+        _tv = await authVerzoek(`/trainingvoorstel/groep/${huidigGroepsId}${pad}`, methode, body);
+        renderTrainingVoorstel();
+        if (okTekst) tvMelding(okTekst, 'ok');
+        laadGroepsBerichten(huidigGroepsId);
+        return true;
+    } catch (e) { tvMelding(e.message); return false; }
+}
+
+function renderTrainingVoorstel() {
+    const v = _tv;
+    const el = document.getElementById('tv-inhoud');
+    if (_tvBewerken && v.isOrganisator) { el.innerHTML = tvFormulierHtml(v); return; }
+    const datum = v.datum ? new Date(v.datum).toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : 'Datum nog niet gekozen';
+    const prijs = v.isGratis ? 'Gratis' : (v.prijsPerRijder != null ? `€${v.prijsPerRijder} p.p.` : 'Prijs nog niet bepaald');
+    const chips = [...(v.categorieen || '').split(','), ...(v.disciplines || '').split(',')].filter(Boolean);
+    const gepubliceerd = v.gepubliceerdAanbodId != null;
+    const mijnId = (getGebruiker() || {}).id;
+    const ikBenToegevoegd = v.coaches.find(c => c.id === mijnId);
+
+    const coachRij = (naam, extra) => `<div class="tv-coach"><span class="naam">${esc(naam)}</span>${extra}</div>`;
+    let coachesHtml = coachRij(v.organisatorNaam, `<small style="color:var(--kleur-subtekst)">organisator${v.magPercentagesZien ? ' · ' + v.eigenAandeel + '%' : ''}</small>`);
+    coachesHtml += v.coaches.map(c => coachRij(c.naam,
+        (v.magPercentagesZien ? `<small>${c.percentage ?? 0}%</small>` : '') +
+        (gepubliceerd ? '' : `<small style="color:${c.akkoord ? '#2e7d32' : '#9a7800'}">${c.akkoord ? '✅ akkoord' : '⏳ nog niet akkoord'}</small>`))).join('');
+
+    let acties = '';
+    if (!gepubliceerd && ikBenToegevoegd) {
+        acties += ikBenToegevoegd.akkoord
+            ? `<button class="btn btn-secundair" style="color:#555;border-color:#ccc" onclick="tvVerzoek('/akkoord','POST',{akkoord:false})">Akkoord intrekken</button>`
+            : `<button class="btn btn-primair" onclick="tvVerzoek('/akkoord','POST',{akkoord:true},'Je bent akkoord.')">✅ Ik ben akkoord</button>`;
+    }
+    if (!gepubliceerd && v.isOrganisator) {
+        acties += `<button class="btn btn-secundair" style="color:#555;border-color:#ccc" onclick="_tvBewerken=true;renderTrainingVoorstel()">✏️ Aanpassen</button>`;
+        acties += `<button class="btn btn-primair" onclick="tvPubliceer()" ${v.alleAkkoord ? '' : 'disabled title="Wacht tot alle coaches akkoord zijn"'}>🚀 Publiceren</button>`;
+    }
+    if (gepubliceerd) acties += `<a class="btn btn-primair" href="trainingen.html">Bekijk bij Groepstraining</a>`;
+
+    el.innerHTML = `
+        <span class="tv-status ${gepubliceerd ? 'live' : 'concept'}">${gepubliceerd ? '✅ Gepubliceerd' : '📝 Concept, nog niet gepubliceerd'}</span>
+        <h3 style="margin:0;font-size:1.15rem">${esc(v.titel || 'Training')}</h3>
+        <div class="tv-meta">
+            <span>📍 ${esc(v.locatie || 'Locatie nog niet gekozen')}</span><span>📅 ${datum}</span>
+            <span>👥 ${v.maxRijders ? 'Max ' + v.maxRijders + ' rijders' : 'Geen maximum'}</span><span>💶 ${prijs}</span>
+        </div>
+        ${v.beschrijving ? `<div class="tv-beschrijving">${esc(v.beschrijving)}</div>` : ''}
+        ${chips.length ? `<div class="tv-chips">${chips.map(c => `<span class="tv-chip">${esc(c)}</span>`).join('')}</div>` : ''}
+        <div class="tv-kop">Coaches</div>
+        ${coachesHtml}
+        ${v.aanvraag?.groepGrootte ? `<p style="font-size:0.82rem;color:var(--kleur-subtekst);margin-top:0.7rem">De groep bestond bij de aanvraag uit ${v.aanvraag.groepGrootte} rijder${v.aanvraag.groepGrootte === 1 ? '' : 's'}.</p>` : ''}
+        ${!gepubliceerd && v.isOrganisator && !v.alleAkkoord ? '<p style="font-size:0.82rem;color:#9a7800;margin-top:0.5rem">Publiceren kan zodra alle toegevoegde coaches akkoord zijn.</p>' : ''}
+        <div id="tv-melding" class="tv-melding"></div>
+        <div class="tv-acties">${acties}</div>`;
+}
+
+function tvFormulierHtml(v) {
+    const checks = (naam, opties, gekozen) => {
+        const set = new Set((gekozen || '').split(',').filter(Boolean));
+        return `<div class="tv-checks">${opties.map(o => `<label><input type="checkbox" name="${naam}" value="${esc(o)}" ${set.has(o) ? 'checked' : ''}> ${esc(o)}</label>`).join('')}</div>`;
+    };
+    const datum = v.datum ? v.datum.substring(0, 10) : '';
+    const coachRijen = v.coaches.map(c => `
+        <div class="tv-coach">
+            <span class="naam">${esc(c.naam)} <small style="color:${c.akkoord ? '#2e7d32' : '#9a7800'};font-weight:400">${c.akkoord ? '✅' : '⏳'}</small></span>
+            <input type="number" min="0" max="100" value="${c.percentage ?? 0}" id="tv-perc-${esc(c.id)}">%
+            <button class="tv-klein-btn" onclick="tvPercentageOpslaan('${esc(c.id)}')">Opslaan</button>
+            <button class="tv-klein-btn" style="color:#c62828" onclick="tvCoachVerwijderen('${esc(c.id)}','${esc(c.naam)}')">Verwijderen</button>
+        </div>`).join('');
+    return `
+        <h3 style="margin:0 0 0.9rem;font-size:1.1rem">✏️ Training aanpassen</h3>
+        <div class="tv-veld"><label>Titel *</label><input class="groep-input" id="tv-titel" value="${esc(v.titel)}"></div>
+        <div class="tv-veld"><label>Beschrijving</label><textarea class="groep-input" id="tv-beschrijving" rows="3">${esc(v.beschrijving)}</textarea></div>
+        <div class="tv-rij">
+            <div class="tv-veld"><label>Locatie *</label><input class="groep-input" id="tv-locatie" value="${esc(v.locatie)}"></div>
+            <div class="tv-veld"><label>Datum *</label><input class="groep-input" type="date" id="tv-datum" value="${datum}"></div>
+            <div class="tv-veld"><label>Max. aantal rijders</label><input class="groep-input" type="number" min="1" id="tv-max" value="${v.maxRijders ?? ''}" placeholder="geen maximum"></div>
+            <div class="tv-veld"><label>Prijs per rijder (€)</label><input class="groep-input" type="number" min="0" step="5" id="tv-prijs" value="${v.prijsPerRijder ?? ''}" ${v.isGratis ? 'disabled' : ''}></div>
+        </div>
+        <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.86rem;margin-bottom:0.7rem;cursor:pointer"><input type="checkbox" id="tv-gratis" style="width:auto" ${v.isGratis ? 'checked' : ''} onchange="document.getElementById('tv-prijs').disabled=this.checked"> Gratis training</label>
+        <div class="tv-veld"><label>Categorie</label>${checks('tv-cat', TV_CATEGORIEEN, v.categorieen)}</div>
+        <div class="tv-veld"><label>Discipline</label>${checks('tv-disc', TV_DISCIPLINES, v.disciplines)}</div>
+        <div id="tv-melding" class="tv-melding"></div>
+        <div class="tv-acties" style="margin-top:0.3rem">
+            <button class="btn btn-secundair" style="color:#555;border-color:#ccc" onclick="_tvBewerken=false;renderTrainingVoorstel()">Terug</button>
+            <button class="btn btn-primair" onclick="tvOpslaan()">Opslaan</button>
+        </div>
+
+        <div class="tv-kop" style="margin-top:1.3rem">Coaches &amp; verdeling</div>
+        <div class="tv-coach"><span class="naam">${esc(v.organisatorNaam)} <small style="font-weight:400;color:var(--kleur-subtekst)">(jij)</small></span><small>Jouw aandeel: <strong>${v.eigenAandeel}%</strong></small></div>
+        ${coachRijen}
+        ${v.coaches.length ? `<div style="text-align:right;margin-top:0.4rem"><button class="tv-klein-btn" onclick="tvEvenredig()">Evenredig verdelen</button></div>` : ''}
+        <div style="margin-top:0.8rem">
+            <label style="font-size:0.82rem;font-weight:700;display:block;margin-bottom:0.3rem">➕ Coach toevoegen</label>
+            <div style="display:flex;gap:0.4rem;align-items:center">
+                <input class="groep-input" id="tv-coach-zoek" placeholder="🔍 Zoek een coach..." autocomplete="off" oninput="tvZoekCoach()" style="margin:0;flex:1">
+                <input class="groep-input" id="tv-coach-perc" type="number" min="0" max="100" placeholder="%" style="margin:0;width:70px">
+            </div>
+            <div class="groep-zoek-resultaten" id="tv-coach-resultaten" style="margin-top:0.3rem"></div>
+            <small style="color:var(--kleur-subtekst);display:block;margin-top:0.3rem">De coach komt in deze chat en moet akkoord geven voordat je kunt publiceren. Rijders zien de percentages niet.</small>
+        </div>`;
+}
+
+async function tvOpslaan() {
+    const gekozen = naam => [...document.querySelectorAll(`input[name="${naam}"]:checked`)].map(c => c.value).join(',');
+    const maxRaw = document.getElementById('tv-max').value;
+    const prijsRaw = document.getElementById('tv-prijs').value;
+    const datum = document.getElementById('tv-datum').value;
+    const ok = await tvVerzoek('', 'PUT', {
+        titel: document.getElementById('tv-titel').value,
+        beschrijving: document.getElementById('tv-beschrijving').value,
+        locatie: document.getElementById('tv-locatie').value,
+        datum: datum ? datum + 'T00:00:00' : null,
+        maxRijders: maxRaw ? parseInt(maxRaw) : null,
+        prijsPerRijder: prijsRaw ? parseFloat(prijsRaw) : null,
+        isGratis: document.getElementById('tv-gratis').checked,
+        categorieen: gekozen('tv-cat'),
+        disciplines: gekozen('tv-disc')
+    });
+    if (ok) { _tvBewerken = false; renderTrainingVoorstel(); tvMelding('Training opgeslagen. Iedereen in de chat kan hem nu bekijken.', 'ok'); }
+}
+
+function tvZoekCoach() {
+    const q = document.getElementById('tv-coach-zoek').value.trim();
+    const box = document.getElementById('tv-coach-resultaten');
+    clearTimeout(_tvZoekTimer);
+    if (q.length < 2) { box.innerHTML = ''; return; }
+    _tvZoekTimer = setTimeout(async () => {
+        try {
+            const al = new Set([_tv.organisatorId, ..._tv.coaches.map(c => c.id)]);
+            const res = await authVerzoek('/chat/zoek?q=' + encodeURIComponent(q)) || [];
+            _tvZoekResultaten = res.filter(u => (u.rol || '').includes('Coach') && !al.has(u.id));
+            box.innerHTML = _tvZoekResultaten.length
+                ? _tvZoekResultaten.map((u, i) => `<div class="groep-zoek-rij" onclick="tvCoachToevoegen(${i})"><span>${esc(u.naam)}</span><small>Toevoegen ＋</small></div>`).join('')
+                : '<div class="groep-zoek-rij" style="cursor:default"><small>Geen coaches gevonden.</small></div>';
+        } catch { box.innerHTML = '<div class="groep-zoek-rij" style="cursor:default"><small>Zoeken mislukt.</small></div>'; }
+    }, 300);
+}
+
+async function tvCoachToevoegen(i) {
+    const u = _tvZoekResultaten[i];
+    if (!u) return;
+    const perc = parseInt(document.getElementById('tv-coach-perc').value) || 0;
+    if (await tvVerzoek('/coaches', 'POST', { coachId: u.id, percentage: perc }, `${u.naam} is toegevoegd en zit nu in de chat.`)) tvVerversKop();
+}
+
+async function tvPercentageOpslaan(id) {
+    const perc = parseInt(document.getElementById('tv-perc-' + id).value) || 0;
+    await tvVerzoek('/coaches/' + encodeURIComponent(id), 'PUT', { percentage: perc }, 'Percentage opgeslagen. De coach moet opnieuw akkoord geven.');
+}
+
+async function tvCoachVerwijderen(id, naam) {
+    if (!confirm(`${naam} uit de training halen?`)) return;
+    await tvVerzoek('/coaches/' + encodeURIComponent(id), 'DELETE', null, `${naam} coacht niet meer mee.`);
+}
+
+// Iedereen (organisator + coaches) een gelijk deel; de rest blijft bij de organisator
+async function tvEvenredig() {
+    const deel = Math.floor(100 / (_tv.coaches.length + 1));
+    if (!confirm(`Iedere coach krijgt ${deel}%, jij houdt ${100 - deel * _tv.coaches.length}%. Coaches moeten daarna opnieuw akkoord geven.`)) return;
+    // Eerst verlagen, dan verhogen, zodat het totaal nooit boven 100% komt
+    const volgorde = [..._tv.coaches].sort((a, b) => (b.percentage ?? 0) - (a.percentage ?? 0));
+    for (const c of volgorde) {
+        if ((c.percentage ?? 0) === deel) continue;
+        if (!await tvVerzoek('/coaches/' + encodeURIComponent(c.id), 'PUT', { percentage: deel })) return;
+    }
+    tvMelding('Evenredig verdeeld.', 'ok');
+}
+
+// Chatkop bijwerken (nieuwe naam na publiceren, nieuwe leden na coach toevoegen)
+async function tvVerversKop() {
+    await laadGesprekken();
+    const g = _groepCache[huidigGroepsId];
+    if (!g) return;
+    document.getElementById('partner-naam').textContent = g.naam;
+    document.getElementById('partner-rol').textContent = 'Groepsgesprek · ' + (g.leden || []).join(', ');
+}
+
+async function tvPubliceer() {
+    if (!confirm('Training publiceren? Hij komt dan bij Groepstraining → Coach biedt aan, en deze chat wordt de chat van de training.')) return;
+    try {
+        await authVerzoek(`/trainingvoorstel/groep/${huidigGroepsId}/publiceer`, 'POST');
+        _tv = await authVerzoek(`/trainingvoorstel/groep/${huidigGroepsId}`);
+        renderTrainingVoorstel();
+        tvMelding('🎉 Gepubliceerd!', 'ok');
+        laadGroepsBerichten(huidigGroepsId);
+        tvVerversKop();
+    } catch (e) { tvMelding(e.message); }
+}
+
 function zoekNieuwLid() {
     const q = document.getElementById('leden-zoek').value.trim();
     const box = document.getElementById('leden-zoek-resultaten');
@@ -1218,6 +1481,7 @@ async function openGroepsgesprek(groepsId, naam, leden) {
     avatarEl.innerHTML = '👥';
     avatarEl.classList.add('groep-avatar');
     document.getElementById('btn-groepsleden').style.display = '';
+    document.getElementById('btn-training').style.display = _groepCache[groepsId]?.rijderAanvraagId ? '' : 'none';
     document.getElementById('partner-naam').textContent = naam;
     const ledenStr = Array.isArray(leden) ? leden.join(', ') : '';
     document.getElementById('partner-rol').textContent = `Groepsgesprek${ledenStr ? ' · ' + ledenStr : ''}`;
@@ -1253,6 +1517,7 @@ async function openGesprek(partnerId, partnerNaam, partnerRol) {
     avatarEl.classList.remove('groep-avatar');
     avatarEl.style.background = '';
     document.getElementById('btn-groepsleden').style.display = 'none';
+    document.getElementById('btn-training').style.display = 'none';
     const fotoUrl = partnerFotos[partnerId] || '';
     if (fotoUrl) {
         avatarEl.innerHTML = '<img src="https://racecoachfinder-production.up.railway.app' + fotoUrl + '" alt="' + partnerNaam + '">';
