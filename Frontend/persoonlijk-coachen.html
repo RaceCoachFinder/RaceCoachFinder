@@ -877,6 +877,13 @@ async function laadCoachAanbod() {
     try {
         const resp = await fetch(`${API}/coachaanbod?groep=false`);
         window._coachAanbodCache = await resp.json();
+        // Oudere backend geeft nog geen 'coaches' mee: profiel-ids dan opzoeken via de coachlijst
+        if (window._coachAanbodCache.some(a => !a.coaches)) {
+            try {
+                const profielen = await (await fetch(`${API}/coach`)).json();
+                window._coachProfielOpNaam = Object.fromEntries(profielen.map(c => [c.naam, c.id]));
+            } catch { window._coachProfielOpNaam = {}; }
+        }
         filterCoachAanbod();
     } catch {
         container.innerHTML = '<div class="melding melding-fout">Kon aanbiedingen niet laden.</div>';
@@ -953,7 +960,9 @@ function resetCoachFilter() {
 
 // Alle coaches van een aanbod (organisator + uitgenodigde coaches), klikbaar naar hun profiel
 function coachLinksHtml(a) {
-    const lijst = (a.coaches && a.coaches.length) ? a.coaches : [{ naam: a.coachNaam, profielId: a.coachProfielId }];
+    const opNaam = window._coachProfielOpNaam || {};
+    const lijst = (a.coaches && a.coaches.length) ? a.coaches : [{ naam: a.coachNaam, profielId: a.coachProfielId }]
+        .concat((a.geaccepteerdeDeelnemers || []).filter(n => n && n !== a.coachNaam).map(n => ({ naam: n, profielId: opNaam[n] || null })));
     return lijst.map(c => c.profielId
         ? `<a href="coach-detail.html?id=${c.profielId}" class="coach-link" onclick="event.stopPropagation()">${esc(c.naam)}</a>`
         : `<span class="coach-link coach-link-geen">${esc(c.naam)}</span>`).join('');

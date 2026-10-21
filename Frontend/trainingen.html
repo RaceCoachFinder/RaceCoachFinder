@@ -670,6 +670,13 @@ async function laadAanbod() {
         params.set('groep', 'true');
         const resp = await fetch(`${API}/coachaanbod?${params}`);
         let aanbod = await resp.json();
+        // Oudere backend geeft nog geen 'coaches' mee: profiel-ids dan opzoeken via de coachlijst
+        if (!window._coachProfielOpNaam && aanbod.some(a => !a.coaches)) {
+            try {
+                const profielen = await (await fetch(`${API}/coach`)).json();
+                window._coachProfielOpNaam = Object.fromEntries(profielen.map(c => [c.naam, c.id]));
+            } catch { window._coachProfielOpNaam = {}; }
+        }
 
         // Client-side filter voor meerdere categorieën/disciplines tegelijk
         if (gekozenCats.length > 1) {
@@ -924,7 +931,8 @@ function coachChipsHtml(a) {
     let lijst = (a.coaches && a.coaches.length) ? a.coaches : null;
     if (!lijst) {
         const namen = [a.coachNaam, ...(a.geaccepteerdeDeelnemers || [])].filter((n, i, arr) => n && arr.indexOf(n) === i);
-        lijst = namen.map((n, i) => ({ naam: n, profielId: i === 0 ? a.coachProfielId : null }));
+        const opNaam = window._coachProfielOpNaam || {};
+        lijst = namen.map((n, i) => ({ naam: n, profielId: i === 0 ? a.coachProfielId : (opNaam[n] || null) }));
     }
     return lijst.map(c => c.profielId
         ? `<a href="coach-detail.html?id=${c.profielId}" class="chip-deelnemer chip-deelnemer-link" onclick="event.stopPropagation()">${esc(c.naam)}</a>`
