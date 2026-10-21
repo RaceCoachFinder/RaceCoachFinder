@@ -56,10 +56,16 @@ public class CoachAanbodController : ControllerBase
         var lijst = await query.OrderBy(a => a.Datum).ToListAsync();
 
         // Voeg CoachProfielId + review-stats toe via join op GebruikerId
+        var aanbodIdsVoorProfielen = lijst.Select(a => a.Id).ToList();
+        var uitgenodigdeIds = await _context.CoachAanbodUitnodigingen
+            .Where(u => aanbodIdsVoorProfielen.Contains(u.CoachAanbodId) && u.Status != "Afgewezen")
+            .Select(u => u.CoachGebruikerId)
+            .ToListAsync();
         var gebruikerIds = lijst.Select(a => a.CoachGebruikerId).Distinct().ToList();
+        var profielGebruikerIds = gebruikerIds.Concat(uitgenodigdeIds).Distinct().ToList();
 
         var profielIds = await _context.Coaches
-            .Where(c => c.GebruikerId != null && gebruikerIds.Contains(c.GebruikerId))
+            .Where(c => c.GebruikerId != null && profielGebruikerIds.Contains(c.GebruikerId))
             .ToDictionaryAsync(c => c.GebruikerId!, c => c.Id);
 
         var reviewStats = await _context.Reviews
@@ -112,7 +118,14 @@ public class CoachAanbodController : ControllerBase
                 GemiddeldeScore = reviewStats.TryGetValue(a.CoachGebruikerId, out var rs) ? rs.Gemiddeld : 0,
                 AantalReviews = reviewStats.TryGetValue(a.CoachGebruikerId, out var rs2) ? rs2.Aantal : 0,
                 GroepsgesprekId = groep?.Id,
-                GeaccepteerdeDeelnemers = alleCoachNamen
+                GeaccepteerdeDeelnemers = alleCoachNamen,
+                // Organisator + uitgenodigde coaches, met profiel-id zodat de namen klikbaar zijn
+                Coaches = new[] { new { Naam = a.CoachNaam, ProfielId = profielIds.TryGetValue(a.CoachGebruikerId, out var opid) ? opid : (int?)null, IsOrganisator = true } }
+                    .Concat(alleUitnodigingen
+                        .Where(u => u.CoachAanbodId == a.Id && u.CoachGebruikerId != a.CoachGebruikerId)
+                        .GroupBy(u => u.CoachGebruikerId).Select(g => g.First())
+                        .Select(u => new { Naam = u.CoachNaam, ProfielId = profielIds.TryGetValue(u.CoachGebruikerId, out var upid) ? upid : (int?)null, IsOrganisator = false }))
+                    .ToList()
             };
         });
 
@@ -217,6 +230,12 @@ public class CoachAanbodController : ControllerBase
             return BadRequest("Datum is verplicht.");
         if (verzoek.Datum.Date < DateTime.UtcNow.Date)
             return BadRequest("Datum moet in de toekomst liggen.");
+
+        var percentages = (verzoek.UitgenodigdeCoaches ?? new List<UitgenodigdeCoachVerzoek>()).Select(c => c.Percentage ?? 0).ToList();
+        if (percentages.Any(p => p < 0 || p > 100))
+            return BadRequest("Percentage moet tussen 0 en 100 liggen.");
+        if (percentages.Sum() > 100)
+            return BadRequest("De aandelen van de coaches komen samen boven de 100%.");
 
         var heeftUitnodigingen = verzoek.UitgenodigdeCoaches?.Any() == true;
         var aanbod = new CoachAanbod

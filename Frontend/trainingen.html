@@ -249,6 +249,12 @@
         .bw-ok { background: #e8f5e9; color: #2e7d32; } .bw-nee { background: #fde8ea; color: #c62828; } .bw-wacht { background: #fff3cd; color: #856404; }
         .bw-klein { background: #fff; border: 1.5px solid #ccc; border-radius: 6px; padding: 0.3rem 0.6rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
         .bw-rood { color: #c62828; border-color: #f3c1c1; }
+        .verdeling-balk { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; font-size: 0.85rem; }
+        .btn-verdelen { background: #fff; border: 1.5px solid #ccc; border-radius: 6px; padding: 0.3rem 0.7rem; font-size: 0.82rem; font-weight: 600; cursor: pointer; font-family: inherit; color: var(--kleur-tekst); }
+        .btn-verdelen:hover { border-color: var(--kleur-primair); }
+        @media (max-width: 700px) { .coach-tag input[type=number] { font-size: 16px !important; width: 54px !important; } }
+        .chip-deelnemer-link { color: inherit; cursor: pointer; text-decoration: none; }
+        .chip-deelnemer-link:hover { background: #fff3c4; text-decoration: none; }
 </style>
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
@@ -720,14 +726,10 @@ function aanbodKaartHTML(a) {
         ? `<span>👥 Max ${a.maxRijders} rijder${a.maxRijders !== 1 ? 's' : ''}</span>`
         : '';
 
-    const extraCoaches = (a.geaccepteerdeDeelnemers || []).filter(Boolean);
-    const alleCoaches = [a.coachNaam, ...extraCoaches].filter((n, i, arr) => n && arr.indexOf(n) === i);
-    const deelnemersHtml = alleCoaches.length > 0
-        ? `<div class="aanbod-deelnemers">
+    const deelnemersHtml = `<div class="aanbod-deelnemers">
                <span style="font-size:0.72rem;color:var(--kleur-subtekst);font-weight:600">Coaches:</span>
-               ${alleCoaches.map(n => `<span class="chip-deelnemer">${esc(n)}</span>`).join('')}
-           </div>`
-        : '';
+               ${coachChipsHtml(a)}
+           </div>`;
 
     return `
     <div class="aanbod-kaart">
@@ -917,6 +919,18 @@ async function submitBewerken(event) {
     }
 }
 
+// Alle coaches van een training (organisator + uitgenodigde coaches), klikbaar naar hun profiel
+function coachChipsHtml(a) {
+    let lijst = (a.coaches && a.coaches.length) ? a.coaches : null;
+    if (!lijst) {
+        const namen = [a.coachNaam, ...(a.geaccepteerdeDeelnemers || [])].filter((n, i, arr) => n && arr.indexOf(n) === i);
+        lijst = namen.map((n, i) => ({ naam: n, profielId: i === 0 ? a.coachProfielId : null }));
+    }
+    return lijst.map(c => c.profielId
+        ? `<a href="coach-detail.html?id=${c.profielId}" class="chip-deelnemer chip-deelnemer-link" onclick="event.stopPropagation()">${esc(c.naam)}</a>`
+        : `<span class="chip-deelnemer">${esc(c.naam)}</span>`).join('');
+}
+
 // ===================== COACHES BEHEREN (bewerken) =====================
 
 let bwGekozenCoach = null;
@@ -943,6 +957,30 @@ function renderBewerkCoaches() {
                 <button type="button" class="bw-klein bw-rood" onclick="verwijderBewerkCoach(${u.id})">Verwijderen</button>
             </div>`).join('')
         : '<p style="font-size:0.85rem;color:var(--kleur-subtekst);margin:0 0 0.5rem">Nog geen andere coaches bij deze training.</p>';
+    toonBewerkEigenAandeel();
+}
+
+function toonBewerkEigenAandeel() {
+    const lijst = (bewerkData && bewerkData.uitnodigingen) || [];
+    document.getElementById('bw-verdeling').style.display = lijst.length ? '' : 'none';
+    const rest = 100 - lijst.reduce((som, u) => som + (u.percentage || 0), 0);
+    document.getElementById('bw-eigen-aandeel').innerHTML = `Jouw aandeel: <strong>${Math.round(rest * 100) / 100}%</strong>`;
+}
+
+async function verdeelBewerkEvenredig() {
+    const lijst = (bewerkData && bewerkData.uitnodigingen) || [];
+    if (!lijst.length) return;
+    const deel = Math.floor(100 / (lijst.length + 1));
+    const teWijzigen = lijst.filter(u => u.percentage !== deel);
+    if (!teWijzigen.length) { bwMelding('Het is al evenredig verdeeld.'); return; }
+    if (!confirm(`Iedereen krijgt ${deel}% (jij ${100 - deel * lijst.length}%).\n${teWijzigen.map(u => u.coachNaam).join(', ')} ${teWijzigen.length === 1 ? 'krijgt een nieuwe uitnodiging en moet' : 'krijgen een nieuwe uitnodiging en moeten'} opnieuw accepteren. Tot die tijd staat de training offline.`)) return;
+    try {
+        // Eerst de hoogste aandelen verlagen, zodat het totaal onderweg nooit boven de 100% komt
+        const volgorde = [...teWijzigen].sort((a, b) => (b.percentage || 0) - (a.percentage || 0));
+        for (const u of volgorde) await bwVerzoek('/' + u.id, 'PUT', { percentage: deel });
+        bwMelding('✅ Evenredig verdeeld.');
+    } catch (e) { bwMelding(e.message, true); }
+    await herlaadBewerkData();
 }
 
 function bwMelding(tekst, fout) {
@@ -1083,6 +1121,11 @@ async function submitAanbod(event) {
         uitgenodigdeCoaches: uitgenodigdeCoaches.map(c => ({ id: c.id, percentage: c.percentage }))
     };
 
+    if (uitgenodigdeCoaches.reduce((som, c) => som + (c.percentage || 0), 0) > 100) {
+        alert('De aandelen van de coaches komen samen boven de 100%.');
+        return;
+    }
+
     const btn = event.target.querySelector('button[type="submit"]');
     btn.disabled = true; btn.textContent = 'Bezig...';
 
@@ -1116,10 +1159,7 @@ function toonPopup(a) {
     const prijsStr = a.isGratis ? 'Gratis' : a.prijsPerRijder ? `€${a.prijsPerRijder} p.p.` : '';
     const maxStr = a.maxRijders ? `Max ${a.maxRijders} rijders` : '';
 
-    const extraCoaches = (a.geaccepteerdeDeelnemers || []).filter(Boolean);
-    const alleCoaches = [a.coachNaam, ...extraCoaches].filter((n, i, arr) => n && arr.indexOf(n) === i);
-    document.getElementById('modal-coaches').innerHTML =
-        alleCoaches.map(n => `<span class="chip-deelnemer">${esc(n)}</span>`).join('');
+    document.getElementById('modal-coaches').innerHTML = coachChipsHtml(a);
     document.getElementById('modal-titel').textContent = a.titel;
     document.getElementById('modal-meta').innerHTML =
         `<span>📍 ${esc(a.locatie)}</span><span>📅 ${datum}</span>${maxStr ? `<span>👥 ${maxStr}</span>` : ''}${prijsStr ? `<span>${prijsStr}</span>` : ''}`;
@@ -1232,6 +1272,13 @@ function _refreshPercTotaal() {
     }
 }
 
+// Gelijk verdelen over jou + alle uitgenodigde coaches; afrondingsrest gaat naar jou
+function verdeelEvenredig() {
+    const deel = Math.floor(100 / (uitgenodigdeCoaches.length + 1));
+    uitgenodigdeCoaches.forEach(c => { c.percentage = deel; });
+    renderCoachTags();
+}
+
 function renderCoachTags() {
     const som = uitgenodigdeCoaches.reduce((s, c) => s + (c.percentage || 0), 0);
     const jijRest = Math.max(0, 100 - som);
@@ -1257,8 +1304,9 @@ function renderCoachTags() {
         </span>`
     ).join('');
 
-    const totaalBalk = `<div id="coach-perc-totaal" style="font-size:0.78rem;color:var(--kleur-subtekst);margin-top:0.4rem;width:100%">
-        ${heeftPerc ? `Verdeeld: <strong>${som}%</strong> &nbsp;•&nbsp; Jij houdt: <strong>${jijRest}%</strong>` : ''}
+    const totaalBalk = `<div class="verdeling-balk" style="width:100%">
+        <span id="coach-perc-totaal" style="font-size:0.78rem;color:var(--kleur-subtekst)">${heeftPerc ? `Verdeeld: <strong>${som}%</strong> &nbsp;•&nbsp; Jij houdt: <strong>${jijRest}%</strong>` : ''}${som > 100 ? ' <strong style="color:#c62828">— samen meer dan 100%</strong>' : ''}</span>
+        ${uitgenodigdeCoaches.length ? '<button type="button" class="btn-verdelen" onclick="verdeelEvenredig()">⚖️ Evenredig verdelen</button>' : ''}
     </div>`;
 
     document.getElementById('coach-tags').innerHTML = jijTag + coachTags + totaalBalk;
@@ -1616,6 +1664,10 @@ if (gebruikerG) {
                 </div>
                 <input type="number" id="bw-coach-perc" min="0" max="100" step="1" placeholder="%" style="width:64px">
                 <button type="button" class="btn btn-primair" id="bw-coach-uitnodigen" onclick="nodigBewerkCoachUit()" disabled style="font-size:0.82rem;padding:0.4rem 0.8rem">Uitnodigen</button>
+            </div>
+            <div class="verdeling-balk" id="bw-verdeling">
+                <span id="bw-eigen-aandeel"></span>
+                <button type="button" class="btn-verdelen" onclick="verdeelBewerkEvenredig()">⚖️ Evenredig verdelen</button>
             </div>
             <div id="bw-coaches-melding" style="font-size:0.82rem;margin-top:0.4rem"></div>
         </div>

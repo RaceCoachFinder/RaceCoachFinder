@@ -144,6 +144,20 @@
             font-size: 0.78rem; font-weight: 600;
             padding: 0.22rem 0.6rem; border-radius: 20px;
         }
+        .filter-balk-coach { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.25rem; align-items: flex-end; background: var(--kleur-wit); border-radius: var(--rand); box-shadow: var(--schaduw); padding: 1rem 1.25rem; }
+        .filter-balk-coach input[type=date] { padding: 0.5rem 0.6rem; font-size: 0.9rem; border: 1.5px solid #e0e0e0; border-radius: 8px; font-family: inherit; }
+        @media (max-width: 700px) { .filter-balk-coach > div { flex: 1 1 calc(50% - 0.75rem); } .filter-balk-coach input, .filter-balk-coach select { width: 100%; box-sizing: border-box; font-size: 16px !important; } }
+        .coach-links { display: inline-flex; flex-wrap: wrap; gap: 0.3rem; }
+        .coach-link { font-size: 0.8rem; font-weight: 600; color: var(--kleur-tekst); background: #f1f1f1; border-radius: 999px; padding: 0.1rem 0.55rem; }
+        .coach-link:hover { background: #fff3c4; text-decoration: none; }
+        .coach-link-geen { color: var(--kleur-subtekst); }
+        .meer-info-knop { background: none; border: none; padding: 0; margin-bottom: 0.5rem; color: #8a6d00; font-weight: 700; font-size: 0.85rem; cursor: pointer; font-family: inherit; }
+        .meer-info { font-size: 0.87rem; color: var(--kleur-tekst); line-height: 1.5; margin-bottom: 0.6rem; background: #fafafa; border-radius: 8px; padding: 0.6rem 0.75rem; }
+        .aandeel-input { width: 46px; border: 1px solid rgba(0,0,0,0.18); border-radius: 5px; padding: 0.1rem 0.3rem; font-size: 0.78rem; text-align: center; font-family: inherit; background: rgba(255,255,255,0.8); }
+        @media (max-width: 700px) { .aandeel-input { font-size: 16px; width: 54px; } }
+        .verdeling-balk { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; font-size: 0.85rem; }
+        .btn-verdelen { background: #fff; border: 1.5px solid #ccc; border-radius: 6px; padding: 0.3rem 0.7rem; font-size: 0.82rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+        .btn-verdelen:hover { border-color: var(--kleur-primair); }
         .coach-tag button {
             background: none; border: none; cursor: pointer;
             color: #1565c0; font-size: 0.85rem; line-height: 1;
@@ -399,6 +413,10 @@
                                 <input type="text" id="c-coach-zoek" placeholder="Zoek op naam..." autocomplete="off" oninput="filterCoachSuggesties(this.value)" style="margin-top:0.25rem">
                                 <div id="c-coach-dropdown" class="coach-dropdown" style="display:none"></div>
                             </div>
+                            <div id="c-verdeling" class="verdeling-balk" style="display:none">
+                                <span id="c-eigen-aandeel"></span>
+                                <button type="button" class="btn-verdelen" onclick="verdeelEvenredig()">⚖️ Evenredig verdelen</button>
+                            </div>
                         </div>
 
                         <div style="display:flex;gap:0.75rem;justify-content:flex-end;margin-top:0.5rem">
@@ -419,6 +437,34 @@
             <div class="sectie-kop">
                 <h2 style="font-size:1.1rem;margin:0">Coaches die beschikbaar zijn</h2>
                 <span id="coach-teller" style="font-size:0.85rem;color:var(--kleur-subtekst)"></span>
+            </div>
+            <!-- Filter balk coach-aanbod -->
+            <div class="filter-balk-coach">
+                <div style="flex:1;min-width:150px">
+                    <label style="font-size:0.76rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--kleur-subtekst);display:block;margin-bottom:0.3rem">Locatie</label>
+                    <input type="text" id="cf-locatie" placeholder="Filteren op locatie..." oninput="filterCoachAanbod()" style="margin:0">
+                </div>
+                <div>
+                    <label style="font-size:0.76rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--kleur-subtekst);display:block;margin-bottom:0.3rem">Soort</label>
+                    <select id="cf-soort" onchange="filterCoachAanbod()" style="margin:0;padding:0.55rem 0.75rem;font-size:0.9rem;border:1.5px solid #e0e0e0;border-radius:8px;font-family:inherit;background:var(--kleur-wit);color:var(--kleur-tekst)">
+                        <option value="">Alle</option>
+                        <option value="Training">Training</option>
+                        <option value="Wedstrijd">Wedstrijd</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:0.76rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--kleur-subtekst);display:block;margin-bottom:0.3rem">Vanaf datum</label>
+                    <input type="date" id="cf-datum" onchange="filterCoachAanbod()" style="margin:0">
+                </div>
+                <div>
+                    <label style="font-size:0.76rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--kleur-subtekst);display:block;margin-bottom:0.3rem">Prijs</label>
+                    <select id="cf-prijs" onchange="filterCoachAanbod()" style="margin:0;padding:0.55rem 0.75rem;font-size:0.9rem;border:1.5px solid #e0e0e0;border-radius:8px;font-family:inherit;background:var(--kleur-wit);color:var(--kleur-tekst)">
+                        <option value="">Alle</option>
+                        <option value="gratis">Gratis</option>
+                        <option value="betaald">Betaald</option>
+                    </select>
+                </div>
+                <button type="button" onclick="resetCoachFilter()" class="btn btn-secundair" style="font-size:0.83rem;padding:0.5rem 1rem;color:#555;border-color:#ccc;white-space:nowrap;align-self:flex-end">Reset</button>
             </div>
             <div id="coach-aanbod-lijst"><div class="laden"><div class="spinner"></div><p>Laden...</p></div></div>
         </div>
@@ -625,8 +671,13 @@ async function submitCoachAanbod(event) {
         prijsPerRijder: parseFloat(document.getElementById('c-prijs').value) || null,
         isGratis: document.getElementById('c-gratis').checked,
         isGroep: false,
-        uitgenodigdeCoaches: _uitgenodigdeCoaches.map(c => ({ id: c.id, percentage: null }))
+        uitgenodigdeCoaches: _uitgenodigdeCoaches.map(c => ({ id: c.id, percentage: c.percentage ?? null }))
     };
+
+    if (totaalAandeel() > 100) {
+        melding.innerHTML = '<div class="melding melding-fout">De aandelen van de coaches komen samen boven de 100%.</div>';
+        return;
+    }
 
     const btn = event.target.querySelector('button[type="submit"]');
     btn.disabled = true; btn.textContent = 'Bezig...';
@@ -808,11 +859,8 @@ async function laadCoachAanbod() {
     const teller = document.getElementById('coach-teller');
     try {
         const resp = await fetch(`${API}/coachaanbod?groep=false`);
-        const lijst = await resp.json();
-        teller.textContent = lijst.length === 0 ? 'Geen aanbiedingen' : `${lijst.length} beschikbaar`;
-        container.innerHTML = lijst.length === 0
-            ? '<div style="text-align:center;padding:3rem 0;color:var(--kleur-subtekst)"><div style="font-size:2.5rem;margin-bottom:0.75rem">🔍</div><p>Nog geen persoonlijke coachingaanbiedingen.</p></div>'
-            : lijst.map(a => coachKaartHTML(a)).join('');
+        window._coachAanbodCache = await resp.json();
+        filterCoachAanbod();
     } catch {
         container.innerHTML = '<div class="melding melding-fout">Kon aanbiedingen niet laden.</div>';
     }
@@ -839,13 +887,14 @@ function coachKaartHTML(a) {
         <div style="flex:1;min-width:0">
             <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.3rem;flex-wrap:wrap">
                 <span class="chip ${soortLabel.includes('Wedstrijd') ? 'chip-wedstrijd' : 'chip-training'}" style="font-size:0.72rem">${soortLabel}</span>
-                <span style="font-size:0.82rem;color:var(--kleur-subtekst)">${esc(a.coachNaam)}</span>
+                <span class="coach-links">${coachLinksHtml(a)}</span>
             </div>
             <div style="font-size:1rem;font-weight:800;margin-bottom:0.25rem">${esc(a.titel)}</div>
             <div style="font-size:0.82rem;color:var(--kleur-subtekst);margin-bottom:0.5rem">
                 📍 ${esc(a.locatie)} &nbsp;•&nbsp; 📅 ${volledigeDatum}
             </div>
-            ${a.beschrijving ? `<div style="font-size:0.87rem;color:var(--kleur-tekst);line-height:1.5;margin-bottom:0.5rem">${esc(a.beschrijving.substring(0,180))}${a.beschrijving.length > 180 ? '...' : ''}</div>` : ''}
+            ${a.beschrijving ? `<button type="button" class="meer-info-knop" onclick="toggleMeerInfo(this)">Meer informatie ▾</button>
+                <div class="meer-info" style="display:none">${esc(a.beschrijving).replace(/\n/g, '<br>')}</div>` : ''}
             <div class="chips">
                 ${discs.map(d => `<span class="chip chip-training">${esc(d)}</span>`).join('')}
                 ${prijsTag}
@@ -855,6 +904,49 @@ function coachKaartHTML(a) {
             ${a.coachProfielId ? `<a href="coach-detail.html?id=${a.coachProfielId}" class="btn btn-primair btn-sm" style="white-space:nowrap;font-size:0.82rem">Coach bekijken</a>` : ''}
         </div>
     </div>`;
+}
+
+// Filter op het coach-aanbod (in de browser, op de al geladen lijst)
+function filterCoachAanbod() {
+    const alles = window._coachAanbodCache;
+    if (!alles) return;
+    const locatie = document.getElementById('cf-locatie').value.trim().toLowerCase();
+    const soort = document.getElementById('cf-soort').value;
+    const vanaf = document.getElementById('cf-datum').value;
+    const prijs = document.getElementById('cf-prijs').value;
+    const lijst = alles.filter(a =>
+        (!locatie || (a.locatie || '').toLowerCase().includes(locatie)) &&
+        (!soort || ((a.categorieen || '').includes('Wedstrijd') ? 'Wedstrijd' : 'Training') === soort) &&
+        (!vanaf || (a.datum || '').substring(0, 10) >= vanaf) &&
+        (!prijs || (prijs === 'gratis' ? a.isGratis : !a.isGratis)));
+    const teller = document.getElementById('coach-teller');
+    teller.textContent = alles.length === 0 ? 'Geen aanbiedingen'
+        : lijst.length === alles.length ? `${alles.length} beschikbaar` : `${lijst.length} van ${alles.length}`;
+    document.getElementById('coach-aanbod-lijst').innerHTML = alles.length === 0
+        ? '<div style="text-align:center;padding:3rem 0;color:var(--kleur-subtekst)"><div style="font-size:2.5rem;margin-bottom:0.75rem">🔍</div><p>Nog geen persoonlijke coachingaanbiedingen.</p></div>'
+        : lijst.length === 0
+            ? '<div style="text-align:center;padding:2rem 0;color:var(--kleur-subtekst)"><p>Geen aanbiedingen die passen bij je filter.</p></div>'
+            : lijst.map(a => coachKaartHTML(a)).join('');
+}
+
+function resetCoachFilter() {
+    ['cf-locatie', 'cf-soort', 'cf-datum', 'cf-prijs'].forEach(id => document.getElementById(id).value = '');
+    filterCoachAanbod();
+}
+
+// Alle coaches van een aanbod (organisator + uitgenodigde coaches), klikbaar naar hun profiel
+function coachLinksHtml(a) {
+    const lijst = (a.coaches && a.coaches.length) ? a.coaches : [{ naam: a.coachNaam, profielId: a.coachProfielId }];
+    return lijst.map(c => c.profielId
+        ? `<a href="coach-detail.html?id=${c.profielId}" class="coach-link" onclick="event.stopPropagation()">${esc(c.naam)}</a>`
+        : `<span class="coach-link coach-link-geen">${esc(c.naam)}</span>`).join('');
+}
+
+function toggleMeerInfo(knop) {
+    const info = knop.nextElementSibling;
+    const open = info.style.display === 'none';
+    info.style.display = open ? '' : 'none';
+    knop.textContent = open ? 'Minder informatie ▴' : 'Meer informatie ▾';
 }
 
 // ======== MIJN COACH AANBOD ========
@@ -940,7 +1032,7 @@ function filterCoachSuggesties(val) {
 
 function voegCoachToe(id, naam) {
     if (_uitgenodigdeCoaches.find(c => c.id === id)) return;
-    _uitgenodigdeCoaches.push({ id, naam });
+    _uitgenodigdeCoaches.push({ id, naam, percentage: null });
     document.getElementById('c-coach-zoek').value = '';
     document.getElementById('c-coach-dropdown').style.display = 'none';
     renderCoachTags();
@@ -955,8 +1047,43 @@ function renderCoachTags() {
     const container = document.getElementById('c-coach-tags');
     if (!container) return;
     container.innerHTML = _uitgenodigdeCoaches.map(c =>
-        `<span class="coach-tag">${esc(c.naam)}<button type="button" onclick="verwijderCoachTag('${esc(c.id)}')" title="Verwijderen">✕</button></span>`
+        `<span class="coach-tag">${esc(c.naam)}
+            <input type="number" min="0" max="100" step="1" value="${c.percentage ?? ''}" placeholder="%" class="aandeel-input"
+                title="Aandeel van ${esc(c.naam)} in %" oninput="zetAandeel('${esc(c.id)}', this.value)">
+            <span style="opacity:0.7">%</span>
+            <button type="button" onclick="verwijderCoachTag('${esc(c.id)}')" title="Verwijderen">✕</button></span>`
     ).join('');
+    toonEigenAandeel();
+}
+
+function zetAandeel(id, val) {
+    const c = _uitgenodigdeCoaches.find(c => c.id === id);
+    if (c) c.percentage = val === '' ? null : Math.min(100, Math.max(0, parseFloat(val) || 0));
+    toonEigenAandeel();
+}
+
+function totaalAandeel() {
+    return _uitgenodigdeCoaches.reduce((som, c) => som + (c.percentage || 0), 0);
+}
+
+// Jij (organisator) krijgt wat overblijft na de aandelen van de uitgenodigde coaches
+function toonEigenAandeel() {
+    const balk = document.getElementById('c-verdeling');
+    if (!balk) return;
+    balk.style.display = _uitgenodigdeCoaches.length ? '' : 'none';
+    const rest = 100 - totaalAandeel();
+    const el = document.getElementById('c-eigen-aandeel');
+    el.innerHTML = rest < 0
+        ? '<strong style="color:#c62828">Samen meer dan 100%</strong>'
+        : `Jouw aandeel: <strong>${Math.round(rest * 100) / 100}%</strong>`;
+}
+
+// Gelijk verdelen over jou + alle uitgenodigde coaches; afrondingsrest gaat naar jou
+function verdeelEvenredig() {
+    const n = _uitgenodigdeCoaches.length + 1;
+    const deel = Math.floor(100 / n);
+    _uitgenodigdeCoaches.forEach(c => { c.percentage = deel; });
+    renderCoachTags();
 }
 
 document.addEventListener('click', function(e) {
