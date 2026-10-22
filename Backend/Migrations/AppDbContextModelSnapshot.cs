@@ -408,6 +408,14 @@ namespace Backend.Migrations
                     b.Property<bool>("WachtOpCoaches")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("WedstrijdNaam")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("WedstrijdOrganisatie")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
 
                     b.ToTable("CoachAanboden");
@@ -906,6 +914,14 @@ namespace Backend.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Titel")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("WedstrijdNaam")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("WedstrijdOrganisatie")
                         .IsRequired()
                         .HasColumnType("TEXT");
 

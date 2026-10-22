@@ -138,13 +138,13 @@ public class AanvragenController : ControllerBase
         // Nieuw groepsgesprek aanmaken
         var korteBeschrijving = aanvraag.Beschrijving?.Length > 40
             ? aanvraag.Beschrijving[..40] + "…"
-            : aanvraag.Beschrijving ?? "Groepstraining";
+            : aanvraag.Beschrijving ?? "Groepscoaching";
 
         var groep = new Groepsgesprek
         {
             CoachAanbodId = 0,
             RijderAanvraagId = id,
-            Naam = $"Groepstraining: {korteBeschrijving}",
+            Naam = $"Groepscoaching: {korteBeschrijving}",
             AangemaaktDoorId = coachId,
             AangemaaktOp = DateTime.UtcNow
         };

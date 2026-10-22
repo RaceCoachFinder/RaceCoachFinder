@@ -172,10 +172,10 @@ function updateNav() {
                 '<li class="nav-auth"><a href="#" onclick="wisselRol();return false;" style="background:#f0f0f0;color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700;font-size:0.82rem;white-space:nowrap">⇄ ' + andereRol + '</a></li>';
             // Only show role-specific buttons based on active role
             if (actief === 'Rijder') {
-                rolKnoppenHtml = '<li class="nav-auth"><a href="trainingen.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Groepstraining</a></li>' +
+                rolKnoppenHtml = '<li class="nav-auth"><a href="trainingen.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Groepscoaching</a></li>' +
                                  '<li class="nav-auth"><a href="persoonlijk-coachen.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Persoonlijk coachen</a></li>';
             } else if (actief === 'Coach') {
-                rolKnoppenHtml = '<li class="nav-auth"><a href="trainingen.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Groepstraining</a></li>' +
+                rolKnoppenHtml = '<li class="nav-auth"><a href="trainingen.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Groepscoaching</a></li>' +
                                  '<li class="nav-auth"><a href="persoonlijk-coachen.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Persoonlijk coachen</a></li>';
             }
         } else {
@@ -184,11 +184,11 @@ function updateNav() {
             if (rollen.indexOf('Admin') !== -1) dashboardUrl = 'admin.html';
             dashboardHtml = '<li class="nav-auth"><a href="' + dashboardUrl + '">' + _esc(gebruiker.naam) + '</a></li>';
             if (rollen.indexOf('Rijder') !== -1) {
-                rolKnoppenHtml += '<li class="nav-auth"><a href="trainingen.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Groepstraining</a></li>' +
+                rolKnoppenHtml += '<li class="nav-auth"><a href="trainingen.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Groepscoaching</a></li>' +
                                   '<li class="nav-auth"><a href="persoonlijk-coachen.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Persoonlijk coachen</a></li>';
             }
             if (rollen.indexOf('Coach') !== -1) {
-                rolKnoppenHtml += '<li class="nav-auth"><a href="trainingen.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Groepstraining</a></li>' +
+                rolKnoppenHtml += '<li class="nav-auth"><a href="trainingen.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Groepscoaching</a></li>' +
                                   '<li class="nav-auth"><a href="persoonlijk-coachen.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Persoonlijk coachen</a></li>';
             }
         }
@@ -205,7 +205,7 @@ function updateNav() {
         laadBerichtenBadge();
     } else {
         navLinks.innerHTML +=
-            '<li class="nav-auth"><a href="trainingen.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Groepstraining</a></li>' +
+            '<li class="nav-auth"><a href="trainingen.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Groepscoaching</a></li>' +
             '<li class="nav-auth"><a href="persoonlijk-coachen.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Persoonlijk coachen</a></li>' +
             '<li class="nav-auth"><a href="inloggen.html">Inloggen</a></li>' +
             '<li class="nav-auth"><a href="registreren.html" style="background:var(--kleur-primair);color:#fff;padding:0.3rem 0.9rem;border-radius:6px;font-weight:600">Registreren</a></li>';

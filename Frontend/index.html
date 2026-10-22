@@ -85,7 +85,7 @@
 
 <section class="hero">
     <h1>Vind jouw <span>racecoach</span></h1>
-    <p>Eén platform voor rijders en coaches: vind een coach, regel persoonlijke begeleiding of doe mee aan een groepstraining. Alles via chat.</p>
+    <p>Eén platform voor rijders en coaches: vind een coach, regel persoonlijke begeleiding of doe mee aan groepscoaching. Alles via chat.</p>
     <div class="hero-knoppen" id="hero-knoppen">
         <a href="coaches.html" class="btn btn-primair">Zoek een coach</a>
         <a href="registreren.html" class="btn btn-secundair">Word coach</a>
@@ -95,7 +95,7 @@
 <div class="stats-balk home-stats">
     <div class="stat"><div class="stat-getal" id="stat-coaches">-</div><div class="stat-label">Coaches</div></div>
     <div class="stat"><div class="stat-getal" id="stat-rijders">-</div><div class="stat-label">Rijders</div></div>
-    <div class="stat"><div class="stat-getal" id="stat-trainingen">-</div><div class="stat-label">Groepstrainingen</div></div>
+    <div class="stat"><div class="stat-getal" id="stat-trainingen">-</div><div class="stat-label">Groepscoaching</div></div>
     <div class="stat"><div class="stat-getal" id="stat-aanvragen">-</div><div class="stat-label">Open aanvragen</div></div>
 </div>
 
@@ -129,10 +129,10 @@
         </a>
         <a class="home-tegel" href="trainingen.html">
             <div class="tegel-icoon">👥</div>
-            <div class="tegel-titel">Groepstraining</div>
+            <div class="tegel-titel">Groepscoaching</div>
             <p>Doe mee met een training, wedstrijddag of evenement met meerdere rijders, soms met meerdere coaches.</p>
             <div class="tegel-teller" id="tegel-trainingen"></div>
-            <span class="tegel-link">Naar groepstrainingen</span>
+            <span class="tegel-link">Naar groepscoaching</span>
         </a>
         <a class="home-tegel" href="berichten.html" id="tegel-berichten">
             <div class="tegel-icoon">💬</div>
@@ -152,7 +152,7 @@
                 <ul>
                     <li>Zoek en vergelijk coaches op locatie, voertuig en prijs</li>
                     <li>Plaats een aanvraag als je een coach zoekt voor een training of wedstrijd</li>
-                    <li>Sluit je aan bij groepstrainingen</li>
+                    <li>Sluit je aan bij groepscoaching</li>
                     <li>Chat met coaches en betaal facturen veilig online</li>
                     <li>Laat na je coaching een review achter</li>
                 </ul>
@@ -164,7 +164,7 @@
                 <ul>
                     <li>Maak een profiel met je ervaring, specialisaties en prijzen</li>
                     <li>Reageer op rijders die een coach zoeken</li>
-                    <li>Organiseer groepstrainingen, ook samen met andere coaches</li>
+                    <li>Organiseer groepscoaching, ook samen met andere coaches</li>
                     <li>Stuur betaalverzoeken en facturen vanuit de chat</li>
                     <li>Houd je afspraken bij in je eigen agenda</li>
                 </ul>
@@ -176,10 +176,10 @@
 </div>
 
 <div class="container pagina-sectie" id="sectie-trainingen" style="display:none">
-    <h2 class="sectie-titel">Komende groepstrainingen</h2>
+    <h2 class="sectie-titel">Komende groepscoaching</h2>
     <div class="training-grid" id="komende-trainingen"></div>
     <div style="text-align:center;margin-top:1.75rem">
-        <a href="trainingen.html" class="btn btn-donker">Alle groepstrainingen</a>
+        <a href="trainingen.html" class="btn btn-donker">Bekijk alle groepscoaching</a>
     </div>
 </div>
 
@@ -209,7 +209,7 @@
     <h2 class="sectie-titel">Zo werkt het</h2>
     <div class="home-stappen">
         <div class="home-stap"><div class="stap-nr">1</div><div class="stap-titel">Maak een account</div><p>Kies of je rijder of coach bent en vul je profiel in.</p></div>
-        <div class="home-stap"><div class="stap-nr">2</div><div class="stap-titel">Vind elkaar</div><p>Zoek een coach, plaats een aanvraag of meld je aan voor een groepstraining.</p></div>
+        <div class="home-stap"><div class="stap-nr">2</div><div class="stap-titel">Vind elkaar</div><p>Zoek een coach, plaats een aanvraag of meld je aan voor groepscoaching.</p></div>
         <div class="home-stap"><div class="stap-nr">3</div><div class="stap-titel">Regel alles via chat</div><p>Spreek af, ontvang de factuur en betaal veilig online.</p></div>
     </div>
     <div style="text-align:center;margin-top:1.5rem">
@@ -326,13 +326,13 @@ function toonWelkom() {
         : `<a href="${dashboard}" class="btn btn-primair">Mijn dashboard</a>
            <a href="berichten.html" class="btn btn-licht">💬 Berichten</a>
            <a href="persoonlijk-coachen.html" class="btn btn-licht">🎯 Aanvraag plaatsen</a>
-           <a href="trainingen.html" class="btn btn-licht">👥 Groepstrainingen</a>`);
+           <a href="trainingen.html" class="btn btn-licht">👥 Groepscoaching</a>`);
     document.getElementById('welkom-blok').style.display = '';
 
     // Registreer-knoppen zijn niet nodig als je al een account hebt
     document.getElementById('hero-knoppen').innerHTML = isCoach
         ? `<a href="${dashboard}" class="btn btn-primair">Naar mijn dashboard</a><a href="persoonlijk-coachen.html" class="btn btn-secundair">Rijders zoeken een coach</a>`
-        : `<a href="coaches.html" class="btn btn-primair">Zoek een coach</a><a href="trainingen.html" class="btn btn-secundair">Groepstrainingen</a>`;
+        : `<a href="coaches.html" class="btn btn-primair">Zoek een coach</a><a href="trainingen.html" class="btn btn-secundair">Groepscoaching</a>`;
     document.getElementById('rol-knop-rijder').style.display = 'none';
     document.getElementById('rol-knop-coach').style.display = 'none';
 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Groepstraining – RaceCoachFinder</title>
+    <title>Groepscoaching – RaceCoachFinder</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="css/style.css">
     <style>
@@ -276,14 +276,14 @@
 
 <div class="pagina-hero">
     <div class="container">
-        <h1>👥 Groepstraining</h1>
+        <h1>👥 Groepscoaching</h1>
         <p>Coaches die beschikbaar zijn voor een groepssessie. Als rijder sluit je je aan bij een training, wedstrijddag of evenement.</p>
     </div>
 </div>
 
 <div class="tab-balk">
     <button class="tab-knop actief" id="tab-btn-coach" onclick="toonGroepTab('coach')">🏁 Coach biedt aan</button>
-    <button class="tab-knop" id="tab-btn-rijder" onclick="toonGroepTab('rijder')">🙋 Rijder zoekt groep</button>
+    <button class="tab-knop" id="tab-btn-rijder" onclick="toonGroepTab('rijder')">🙋 Rijder zoekt coach</button>
 </div>
 
 <div id="groep-tab-coach">
@@ -301,6 +301,32 @@
                 <div id="melding-form"></div>
                 <form onsubmit="submitAanbod(event)">
                     <div class="formulier-groep">
+                        <label>Soort</label>
+                        <div class="type-selector">
+                            <button type="button" class="type-optie actief" id="ctype-training-btn" onclick="setCoachGroepType('Training')">🎯 Training</button>
+                            <button type="button" class="type-optie" id="ctype-wedstrijd-btn" onclick="setCoachGroepType('Wedstrijd')">🏁 Wedstrijd</button>
+                        </div>
+                    </div>
+                    <div id="cgroep-wedstrijd-velden" style="display:none">
+                        <div class="formulier-groep">
+                            <label>Soort wedstrijd</label>
+                            <div style="display:flex;gap:1.25rem;margin-top:0.25rem">
+                                <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-weight:400;text-transform:none;letter-spacing:0"><input type="radio" name="cgroep-wed-soort" value="Sprint" checked style="width:auto;accent-color:var(--kleur-primair)"> 🏎️ Sprint</label>
+                                <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-weight:400;text-transform:none;letter-spacing:0"><input type="radio" name="cgroep-wed-soort" value="Endurance" style="width:auto;accent-color:var(--kleur-primair)"> ⏱️ Endurance</label>
+                            </div>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+                            <div class="formulier-groep">
+                                <label for="cgroep-organisatie">Competitie <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel)</span></label>
+                                <input type="text" id="cgroep-organisatie" placeholder="bijv. Rotax Max Challenge">
+                            </div>
+                            <div class="formulier-groep">
+                                <label for="cgroep-wedstrijd">Wedstrijd <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel)</span></label>
+                                <input type="text" id="cgroep-wedstrijd" placeholder="bijv. Ronde 3">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="formulier-groep">
                         <label for="titel">Titel *</label>
                         <input type="text" id="titel" placeholder="bijv. Coach beschikbaar bij NK Karting Genk" required>
                     </div>
@@ -315,7 +341,7 @@
                         </div>
                     </div>
                     <div class="formulier-groep">
-                        <label>Categorie * <span style="font-weight:400;color:var(--kleur-subtekst)">(meerdere mogelijk)</span></label>
+                        <label>Extra categorie <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel, meerdere mogelijk)</span></label>
                         <div class="multi-check-grid" id="cat-grid"></div>
                     </div>
                     <div class="formulier-groep">
@@ -482,11 +508,11 @@
                     <div id="groep-wedstrijd-velden" style="display:none">
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
                             <div class="formulier-groep">
-                                <label for="groep-org">Organisatie / competitie <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel)</span></label>
+                                <label for="groep-org">Competitie <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel)</span></label>
                                 <input type="text" id="groep-org" placeholder="bijv. Rotax Max Euro Challenge">
                             </div>
                             <div class="formulier-groep">
-                                <label for="groep-wnaam">Wedstrijd / circuit <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel)</span></label>
+                                <label for="groep-wnaam">Wedstrijd <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel)</span></label>
                                 <input type="text" id="groep-wnaam" placeholder="bijv. Ronde 3 – Genk">
                             </div>
                         </div>
@@ -660,7 +686,8 @@ function bouwFormCheckboxes(containerId, opties) {
     ).join('');
 }
 
-bouwFormCheckboxes('cat-grid', CATEGORIEEN);
+// Wedstrijddag/Trainingsdag kies je met de knop 'Soort', de rest is extra
+bouwFormCheckboxes('cat-grid', CATEGORIEEN.filter(c => c !== 'Wedstrijddag' && c !== 'Trainingsdag'));
 bouwFormCheckboxes('disc-grid', DISCIPLINES);
 
 document.getElementById('datum').min = new Date().toISOString().split('T')[0];
@@ -784,6 +811,7 @@ function aanbodKaartHTML(a) {
         : '';
 
     const deelnemersHtml = `<div class="aanbod-deelnemers">
+               ${soortChipHtml(a)}
                <span style="font-size:0.72rem;color:var(--kleur-subtekst);font-weight:600">Coaches:</span>
                ${coachChipsHtml(a)}
            </div>`;
@@ -797,6 +825,7 @@ function aanbodKaartHTML(a) {
         <div class="aanbod-inhoud">
             ${deelnemersHtml}
             <div class="aanbod-titel">${esc(a.titel)}</div>
+            ${wedstrijdInfoTekst(a) ? `<div class="aanbod-meta" style="margin-bottom:0.2rem"><span>🏆 ${esc(wedstrijdInfoTekst(a))}</span></div>` : ''}
             <div class="aanbod-meta">
                 <span>📍 ${esc(a.locatie)}</span>
                 <span>📅 ${volledigeDatum}</span>
@@ -804,14 +833,14 @@ function aanbodKaartHTML(a) {
             </div>
             ${a.korteOmschrijving ? `<div class="aanbod-beschrijving">${esc(a.korteOmschrijving)}</div>` : ''}
             <div class="chips">
-                ${cats.map(c => `<span class="chip chip-categorie">${esc(c)}</span>`).join('')}
+                ${cats.filter(c => !SOORT_CATS.includes(c)).map(c => `<span class="chip chip-categorie">${esc(c)}</span>`).join('')}
                 ${discs.map(d => `<span class="chip chip-discipline">${esc(d)}</span>`).join('')}
                 ${prijsTag}
             </div>
         </div>
         <div class="aanbod-acties">
             ${a.groepsgesprekId ? `<button onclick="reageerOpActiviteit(${a.id},${a.groepsgesprekId})" class="btn-reageer">👥 Reageren op activiteit</button>` : ''}
-            ${a.beschrijving ? `<button onclick='toonPopup(${JSON.stringify(a)})' class="btn btn-secundair btn-sm" style="white-space:nowrap;font-size:0.82rem;color:#555;border-color:#ccc;margin-bottom:0.4rem">Meer info</button>` : ''}
+            <button onclick='toonPopup(${JSON.stringify(a).replace(/'/g, "&#39;")})' class="btn btn-secundair btn-sm" style="white-space:nowrap;font-size:0.82rem;color:#555;border-color:#ccc;margin-bottom:0.4rem">Meer info</button>
             <a href="${a.coachProfielId ? 'coach-detail.html?id=' + a.coachProfielId : '#'}" class="btn btn-primair btn-sm" style="white-space:nowrap;font-size:0.82rem">
                 Coach bekijken
             </a>
@@ -914,6 +943,9 @@ function openBewerkModal(id) {
     document.getElementById('bw-max-rijders').value = a.maxRijders || '';
     document.getElementById('bw-prijs').value = a.prijsPerRijder || '';
     document.getElementById('bw-is-gratis').checked = a.isGratis || false;
+    document.getElementById('bw-wedstrijd-velden').style.display = isWedstrijdAanbod(a) ? 'grid' : 'none';
+    document.getElementById('bw-organisatie').value = a.wedstrijdOrganisatie || '';
+    document.getElementById('bw-wedstrijd').value = a.wedstrijdNaam || '';
     document.getElementById('bw-melding').innerHTML = '';
 
     const afgewezen = (a.uitnodigingen || []).filter(u => u.status === 'Afgewezen');
@@ -952,7 +984,9 @@ async function submitBewerken(event) {
         disciplines: bewerkData?.disciplines || '',
         maxRijders: parseInt(document.getElementById('bw-max-rijders').value) || null,
         prijsPerRijder: parseFloat(document.getElementById('bw-prijs').value) || null,
-        isGratis: document.getElementById('bw-is-gratis').checked
+        isGratis: document.getElementById('bw-is-gratis').checked,
+        wedstrijdOrganisatie: isWedstrijdAanbod(bewerkData || {}) ? document.getElementById('bw-organisatie').value.trim() : null,
+        wedstrijdNaam: isWedstrijdAanbod(bewerkData || {}) ? document.getElementById('bw-wedstrijd').value.trim() : null
     };
 
     const btn = event.target.querySelector('button[type="submit"]');
@@ -1154,16 +1188,42 @@ function toggleFormulier() {
     btn.textContent = zichtbaar ? '+ Aanbieding toevoegen' : '✕ Sluiten';
 }
 
+let coachGroepType = 'Training';
+function setCoachGroepType(type) {
+    coachGroepType = type;
+    document.getElementById('ctype-training-btn').classList.toggle('actief', type === 'Training');
+    document.getElementById('ctype-wedstrijd-btn').classList.toggle('actief', type === 'Wedstrijd');
+    document.getElementById('cgroep-wedstrijd-velden').style.display = type === 'Wedstrijd' ? '' : 'none';
+    document.getElementById('titel').placeholder = type === 'Wedstrijd'
+        ? 'bijv. Teamcoaching Rotax Max Challenge Genk' : 'bijv. Groepscoaching regenrijden Genk';
+}
+
+// Training of wedstrijd, afgeleid uit de categorieën
+function isWedstrijdAanbod(a) {
+    const cats = (a.categorieen || '').split(',');
+    return cats.includes('Wedstrijddag') || cats.includes('Wedstrijd');
+}
+function soortChipHtml(a) {
+    const cats = (a.categorieen || '').split(',');
+    if (isWedstrijdAanbod(a)) {
+        const sub = cats.find(c => c === 'Sprint' || c === 'Endurance');
+        return `<span class="chip chip-wedstrijd">🏁 Wedstrijd${sub ? ' · ' + sub : ''}</span>`;
+    }
+    return cats.includes('Trainingsdag') ? '<span class="chip chip-training-g">🎯 Training</span>' : '';
+}
+function wedstrijdInfoTekst(a) {
+    return [a.wedstrijdOrganisatie, a.wedstrijdNaam].filter(Boolean).join(' — ');
+}
+const SOORT_CATS = ['Wedstrijddag', 'Trainingsdag', 'Wedstrijd', 'Sprint', 'Endurance'];
+
 async function submitAanbod(event) {
     event.preventDefault();
     const melding = document.getElementById('melding-form');
     melding.innerHTML = '';
 
-    const cats = getGekozen('cat-grid');
-    if (cats.length === 0) {
-        melding.innerHTML = '<div class="melding melding-fout">Selecteer minimaal één categorie.</div>';
-        return;
-    }
+    const isWedstrijd = coachGroepType === 'Wedstrijd';
+    const wedSoort = document.querySelector('input[name="cgroep-wed-soort"]:checked')?.value || 'Sprint';
+    const cats = [isWedstrijd ? 'Wedstrijddag' : 'Trainingsdag', ...(isWedstrijd ? [wedSoort] : []), ...getGekozen('cat-grid')];
 
     const body = {
         titel: document.getElementById('titel').value.trim(),
@@ -1176,6 +1236,8 @@ async function submitAanbod(event) {
         maxRijders: parseInt(document.getElementById('max-rijders').value) || null,
         prijsPerRijder: parseFloat(document.getElementById('prijs').value) || null,
         isGratis: document.getElementById('is-gratis').checked,
+        wedstrijdOrganisatie: isWedstrijd ? document.getElementById('cgroep-organisatie').value.trim() : '',
+        wedstrijdNaam: isWedstrijd ? document.getElementById('cgroep-wedstrijd').value.trim() : '',
         uitgenodigdeCoaches: uitgenodigdeCoaches.map(c => ({ id: c.id, percentage: c.percentage }))
     };
 
@@ -1198,6 +1260,7 @@ async function submitAanbod(event) {
         melding.innerHTML = '<div class="melding melding-succes">Aanbieding geplaatst!</div>';
         event.target.reset();
         document.querySelectorAll('#cat-grid input, #disc-grid input').forEach(c => c.checked = false);
+        setCoachGroepType('Training');
         uitgenodigdeCoaches = [];
         renderCoachTags();
         toggleFormulier();
@@ -1217,17 +1280,17 @@ function toonPopup(a) {
     const prijsStr = a.isGratis ? 'Gratis' : a.prijsPerRijder ? `€${a.prijsPerRijder} p.p.` : '';
     const maxStr = a.maxRijders ? `Max ${a.maxRijders} rijders` : '';
 
-    document.getElementById('modal-coaches').innerHTML = coachChipsHtml(a);
+    document.getElementById('modal-coaches').innerHTML = soortChipHtml(a) + coachChipsHtml(a);
     document.getElementById('modal-titel').textContent = a.titel;
     document.getElementById('modal-meta').innerHTML =
-        `<span>📍 ${esc(a.locatie)}</span><span>📅 ${datum}</span>${maxStr ? `<span>👥 ${maxStr}</span>` : ''}${prijsStr ? `<span>${prijsStr}</span>` : ''}`;
+        `${wedstrijdInfoTekst(a) ? `<span>🏆 ${esc(wedstrijdInfoTekst(a))}</span>` : ''}<span>📍 ${esc(a.locatie)}</span><span>📅 ${datum}</span>${maxStr ? `<span>👥 ${maxStr}</span>` : ''}${prijsStr ? `<span>${prijsStr}</span>` : ''}`;
     document.getElementById('modal-kort').textContent = a.korteOmschrijving || '';
     document.getElementById('modal-beschrijving').textContent = a.beschrijving || '';
 
     const cats = (a.categorieen || '').split(',').filter(Boolean);
     const discs = (a.disciplines || '').split(',').filter(Boolean);
     document.getElementById('modal-chips').innerHTML =
-        cats.map(c => `<span class="chip chip-categorie">${esc(c)}</span>`).join('') +
+        cats.filter(c => !SOORT_CATS.includes(c)).map(c => `<span class="chip chip-categorie">${esc(c)}</span>`).join('') +
         discs.map(d => `<span class="chip chip-discipline">${esc(d)}</span>`).join('') +
         (a.isGratis ? '<span class="chip chip-gratis">Gratis</span>' : a.prijsPerRijder ? `<span class="chip chip-prijs">€${a.prijsPerRijder} p.p.</span>` : '');
 
@@ -1814,6 +1877,16 @@ if (gebruikerG) {
             <div class="formulier-groep">
                 <label>Titel</label>
                 <input type="text" id="bw-titel" required>
+            </div>
+            <div id="bw-wedstrijd-velden" style="display:none;grid-template-columns:1fr 1fr;gap:0.75rem">
+                <div class="formulier-groep">
+                    <label>Competitie</label>
+                    <input type="text" id="bw-organisatie" placeholder="bijv. Rotax Max Challenge">
+                </div>
+                <div class="formulier-groep">
+                    <label>Wedstrijd</label>
+                    <input type="text" id="bw-wedstrijd" placeholder="bijv. Ronde 3">
+                </div>
             </div>
             <div class="formulier-groep">
                 <label>Korte omschrijving</label>

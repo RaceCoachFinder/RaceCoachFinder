@@ -110,6 +110,8 @@ public class CoachAanbodController : ControllerBase
                 a.Locatie,
                 a.Categorieen,
                 a.Disciplines,
+                a.WedstrijdOrganisatie,
+                a.WedstrijdNaam,
                 a.MaxRijders,
                 a.PrijsPerRijder,
                 a.IsGratis,
@@ -150,7 +152,7 @@ public class CoachAanbodController : ControllerBase
         var resultaat = lijst.Select(a => new {
             a.Id, a.Titel, a.Datum, a.Locatie, a.Categorieen, a.Disciplines,
             a.MaxRijders, a.PrijsPerRijder, a.IsGratis, a.IsActief, a.WachtOpCoaches,
-            a.KorteOmschrijving, a.Beschrijving,
+            a.KorteOmschrijving, a.Beschrijving, a.WedstrijdOrganisatie, a.WedstrijdNaam,
             Uitnodigingen = uitnodigingen
                 .Where(u => u.CoachAanbodId == a.Id)
                 .Select(u => new { u.Id, u.CoachGebruikerId, u.CoachNaam, u.Status, u.Percentage })
@@ -182,6 +184,9 @@ public class CoachAanbodController : ControllerBase
         aanbod.MaxRijders = verzoek.MaxRijders;
         aanbod.PrijsPerRijder = verzoek.PrijsPerRijder;
         aanbod.IsGratis = verzoek.IsGratis;
+        // null = niet meegestuurd: laat de bestaande waarde staan
+        if (verzoek.WedstrijdOrganisatie != null) aanbod.WedstrijdOrganisatie = verzoek.WedstrijdOrganisatie.Trim();
+        if (verzoek.WedstrijdNaam != null) aanbod.WedstrijdNaam = verzoek.WedstrijdNaam.Trim();
 
         // Zet afgewezen coaches terug op Openstaand en stuur opnieuw bericht
         var afgewezen = await _context.CoachAanbodUitnodigingen
@@ -253,6 +258,8 @@ public class CoachAanbodController : ControllerBase
             PrijsPerRijder = verzoek.PrijsPerRijder,
             IsGratis = verzoek.IsGratis,
             IsGroep = verzoek.IsGroep,
+            WedstrijdOrganisatie = verzoek.WedstrijdOrganisatie?.Trim() ?? string.Empty,
+            WedstrijdNaam = verzoek.WedstrijdNaam?.Trim() ?? string.Empty,
             AangemaaktOp = DateTime.UtcNow,
             IsActief = !heeftUitnodigingen,
             WachtOpCoaches = heeftUitnodigingen
@@ -508,7 +515,9 @@ public record CoachAanbodVerzoek(
     decimal? PrijsPerRijder,
     bool IsGratis,
     bool IsGroep = true,
-    List<UitgenodigdeCoachVerzoek>? UitgenodigdeCoaches = null
+    List<UitgenodigdeCoachVerzoek>? UitgenodigdeCoaches = null,
+    string? WedstrijdOrganisatie = null,
+    string? WedstrijdNaam = null
 );
 
 public record UitgenodigdeCoachVerzoek(string Id, decimal? Percentage);

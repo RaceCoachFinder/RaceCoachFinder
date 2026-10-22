@@ -17,6 +17,8 @@ public class TrainingVoorstel
     public bool IsGratis { get; set; } = false;
     public string Categorieen { get; set; } = string.Empty;   // comma-separated
     public string Disciplines { get; set; } = string.Empty;   // comma-separated
+    public string WedstrijdOrganisatie { get; set; } = string.Empty;
+    public string WedstrijdNaam { get; set; } = string.Empty;
     // Extra coaches: JSON-lijst van { id, naam, percentage, akkoord }
     public string CoachesJson { get; set; } = "[]";
     public int? GepubliceerdAanbodId { get; set; }

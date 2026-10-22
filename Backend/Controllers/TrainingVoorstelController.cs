@@ -65,14 +65,19 @@ public class TrainingVoorstelController : ControllerBase
                 GroepsgesprekId = groepId,
                 RijderAanvraagId = aanvraag.Id,
                 OrganisatorId = groep.AangemaaktDoorId,
-                Titel = isWedstrijd && wedstrijdNaam != "" ? wedstrijdNaam : (isWedstrijd ? "Wedstrijdbegeleiding" : "Groepstraining"),
+                Titel = isWedstrijd && wedstrijdNaam != "" ? wedstrijdNaam : (isWedstrijd ? "Wedstrijdbegeleiding" : "Groepscoaching"),
                 Beschrijving = aanvraag.Beschrijving,
                 Locatie = aanvraag.Locatie,
                 Datum = aanvraag.Datum,
                 MaxRijders = aanvraag.GroepGrootte,
                 PrijsPerRijder = aanvraag.MaxPrijs,
-                Categorieen = isWedstrijd ? "Wedstrijddag" : "Trainingsdag",
-                Disciplines = aanvraag.Specialisaties
+                // Bij een wedstrijd staat het soort (Sprint/Endurance) vooraan in de kwaliteiten van de aanvraag
+                Categorieen = isWedstrijd
+                    ? string.Join(",", new[] { "Wedstrijddag" }.Concat(aanvraag.Kwaliteiten.Split(',').Select(k => k.Trim()).Where(k => k is "Sprint" or "Endurance").Take(1)))
+                    : "Trainingsdag",
+                Disciplines = aanvraag.Specialisaties,
+                WedstrijdOrganisatie = isWedstrijd ? aanvraag.WedstrijdOrganisatie : "",
+                WedstrijdNaam = isWedstrijd ? aanvraag.WedstrijdNaam : ""
             };
             _context.TrainingVoorstellen.Add(voorstel);
             await _context.SaveChangesAsync();
@@ -109,7 +114,7 @@ public class TrainingVoorstelController : ControllerBase
             IsOrganisator = isOrganisator,
             MagPercentagesZien = magPercentagesZien,
             v.Titel, v.Beschrijving, v.Locatie, v.Datum, v.MaxRijders, v.PrijsPerRijder, v.IsGratis,
-            v.Categorieen, v.Disciplines,
+            v.Categorieen, v.Disciplines, v.WedstrijdOrganisatie, v.WedstrijdNaam,
             Coaches = coaches.Select(c => new { c.Id, c.Naam, Percentage = magPercentagesZien ? c.Percentage : null, c.Akkoord }),
             EigenAandeel = magPercentagesZien ? 100 - coaches.Sum(c => c.Percentage ?? 0) : (int?)null,
             AlleAkkoord = coaches.All(c => c.Akkoord),
@@ -127,7 +132,8 @@ public class TrainingVoorstelController : ControllerBase
     }
 
     public record VoorstelVerzoek(string? Titel, string? Beschrijving, string? Locatie, DateTime? Datum,
-        int? MaxRijders, decimal? PrijsPerRijder, bool IsGratis, string? Categorieen, string? Disciplines);
+        int? MaxRijders, decimal? PrijsPerRijder, bool IsGratis, string? Categorieen, string? Disciplines,
+        string? WedstrijdOrganisatie = null, string? WedstrijdNaam = null);
 
     [HttpPut("groep/{groepId:int}")]
     public async Task<IActionResult> Bijwerken(int groepId, [FromBody] VoorstelVerzoek verzoek)
@@ -135,7 +141,7 @@ public class TrainingVoorstelController : ControllerBase
         var (groep, aanvraag, v, fout) = await Laad(groepId);
         if (fout != null) return fout;
         if (v!.OrganisatorId != MijnId) return StatusCode(403, "Alleen de coach die de training organiseert kan hem aanpassen.");
-        if (v.GepubliceerdAanbodId != null) return BadRequest("De training is al gepubliceerd. Pas hem aan via Groepstraining.");
+        if (v.GepubliceerdAanbodId != null) return BadRequest("De training is al gepubliceerd. Pas hem aan via Groepscoaching.");
         if (verzoek.MaxRijders is < 1) return BadRequest("Maximaal aantal rijders moet minstens 1 zijn.");
         if (verzoek.PrijsPerRijder is < 0) return BadRequest("Prijs kan niet negatief zijn.");
 
@@ -150,6 +156,8 @@ public class TrainingVoorstelController : ControllerBase
         v.IsGratis = verzoek.IsGratis;
         v.Categorieen = verzoek.Categorieen ?? "";
         v.Disciplines = verzoek.Disciplines ?? "";
+        v.WedstrijdOrganisatie = verzoek.WedstrijdOrganisatie?.Trim() ?? "";
+        v.WedstrijdNaam = verzoek.WedstrijdNaam?.Trim() ?? "";
         v.BijgewerktOp = DateTime.UtcNow;
         if (prijsAnders)
         {
@@ -293,6 +301,8 @@ public class TrainingVoorstelController : ControllerBase
             Locatie = v.Locatie.Trim(),
             Categorieen = v.Categorieen,
             Disciplines = v.Disciplines,
+            WedstrijdOrganisatie = v.WedstrijdOrganisatie,
+            WedstrijdNaam = v.WedstrijdNaam,
             MaxRijders = v.MaxRijders,
             PrijsPerRijder = v.IsGratis ? null : v.PrijsPerRijder,
             IsGratis = v.IsGratis,
@@ -327,7 +337,7 @@ public class TrainingVoorstelController : ControllerBase
         v.GepubliceerdAanbodId = aanbod.Id;
         aanvraag!.IsGesloten = true;
         aanvraag.CoachGevonden = true;
-        await Systeembericht(groepId, $"🎉 De training '{aanbod.Titel}' is gepubliceerd en staat nu bij Groepstraining → Coach biedt aan.");
+        await Systeembericht(groepId, $"🎉 De training '{aanbod.Titel}' is gepubliceerd en staat nu bij Groepscoaching → Coach biedt aan.");
         await _context.SaveChangesAsync();
         return Ok(new { aanbodId = aanbod.Id });
     }

@@ -1194,7 +1194,7 @@ let _ledenZoekResultaten = [];
 // De coach die reageerde werkt hier de training uit, voegt coaches toe (met percentage) en publiceert.
 // Rijders zien het voorstel en wie er coacht, maar geen percentages.
 
-const TV_CATEGORIEEN = ['Wedstrijddag', 'Trainingsdag', 'Testdag', 'Speciaal evenement', 'Groepscoaching', 'Beginners / Rookies'];
+const TV_CATEGORIEEN = ['Wedstrijddag', 'Sprint', 'Endurance', 'Trainingsdag', 'Testdag', 'Speciaal evenement', 'Groepscoaching', 'Beginners / Rookies'];
 const TV_DISCIPLINES = ['Huurkart', 'Rotax Max', 'OK / Junior', 'KZ / Shifter', 'Superkart', 'Endurance', 'Simracing', 'Algemeen'];
 let _tv = null;          // huidig voorstel van de server
 let _tvBewerken = false; // organisator heeft het formulier open
@@ -1259,11 +1259,12 @@ function renderTrainingVoorstel() {
         acties += `<button class="btn btn-secundair" style="color:#555;border-color:#ccc" onclick="_tvBewerken=true;renderTrainingVoorstel()">✏️ Aanpassen</button>`;
         acties += `<button class="btn btn-primair" onclick="tvPubliceer()" ${v.alleAkkoord ? '' : 'disabled title="Wacht tot alle coaches akkoord zijn"'}>🚀 Publiceren</button>`;
     }
-    if (gepubliceerd) acties += `<a class="btn btn-primair" href="trainingen.html">Bekijk bij Groepstraining</a>`;
+    if (gepubliceerd) acties += `<a class="btn btn-primair" href="trainingen.html">Bekijk bij Groepscoaching</a>`;
 
     el.innerHTML = `
         <span class="tv-status ${gepubliceerd ? 'live' : 'concept'}">${gepubliceerd ? '✅ Gepubliceerd' : '📝 Concept, nog niet gepubliceerd'}</span>
         <h3 style="margin:0;font-size:1.15rem">${esc(v.titel || 'Training')}</h3>
+        ${[v.wedstrijdOrganisatie, v.wedstrijdNaam].filter(Boolean).length ? `<div class="tv-meta" style="margin-bottom:0">🏆 ${esc([v.wedstrijdOrganisatie, v.wedstrijdNaam].filter(Boolean).join(' — '))}</div>` : ''}
         <div class="tv-meta">
             <span>📍 ${esc(v.locatie || 'Locatie nog niet gekozen')}</span><span>📅 ${datum}</span>
             <span>👥 ${v.maxRijders ? 'Max ' + v.maxRijders + ' rijders' : 'Geen maximum'}</span><span>💶 ${prijs}</span>
@@ -1294,6 +1295,10 @@ function tvFormulierHtml(v) {
     return `
         <h3 style="margin:0 0 0.9rem;font-size:1.1rem">✏️ Training aanpassen</h3>
         <div class="tv-veld"><label>Titel *</label><input class="groep-input" id="tv-titel" value="${esc(v.titel)}"></div>
+        <div class="tv-rij">
+            <div class="tv-veld"><label>Competitie <small style="font-weight:400">(bij wedstrijd)</small></label><input class="groep-input" id="tv-organisatie" value="${esc(v.wedstrijdOrganisatie || '')}" placeholder="bijv. Rotax Max Challenge"></div>
+            <div class="tv-veld"><label>Wedstrijd <small style="font-weight:400">(bij wedstrijd)</small></label><input class="groep-input" id="tv-wedstrijd" value="${esc(v.wedstrijdNaam || '')}" placeholder="bijv. Ronde 3"></div>
+        </div>
         <div class="tv-veld"><label>Beschrijving</label><textarea class="groep-input" id="tv-beschrijving" rows="3">${esc(v.beschrijving)}</textarea></div>
         <div class="tv-rij">
             <div class="tv-veld"><label>Locatie *</label><input class="groep-input" id="tv-locatie" value="${esc(v.locatie)}"></div>
@@ -1339,7 +1344,9 @@ async function tvOpslaan() {
         prijsPerRijder: prijsRaw ? parseFloat(prijsRaw) : null,
         isGratis: document.getElementById('tv-gratis').checked,
         categorieen: gekozen('tv-cat'),
-        disciplines: gekozen('tv-disc')
+        disciplines: gekozen('tv-disc'),
+        wedstrijdOrganisatie: document.getElementById('tv-organisatie').value,
+        wedstrijdNaam: document.getElementById('tv-wedstrijd').value
     });
     if (ok) { _tvBewerken = false; renderTrainingVoorstel(); tvMelding('Training opgeslagen. Iedereen in de chat kan hem nu bekijken.', 'ok'); }
 }
@@ -1401,7 +1408,7 @@ async function tvVerversKop() {
 }
 
 async function tvPubliceer() {
-    if (!confirm('Training publiceren? Hij komt dan bij Groepstraining → Coach biedt aan, en deze chat wordt de chat van de training.')) return;
+    if (!confirm('Training publiceren? Hij komt dan bij Groepscoaching → Coach biedt aan, en deze chat wordt de chat van de training.')) return;
     try {
         await authVerzoek(`/trainingvoorstel/groep/${huidigGroepsId}/publiceer`, 'POST');
         _tv = await authVerzoek(`/trainingvoorstel/groep/${huidigGroepsId}`);
