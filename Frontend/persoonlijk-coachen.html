@@ -233,14 +233,14 @@
 </div>
 
 <div class="tab-balk">
-    <button class="tab-knop actief" id="tab-btn-rijder" onclick="toonTab('rijder')">🙋 Rijder zoekt coach</button>
-    <button class="tab-knop" id="tab-btn-coach" onclick="toonTab('coach')">🏁 Coach biedt aan</button>
+    <button class="tab-knop actief" id="tab-btn-coach" onclick="toonTab('coach')">🏁 Coach biedt aan</button>
+    <button class="tab-knop" id="tab-btn-rijder" onclick="toonTab('rijder')">🙋 Rijder zoekt coach</button>
 </div>
 
 <div class="container pagina-container">
 
     <!-- ========================= TAB 1: RIJDER ZOEKT ========================= -->
-    <div id="tab-rijder">
+    <div id="tab-rijder" style="display:none">
 
         <div id="rijder-form-sectie" style="display:none">
             <div class="formulier-kaart">
@@ -370,7 +370,7 @@
     </div>
 
     <!-- ========================= TAB 2: COACH BIEDT ========================= -->
-    <div id="tab-coach" style="display:none">
+    <div id="tab-coach">
 
         <div id="coach-form-sectie" style="display:none">
             <div class="formulier-kaart">
@@ -1273,6 +1273,7 @@ document.addEventListener('click', function(e) {
 
 updateNav();
 laadRijderAanvragen();
+toonTab('coach'); // net als bij Groepstraining staat het coach-aanbod eerst
 
 const gebruiker = JSON.parse(localStorage.getItem('kcf_gebruiker') || 'null');
 if (gebruiker) {
