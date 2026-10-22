@@ -237,7 +237,7 @@
                         <input type="text" id="talen" placeholder="bijv. Nederlands, Engels">
                     </div>
                     <div class="formulier-groep">
-                        <label>Specialisaties <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel)</span></label>
+                        <label>Voertuig <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel)</span></label>
                         <div id="specialisaties-kiezer"></div>
                     </div>
                     <div class="formulier-groep">
@@ -451,7 +451,7 @@ function toonSamenvatting(rijder) {
         <div class="info-rij"><span>Naam</span><span>${esc(rijder.naam)}</span></div>
         <div class="info-rij"><span>Woonplaats</span><span>${esc(rijder.woonplaats) || '–'}</span></div>
         <div class="info-rij"><span>Leeftijd</span><span>${rijder.leeftijd || '–'}</span></div>
-        <div class="info-rij"><span>Specialisaties</span><span>${esc(rijder.discipline) || '–'}</span></div>
+        <div class="info-rij"><span>Voertuig</span><span>${esc(rijder.discipline) || '–'}</span></div>
         <div class="info-rij"><span>Niveau</span><span>${esc(rijder.niveau) || '–'}</span></div>
         <div class="info-rij"><span>Doelen</span><span>${esc(rijder.doelen) || '–'}</span></div>
     `;

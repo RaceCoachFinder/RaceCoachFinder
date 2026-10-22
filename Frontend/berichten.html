@@ -1303,7 +1303,7 @@ function tvFormulierHtml(v) {
         </div>
         <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.86rem;margin-bottom:0.7rem;cursor:pointer"><input type="checkbox" id="tv-gratis" style="width:auto" ${v.isGratis ? 'checked' : ''} onchange="document.getElementById('tv-prijs').disabled=this.checked"> Gratis training</label>
         <div class="tv-veld"><label>Categorie</label>${checks('tv-cat', TV_CATEGORIEEN, v.categorieen)}</div>
-        <div class="tv-veld"><label>Discipline</label>${checks('tv-disc', TV_DISCIPLINES, v.disciplines)}</div>
+        <div class="tv-veld"><label>Voertuig</label>${checks('tv-disc', TV_DISCIPLINES, v.disciplines)}</div>
         <div id="tv-melding" class="tv-melding"></div>
         <div class="tv-acties" style="margin-top:0.3rem">
             <button class="btn btn-secundair" style="color:#555;border-color:#ccc" onclick="_tvBewerken=false;renderTrainingVoorstel()">Terug</button>
