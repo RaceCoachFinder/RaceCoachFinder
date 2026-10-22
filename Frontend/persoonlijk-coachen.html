@@ -252,8 +252,8 @@
                 <div id="rijder-formulier" style="display:none">
                     <div id="melding-rijder"></div>
                     <form onsubmit="submitRijderAanvraag(event)">
-
-                        <div class="formulier-groep">
+<div class="wiz-stap" data-label="Soort">
+<div class="formulier-groep">
                             <label>Soort opdracht</label>
                             <div class="type-selector">
                                 <button type="button" class="type-optie actief" id="type-training-btn" onclick="setRijderType('Training')">🎯 Training</button>
@@ -261,12 +261,17 @@
                             </div>
                             <input type="hidden" id="rijder-soort-opdracht" value="Training">
                         </div>
-
-                        <!-- Wedstrijd velden -->
-                        <div id="wedstrijd-velden" style="display:none">
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+<div id="wedstrijd-velden" style="display:none">
+<div class="formulier-groep">
+                                <label>Soort wedstrijd</label>
+                                <div style="display:flex;gap:1.25rem;margin-top:0.25rem">
+                                    <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-weight:400;text-transform:none;letter-spacing:0"><input type="radio" name="wed-soort" id="wed-sprint" value="Sprint" checked style="width:auto;accent-color:var(--kleur-primair)"> 🏎️ Sprint</label>
+                                    <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-weight:400;text-transform:none;letter-spacing:0"><input type="radio" name="wed-soort" id="wed-endurance" value="Endurance" style="width:auto;accent-color:var(--kleur-primair)"> ⏱️ Endurance</label>
+                                </div>
+                            </div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
                                 <div class="formulier-groep">
-                                    <label for="wedstrijd-organisatie">Organisatie / competitie <span style="color:var(--kleur-subtekst);font-weight:400">(optioneel)</span></label>
+                                    <label for="wedstrijd-organisatie">Competitie <span style="color:var(--kleur-subtekst);font-weight:400">(optioneel)</span></label>
                                     <input type="text" id="wedstrijd-organisatie" placeholder="bijv. Rotax Max Euro Challenge">
                                 </div>
                                 <div class="formulier-groep">
@@ -274,16 +279,14 @@
                                     <input type="text" id="wedstrijd-naam" placeholder="bijv. Ronde 3">
                                 </div>
                             </div>
-                            <div class="formulier-groep">
-                                <label>Soort wedstrijd</label>
-                                <div style="display:flex;gap:1.25rem;margin-top:0.25rem">
-                                    <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-weight:400;text-transform:none;letter-spacing:0"><input type="radio" name="wed-soort" id="wed-sprint" value="Sprint" checked style="width:auto;accent-color:var(--kleur-primair)"> 🏎️ Sprint</label>
-                                    <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-weight:400;text-transform:none;letter-spacing:0"><input type="radio" name="wed-soort" id="wed-endurance" value="Endurance" style="width:auto;accent-color:var(--kleur-primair)"> ⏱️ Endurance</label>
-                                </div>
+</div>
+<div class="formulier-groep">
+                                <label>Voertuig <span style="color:var(--kleur-subtekst);font-weight:400">(optioneel)</span></label>
+                                <div class="multi-check-grid" id="spec-grid"></div>
                             </div>
-                        </div>
-
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+</div>
+<div class="wiz-stap" data-label="Wanneer &amp; waar">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
                             <div class="formulier-groep">
                                 <label for="locatie">Locatie / kartbaan <span id="locatie-req-label" style="color:var(--kleur-subtekst);font-weight:400">(optioneel)</span></label>
                                 <input type="text" id="locatie" placeholder="bijv. Karting Genk, Mariembourg...">
@@ -293,34 +296,32 @@
                                 <input type="date" id="datum">
                             </div>
                         </div>
-
-                        <div class="formulier-groep">
-                            <label for="maxprijs">Maximaal budget (€) <span style="color:var(--kleur-subtekst);font-weight:400">(optioneel)</span></label>
-                            <input type="number" id="maxprijs" placeholder="excl. reiskosten" min="0" step="5">
-                        </div>
-
-                        <div class="formulier-groep">
-                            <label for="beschrijving">Beschrijving *</label>
-                            <textarea id="beschrijving" rows="3" placeholder="Wat verwacht je van de coach? Wat is je niveau?..." required></textarea>
-                        </div>
-
-                        <!-- Training: wat wil je aanpakken -->
-                        <div id="training-aanpak-velden">
-                            <div class="formulier-groep">
+</div>
+<div class="wiz-stap" data-label="Details">
+<div class="formulier-groep">
+    <label>Niveau <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel, meerdere mogelijk)</span></label>
+    <div class="multi-check-grid" id="niv-grid"></div>
+</div>
+<div class="formulier-groep">
                                 <label>Wat wil je aanpakken? <span style="color:var(--kleur-subtekst);font-weight:400">(optioneel)</span></label>
                                 <div class="multi-check-grid" id="kwal-grid"></div>
                             </div>
-                            <div class="formulier-groep">
-                                <label>Voertuig <span style="color:var(--kleur-subtekst);font-weight:400">(optioneel)</span></label>
-                                <div class="multi-check-grid" id="spec-grid"></div>
-                            </div>
+<div class="formulier-groep">
+                            <label for="maxprijs">Maximaal budget (€) <span style="color:var(--kleur-subtekst);font-weight:400">(optioneel)</span></label>
+                            <input type="number" id="maxprijs" placeholder="excl. reiskosten" min="0" step="5">
                         </div>
-
-                        <div style="display:flex;gap:0.75rem;justify-content:flex-end;margin-top:0.5rem">
+</div>
+<div class="wiz-stap" data-label="Omschrijving">
+<div class="formulier-groep">
+                            <label for="beschrijving">Beschrijving *</label>
+                            <textarea id="beschrijving" rows="3" placeholder="Wat verwacht je van de coach? Wat is je niveau?..." required></textarea>
+                        </div>
+</div>
+<div class="wiz-slot" style="display:flex;gap:0.75rem;justify-content:flex-end;margin-top:0.5rem">
                             <button type="button" onclick="toggleRijderFormulier()" class="btn btn-secundair" style="color:#555;border-color:#ccc">Annuleren</button>
                             <button type="submit" class="btn btn-primair">Aanvraag plaatsen</button>
                         </div>
-                    </form>
+</form>
                 </div>
             </div>
 
@@ -354,6 +355,14 @@
                         <div class="filter-groep">
                             <label class="filter-label">Wil werken aan</label>
                             <div class="filter-check-lijst" id="rf-kwal"></div>
+                        </div>
+                        <div class="filter-groep">
+                            <label class="filter-label">Niveau</label>
+                            <div class="filter-check-lijst" id="rf-niveau"></div>
+                        </div>
+                        <div class="filter-groep">
+                            <label class="filter-label">Budget</label>
+                            <div id="rf-budget-slider"></div>
                         </div>
                         <button type="button" class="filter-reset" onclick="resetFilter()">Filters wissen</button>
                     </div>
@@ -586,6 +595,19 @@ bouwCheckGrid('kwal-grid', KWALITEITEN);
 bouwCheckGrid('spec-grid', SPECIALISATIES);
 bouwCheckGrid('c-disc-grid', DISCIPLINES);
 
+// Niveau van de rijder, met 'Maakt niet uit' (sluit losse niveaus uit, en andersom)
+const NIVEAUS = ['Eerste keer', 'Beginner', 'Gevorderd', 'Ervaren', 'Zeer ervaren', 'Professioneel'];
+const ALLE_NIVEAUS = 'Alle niveaus';
+bouwCheckGrid('niv-grid', [ALLE_NIVEAUS, ...NIVEAUS]);
+document.querySelector(`#niv-grid input[value="${ALLE_NIVEAUS}"]`).parentElement.lastChild.textContent = ' Maakt niet uit';
+document.getElementById('niv-grid').addEventListener('change', e => {
+    if (!e.target.checked) return;
+    const alles = e.target.value === ALLE_NIVEAUS;
+    document.querySelectorAll('#niv-grid input').forEach(c => {
+        if (c !== e.target && (alles || c.value === ALLE_NIVEAUS)) c.checked = false;
+    });
+});
+
 // Filterpanelen (links naast de lijsten)
 function bouwFilterChecks(id, opties, onChange) {
     document.getElementById(id).innerHTML = opties.map(o =>
@@ -594,6 +616,8 @@ function bouwFilterChecks(id, opties, onChange) {
 bouwFilterChecks('rf-soort', ['Training', 'Wedstrijd'], 'filterRijderAanvragen()');
 bouwFilterChecks('rf-kart', SPECIALISATIES, 'filterRijderAanvragen()');
 bouwFilterChecks('rf-kwal', KWALITEITEN, 'filterRijderAanvragen()');
+bouwFilterChecks('rf-niveau', NIVEAUS, 'filterRijderAanvragen()');
+const rijderBudgetSlider = maakPrijsSlider('rf-budget-slider', filterRijderAanvragen);
 bouwFilterChecks('cf-soort', ['Training', 'Wedstrijd'], 'filterCoachAanbod()');
 bouwFilterChecks('cf-disc', DISCIPLINES, 'filterCoachAanbod()');
 const coachPrijsSlider = maakPrijsSlider('cf-prijs-slider', filterCoachAanbod);
@@ -686,12 +710,11 @@ function setCoachType(type) {
 
 // ======== FORMULIER TOGGLE ========
 
+// Aanvraag plaatsen gaat in een pop-up met stappen
+let _rijderWizard = null;
 function toggleRijderFormulier() {
-    const form = document.getElementById('rijder-formulier');
-    const btn = document.getElementById('rijder-form-toggle');
-    const open = form.style.display !== 'none';
-    form.style.display = open ? 'none' : '';
-    btn.textContent = open ? '+ Aanvraag plaatsen' : '✕ Sluiten';
+    _rijderWizard = _rijderWizard || maakStappenPopup('rijder-formulier', 'Nieuwe aanvraag plaatsen');
+    if (_rijderWizard.isOpen()) _rijderWizard.sluit(); else _rijderWizard.open();
 }
 
 // Aanbieding plaatsen gaat in een pop-up met stappen
@@ -715,7 +738,7 @@ async function submitRijderAanvraag(event) {
     const datumVal = document.getElementById('datum').value;
     const wedSoort = document.querySelector('input[name="wed-soort"]:checked')?.value || 'Sprint';
     // Bij een wedstrijd staat het soort (Sprint/Endurance) vooraan, gevolgd door wat de rijder wil aanpakken
-    const kwaliteiten = [...new Set([...(rijderType === 'Wedstrijd' ? [wedSoort, leesDuur('wed-soort')].filter(Boolean) : []), ...getGekozen('kwal-grid')])].join(',');
+    const kwaliteiten = [...new Set([...(rijderType === 'Wedstrijd' ? [wedSoort, leesDuur('wed-soort')].filter(Boolean) : []), ...getGekozen('niv-grid'), ...getGekozen('kwal-grid')])].join(',');
     const body = {
         locatie: document.getElementById('locatie').value.trim(),
         datum: datumVal ? new Date(datumVal).toISOString() : null,
@@ -735,7 +758,7 @@ async function submitRijderAanvraag(event) {
         event.target.reset();
         setRijderType('Training');
         resetDuur();
-        document.querySelectorAll('#spec-grid input, #kwal-grid input').forEach(c => c.checked = false);
+        document.querySelectorAll('#spec-grid input, #kwal-grid input, #niv-grid input').forEach(c => c.checked = false);
         toggleRijderFormulier();
         laadMijnRijderAanvragen();
         laadRijderAanvragen();
@@ -822,12 +845,16 @@ function filterRijderAanvragen() {
     const soorten = gekozenFilter('rf-soort');
     const karts = gekozenFilter('rf-kart');
     const kwals = gekozenFilter('rf-kwal');
+    const niveaus = gekozenFilter('rf-niveau');
     const lijst = alle.filter(a =>
         (!locatie || (a.locatie || '').toLowerCase().includes(locatie)) &&
         (!vanaf || !a.datum || a.datum.substring(0, 10) >= vanaf) &&
         (soorten.length === 0 || soorten.includes(a.soortOpdracht || 'Training')) &&
         lijstBevat(a.specialisaties, karts) &&
-        lijstBevat(a.kwaliteiten, kwals));
+        lijstBevat(a.kwaliteiten, kwals) &&
+        // 'Alle niveaus' past bij elk gekozen niveau
+        (niveaus.length === 0 || lijstBevat(a.kwaliteiten, [...niveaus, ALLE_NIVEAUS])) &&
+        rijderBudgetSlider.past(a.maxPrijs));
     const teller = document.getElementById('rijder-teller');
     teller.textContent = alle.length === 0 ? 'Geen aanvragen'
         : lijst.length === alle.length ? `${alle.length} open aanvra${alle.length === 1 ? 'ag' : 'gen'}` : `${lijst.length} van ${alle.length}`;
@@ -841,6 +868,7 @@ function filterRijderAanvragen() {
 function resetFilter() {
     ['rf-locatie', 'rf-datum'].forEach(id => document.getElementById(id).value = '');
     document.querySelectorAll('#rf-paneel input[type=checkbox]').forEach(c => c.checked = false);
+    rijderBudgetSlider.reset();
     filterRijderAanvragen();
 }
 
