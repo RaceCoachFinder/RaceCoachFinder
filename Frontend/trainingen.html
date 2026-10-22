@@ -350,7 +350,7 @@
                     </div>
                     <div class="wiz-stap" data-label="Details">
                     <div class="formulier-groep">
-                        <label>Extra categorie <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel, meerdere mogelijk)</span></label>
+                        <label>Niveau rijders <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel, meerdere mogelijk)</span></label>
                         <div class="multi-check-grid" id="cat-grid"></div>
                     </div>
                     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem">
@@ -428,6 +428,11 @@
                 <div class="filter-groep">
                     <label class="filter-label">Categorie</label>
                     <div class="filter-check-lijst" id="f-cat"></div>
+                </div>
+
+                <div class="filter-groep">
+                    <label class="filter-label">Niveau rijders</label>
+                    <div class="filter-check-lijst" id="f-niveau"></div>
                 </div>
 
                 <div class="filter-groep">
@@ -675,7 +680,9 @@
 <script>
 const API = 'https://racecoachfinder-production.up.railway.app/api';
 
-const CATEGORIEEN = ['Wedstrijddag', 'Trainingsdag', 'Testdag', 'Speciaal evenement', 'Beginners / Rookies'];
+const CATEGORIEEN = ['Wedstrijddag', 'Trainingsdag'];
+// Niveau van de rijders voor wie de groepscoaching bedoeld is (opgeslagen bij de categorieën)
+const NIVEAUS = ['Eerste keer', 'Beginner', 'Gevorderd', 'Ervaren', 'Zeer ervaren', 'Professioneel'];
 const DISCIPLINES = ['Huurkart', 'Rotax Max', 'OK / Junior', 'KZ / Shifter', 'Superkart', 'Simracing', 'Algemeen'];
 
 // Bouw filter checkboxes
@@ -687,6 +694,7 @@ function bouwFilterCheckboxes(containerId, opties, onChange) {
 }
 
 bouwFilterCheckboxes('f-cat', CATEGORIEEN, 'laadAanbod()');
+bouwFilterCheckboxes('f-niveau', NIVEAUS, 'laadAanbod()');
 bouwFilterCheckboxes('f-disc', DISCIPLINES, 'laadAanbod()');
 
 // Bouw formulier checkboxes
@@ -697,8 +705,8 @@ function bouwFormCheckboxes(containerId, opties) {
     ).join('');
 }
 
-// Wedstrijddag/Trainingsdag kies je met de knop 'Soort', de rest is extra
-bouwFormCheckboxes('cat-grid', CATEGORIEEN.filter(c => c !== 'Wedstrijddag' && c !== 'Trainingsdag'));
+// Wedstrijddag/Trainingsdag kies je met de knop 'Soort'; hier alleen het niveau
+bouwFormCheckboxes('cat-grid', NIVEAUS);
 bouwFormCheckboxes('disc-grid', DISCIPLINES);
 
 document.getElementById('datum').min = new Date().toISOString().split('T')[0];
@@ -719,7 +727,7 @@ laadAanbod();
 function resetFilters() {
     document.getElementById('f-locatie').value = '';
     document.getElementById('f-datum').value = '';
-    document.querySelectorAll('#f-cat input, #f-disc input').forEach(c => c.checked = false);
+    document.querySelectorAll('#f-cat input, #f-niveau input, #f-disc input').forEach(c => c.checked = false);
     document.querySelector('input[name="f-prijs"][value=""]').checked = true;
     laadAanbod();
 }
@@ -767,6 +775,10 @@ async function laadAanbod() {
         }
 
         // Client-side filter voor meerdere categorieën/disciplines tegelijk
+        const gekozenNiveaus = [...document.querySelectorAll('#f-niveau input:checked')].map(c => c.value);
+        if (gekozenNiveaus.length) {
+            aanbod = aanbod.filter(a => gekozenNiveaus.some(n => (a.categorieen || '').split(',').map(x => x.trim()).includes(n)));
+        }
         if (gekozenCats.length > 1) {
             aanbod = aanbod.filter(a => gekozenCats.some(c => (a.categorieen || '').includes(c)));
         }
