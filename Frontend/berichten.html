@@ -1210,7 +1210,11 @@ async function openTrainingVoorstel() {
         _tv = await authVerzoek(`/trainingvoorstel/groep/${huidigGroepsId}`);
         renderTrainingVoorstel();
     } catch (e) {
-        document.getElementById('tv-inhoud').innerHTML = `<p class="tv-melding fout">${esc(e.message)}</p>`;
+        // 'Fout 404' zonder tekst = de server kent deze functie nog niet (nieuwe backend nog niet live)
+        const tekst = /^Fout 404$/.test(e.message)
+            ? 'Het trainingsvoorstel is nog niet beschikbaar op de server. Probeer het later opnieuw.'
+            : e.message;
+        document.getElementById('tv-inhoud').innerHTML = `<p class="tv-melding fout">${esc(tekst)}</p>`;
     }
 }
 
