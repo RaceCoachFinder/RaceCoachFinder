@@ -690,3 +690,35 @@ footer {
 .filter-dropdown .filter-check-lijst label:hover { background: #f5f5f5; }
 .filter-dropdown .filter-check-lijst input { width: auto; margin: 0; accent-color: var(--kleur-primair); }
 @media (max-width: 720px) { .filter-dropdown-knop { font-size: 16px; } }
+
+/* ===== Formulier in stappen-pop-up (js/stappen-popup.js) ===== */
+.wiz-overlay { display: none; position: fixed; inset: 0; z-index: 9500; background: rgba(0,0,0,0.55); backdrop-filter: blur(3px); align-items: center; justify-content: center; padding: 1rem; }
+.wiz-overlay.open { display: flex; }
+.wiz-kaart { position: relative; background: #fff; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.25); width: 100%; max-width: 620px; max-height: 92vh; display: flex; flex-direction: column; padding: 1.5rem 1.75rem 1.25rem; }
+.wiz-sluiten { position: absolute; top: 0.9rem; right: 1rem; background: none; border: none; font-size: 1.3rem; color: #888; cursor: pointer; line-height: 1; }
+.wiz-titel { margin: 0 2rem 0.25rem 0; font-size: 1.15rem; font-weight: 800; }
+.wiz-indicator { display: flex; align-items: flex-start; margin: 1rem 0 1.25rem; }
+.wiz-stap-bol { position: relative; display: flex; flex-direction: column; align-items: center; flex-shrink: 0; min-width: 44px; }
+.wiz-bal { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #ddd; background: #fff; color: #999; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+.wiz-stap-bol.actief .wiz-bal, .wiz-stap-bol.klaar .wiz-bal { border-color: var(--kleur-primair); background: var(--kleur-primair); color: var(--kleur-donker); }
+.wiz-label { font-size: 0.7rem; color: var(--kleur-subtekst); margin-top: 0.3rem; font-weight: 600; white-space: nowrap; }
+.wiz-stap-bol.actief .wiz-label { color: var(--kleur-tekst); }
+.wiz-lijn { flex: 1; height: 2px; background: #ddd; margin-top: 15px; min-width: 12px; transition: background 0.2s; }
+.wiz-lijn.actief { background: var(--kleur-primair); }
+.wiz-body { overflow-y: auto; flex: 1; min-height: 0; padding: 0.15rem 0.15rem 0.5rem; }
+.wiz-stap { display: none; }
+.wiz-stap.actief { display: block; animation: wiz-in 0.18s ease-out; }
+@keyframes wiz-in { from { opacity: 0; transform: translateX(8px); } to { opacity: 1; transform: none; } }
+.wiz-nav { display: flex; justify-content: space-between; gap: 0.75rem; padding-top: 0.9rem; border-top: 1px solid #f0f0f0; margin-top: 0.5rem; }
+.wiz-nav .btn { min-width: 120px; }
+.wiz-vorige { color: #555 !important; border-color: #ccc !important; }
+@media (max-width: 700px) {
+    .wiz-overlay { padding: 0; align-items: flex-end; }
+    .wiz-kaart { max-height: 94vh; border-radius: 16px 16px 0 0; padding: 1.25rem 1rem 1rem; }
+    .wiz-label { display: none; }
+    .wiz-stap-bol.actief .wiz-label { display: block; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); }
+    .wiz-indicator { margin-bottom: 1.6rem; }
+    .wiz-kaart input, .wiz-kaart textarea, .wiz-kaart select { font-size: 16px; }
+}
+.toast-melding { position: fixed; left: 50%; bottom: 1.5rem; transform: translateX(-50%); z-index: 9999; background: #1f2937; color: #fff; padding: 0.7rem 1.2rem; border-radius: 10px; font-weight: 600; font-size: 0.9rem; box-shadow: 0 6px 20px rgba(0,0,0,0.25); transition: opacity 0.5s; }
+.toast-melding.weg { opacity: 0; }

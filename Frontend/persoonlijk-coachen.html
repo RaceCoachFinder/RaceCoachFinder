@@ -383,7 +383,8 @@
                     <div id="melding-coach"></div>
                     <form onsubmit="submitCoachAanbod(event)">
 
-                        <div class="formulier-groep">
+                        <div class="wiz-stap" data-label="Soort">
+                    <div class="formulier-groep">
                             <label>Soort aanbieding</label>
                             <div class="type-selector">
                                 <button type="button" class="type-optie actief" id="ctype-training-btn" onclick="setCoachType('Training')">🎯 Training</button>
@@ -402,8 +403,9 @@
                                 </div>
                             </div>
                         </div>
-
-                        <div class="formulier-groep">
+                    </div>
+                    <div class="wiz-stap" data-label="Wanneer &amp; waar">
+                    <div class="formulier-groep">
                             <label for="c-titel">Titel *</label>
                             <input type="text" id="c-titel" placeholder="bijv. Persoonlijke coaching Rotax Max – trainingssessie" required>
                         </div>
@@ -418,8 +420,9 @@
                                 <input type="date" id="c-datum" required>
                             </div>
                         </div>
-
-                        <div class="formulier-groep">
+                    </div>
+                    <div class="wiz-stap" data-label="Details">
+                    <div class="formulier-groep">
                             <label>Voertuig <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel)</span></label>
                             <div class="multi-check-grid" id="c-disc-grid"></div>
                         </div>
@@ -436,13 +439,15 @@
                                 </label>
                             </div>
                         </div>
-
-                        <div class="formulier-groep">
+                    </div>
+                    <div class="wiz-stap" data-label="Omschrijving">
+                    <div class="formulier-groep">
                             <label for="c-beschrijving">Beschrijving *</label>
                             <textarea id="c-beschrijving" rows="3" placeholder="Beschrijf wat je biedt, je aanpak, wat inbegrepen is..." required></textarea>
                         </div>
-
-                        <div class="formulier-groep">
+                    </div>
+                    <div class="wiz-stap" data-label="Coaches">
+                    <div class="formulier-groep">
                             <label>Coach uitnodigen <span style="color:var(--kleur-subtekst);font-weight:400">(optioneel – zoek een specifieke coach)</span></label>
                             <div id="c-coach-tags" class="coach-tags"></div>
                             <div class="coach-mention-wrapper">
@@ -454,8 +459,8 @@
                                 <button type="button" class="btn-verdelen" onclick="verdeelEvenredig()">⚖️ Evenredig verdelen</button>
                             </div>
                         </div>
-
-                        <div style="display:flex;gap:0.75rem;justify-content:flex-end;margin-top:0.5rem">
+                    </div>
+                    <div class="wiz-slot" style="display:flex;gap:0.75rem;justify-content:flex-end;margin-top:0.5rem">
                             <button type="button" onclick="toggleCoachFormulier()" class="btn btn-secundair" style="color:#555;border-color:#ccc">Annuleren</button>
                             <button type="submit" class="btn btn-primair">Aanbieding plaatsen</button>
                         </div>
@@ -559,6 +564,7 @@
 <script src="js/auth.js"></script>
 <script src="js/push.js"></script>
 <script src="js/filter-dropdown.js" defer></script>
+<script src="js/stappen-popup.js"></script>
 <script>
 const API = 'https://racecoachfinder-production.up.railway.app/api';
 
@@ -684,12 +690,11 @@ function toggleRijderFormulier() {
     btn.textContent = open ? '+ Aanvraag plaatsen' : '✕ Sluiten';
 }
 
+// Aanbieding plaatsen gaat in een pop-up met stappen
+let _coachWizard = null;
 function toggleCoachFormulier() {
-    const form = document.getElementById('coach-formulier');
-    const btn = document.getElementById('coach-form-toggle');
-    const open = form.style.display !== 'none';
-    form.style.display = open ? 'none' : '';
-    btn.textContent = open ? '+ Aanbieding toevoegen' : '✕ Sluiten';
+    _coachWizard = _coachWizard || maakStappenPopup('coach-formulier', 'Nieuwe aanbieding plaatsen');
+    if (_coachWizard.isOpen()) _coachWizard.sluit(); else _coachWizard.open();
 }
 
 // ======== RIJDER AANVRAAG INDIENEN ========
