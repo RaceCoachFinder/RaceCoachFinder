@@ -1239,7 +1239,8 @@ function renderTrainingVoorstel() {
     if (_tvBewerken && v.isOrganisator) { el.innerHTML = tvFormulierHtml(v); return; }
     const datum = v.datum ? new Date(v.datum).toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : 'Datum nog niet gekozen';
     const prijs = v.isGratis ? 'Gratis' : (v.prijsPerRijder != null ? `€${v.prijsPerRijder} p.p.` : 'Prijs nog niet bepaald');
-    const chips = [...(v.categorieen || '').split(','), ...(v.disciplines || '').split(',')].filter(Boolean);
+    const chips = [...(v.categorieen || '').split(','), ...(v.disciplines || '').split(',')].filter(Boolean)
+        .map(c => c.trim().replace(/^Duur:\s*/, '⏱️ '));
     const gepubliceerd = v.gepubliceerdAanbodId != null;
     const mijnId = (getGebruiker() || {}).id;
     const ikBenToegevoegd = v.coaches.find(c => c.id === mijnId);
@@ -1345,7 +1346,8 @@ async function tvOpslaan() {
         maxRijders: maxRaw ? parseInt(maxRaw) : null,
         prijsPerRijder: prijsRaw ? parseFloat(prijsRaw) : null,
         isGratis: document.getElementById('tv-gratis').checked,
-        categorieen: [gekozen('tv-cat'), gekozen('tv-niveau')].filter(Boolean).join(','),
+        // De duur (bij endurance) staat niet als vinkje in het formulier: bestaande waarde bewaren
+        categorieen: [gekozen('tv-cat'), gekozen('tv-niveau'), ...(_tv.categorieen || '').split(',').map(c => c.trim()).filter(c => c.startsWith('Duur:'))].filter(Boolean).join(','),
         disciplines: gekozen('tv-disc'),
         wedstrijdOrganisatie: document.getElementById('tv-organisatie').value,
         wedstrijdNaam: document.getElementById('tv-wedstrijd').value

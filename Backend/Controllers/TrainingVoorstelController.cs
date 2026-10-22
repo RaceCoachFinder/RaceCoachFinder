@@ -71,9 +71,10 @@ public class TrainingVoorstelController : ControllerBase
                 Datum = aanvraag.Datum,
                 MaxRijders = aanvraag.GroepGrootte,
                 PrijsPerRijder = aanvraag.MaxPrijs,
-                // Bij een wedstrijd staat het soort (Sprint/Endurance) vooraan in de kwaliteiten van de aanvraag
+                // Bij een wedstrijd staan het soort (Sprint/Endurance) en eventueel de duur ('Duur: 6 uur') in de kwaliteiten van de aanvraag
                 Categorieen = isWedstrijd
-                    ? string.Join(",", new[] { "Wedstrijddag" }.Concat(aanvraag.Kwaliteiten.Split(',').Select(k => k.Trim()).Where(k => k is "Sprint" or "Endurance").Take(1)))
+                    ? string.Join(",", new[] { "Wedstrijddag" }.Concat(aanvraag.Kwaliteiten.Split(',').Select(k => k.Trim())
+                        .Where(k => k is "Sprint" or "Endurance" || k.StartsWith("Duur:"))))
                     : "Trainingsdag",
                 Disciplines = aanvraag.Specialisaties,
                 WedstrijdOrganisatie = isWedstrijd ? aanvraag.WedstrijdOrganisatie : "",

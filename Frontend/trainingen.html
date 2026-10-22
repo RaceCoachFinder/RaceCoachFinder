@@ -677,6 +677,7 @@
 <script src="js/push.js"></script>
 <script src="js/filter-dropdown.js" defer></script>
 <script src="js/stappen-popup.js"></script>
+<script src="js/endurance-duur.js" defer></script>
 <script>
 const API = 'https://racecoachfinder-production.up.railway.app/api';
 
@@ -869,7 +870,7 @@ function aanbodKaartHTML(a) {
             </div>
             ${a.korteOmschrijving ? `<div class="aanbod-beschrijving">${esc(a.korteOmschrijving)}</div>` : ''}
             <div class="chips">
-                ${cats.filter(c => !SOORT_CATS.includes(c)).map(c => `<span class="chip chip-categorie">${esc(c)}</span>`).join('')}
+                ${cats.filter(c => !SOORT_CATS.includes(c) && !isDuur(c)).map(c => `<span class="chip chip-categorie">${esc(c)}</span>`).join('')}
                 ${discs.map(d => `<span class="chip chip-discipline">${esc(d)}</span>`).join('')}
                 ${prijsTag}
             </div>
@@ -1242,7 +1243,8 @@ function soortChipHtml(a) {
     const cats = (a.categorieen || '').split(',');
     if (isWedstrijdAanbod(a)) {
         const sub = cats.find(c => c === 'Sprint' || c === 'Endurance');
-        return `<span class="chip chip-wedstrijd">🏁 Wedstrijd${sub ? ' · ' + sub : ''}</span>`;
+        const duur = duurUit(a.categorieen);
+        return `<span class="chip chip-wedstrijd">🏁 Wedstrijd${sub ? ' · ' + sub : ''}${duur ? ' · ' + esc(duur) : ''}</span>`;
     }
     return cats.includes('Trainingsdag') ? '<span class="chip chip-training-g">🎯 Training</span>' : '';
 }
@@ -1258,7 +1260,7 @@ async function submitAanbod(event) {
 
     const isWedstrijd = coachGroepType === 'Wedstrijd';
     const wedSoort = document.querySelector('input[name="cgroep-wed-soort"]:checked')?.value || 'Sprint';
-    const cats = [isWedstrijd ? 'Wedstrijddag' : 'Trainingsdag', ...(isWedstrijd ? [wedSoort] : []), ...getGekozen('cat-grid')];
+    const cats = [isWedstrijd ? 'Wedstrijddag' : 'Trainingsdag', ...(isWedstrijd ? [wedSoort, leesDuur('cgroep-wed-soort')].filter(Boolean) : []), ...getGekozen('cat-grid')];
 
     const body = {
         titel: document.getElementById('titel').value.trim(),
@@ -1296,6 +1298,7 @@ async function submitAanbod(event) {
         event.target.reset();
         document.querySelectorAll('#cat-grid input, #disc-grid input').forEach(c => c.checked = false);
         setCoachGroepType('Training');
+        resetDuur();
         uitgenodigdeCoaches = [];
         renderCoachTags();
         toggleFormulier();
@@ -1325,7 +1328,7 @@ function toonPopup(a) {
     const cats = (a.categorieen || '').split(',').filter(Boolean);
     const discs = (a.disciplines || '').split(',').filter(Boolean);
     document.getElementById('modal-chips').innerHTML =
-        cats.filter(c => !SOORT_CATS.includes(c)).map(c => `<span class="chip chip-categorie">${esc(c)}</span>`).join('') +
+        cats.filter(c => !SOORT_CATS.includes(c) && !isDuur(c)).map(c => `<span class="chip chip-categorie">${esc(c)}</span>`).join('') +
         discs.map(d => `<span class="chip chip-discipline">${esc(d)}</span>`).join('') +
         (a.isGratis ? '<span class="chip chip-gratis">Gratis</span>' : a.prijsPerRijder ? `<span class="chip chip-prijs">€${a.prijsPerRijder} p.p.</span>` : '');
 
@@ -1573,7 +1576,7 @@ async function submitGroepRijder(event) {
     const gekozenKwals = [...document.querySelectorAll('#groep-kwal-grid input:checked')].map(c => c.value);
     const gekozenSpecs = [...document.querySelectorAll('#groep-spec-grid input:checked')].map(c => c.value);
     const kwaliteiten = groepType === 'Wedstrijd'
-        ? wedSoort
+        ? [wedSoort, leesDuur('groep-wed-soort')].filter(Boolean).join(',')
         : gekozenKwals.join(',');
     const body = {
         locatie: document.getElementById('groep-locatie').value.trim(),
@@ -1597,6 +1600,7 @@ async function submitGroepRijder(event) {
         renderGroepRijderChips();
         document.querySelectorAll('#groep-kwal-grid input, #groep-spec-grid input').forEach(c => c.checked = false);
         setGroepType('Training');
+        resetDuur();
         toggleGroepRijderForm();
         laadMijnGroepAanvragen();
         laadGroepAanvragen();
@@ -1668,7 +1672,7 @@ function groepAanvraagChips(a) {
     const specs = (a.specialisaties || '').split(',').filter(Boolean);
     const kwals = (a.kwaliteiten || '').split(',').filter(Boolean);
     return specs.map(s => `<span class="chip chip-discipline">${esc(s)}</span>`).join('')
-        + kwals.map(k => `<span class="chip chip-categorie">${esc(k)}</span>`).join('')
+        + kwals.map(k => `<span class="chip chip-categorie">${esc(toonKenmerk(k))}</span>`).join('')
         + (a.maxPrijs ? `<span class="chip chip-prijs">Max €${a.maxPrijs} p.p.</span>` : '');
 }
 

@@ -565,6 +565,7 @@
 <script src="js/push.js"></script>
 <script src="js/filter-dropdown.js" defer></script>
 <script src="js/stappen-popup.js"></script>
+<script src="js/endurance-duur.js" defer></script>
 <script>
 const API = 'https://racecoachfinder-production.up.railway.app/api';
 
@@ -711,7 +712,7 @@ async function submitRijderAanvraag(event) {
     const datumVal = document.getElementById('datum').value;
     const wedSoort = document.querySelector('input[name="wed-soort"]:checked')?.value || 'Sprint';
     // Bij een wedstrijd staat het soort (Sprint/Endurance) vooraan, gevolgd door wat de rijder wil aanpakken
-    const kwaliteiten = [...new Set([...(rijderType === 'Wedstrijd' ? [wedSoort] : []), ...getGekozen('kwal-grid')])].join(',');
+    const kwaliteiten = [...new Set([...(rijderType === 'Wedstrijd' ? [wedSoort, leesDuur('wed-soort')].filter(Boolean) : []), ...getGekozen('kwal-grid')])].join(',');
     const body = {
         locatie: document.getElementById('locatie').value.trim(),
         datum: datumVal ? new Date(datumVal).toISOString() : null,
@@ -730,6 +731,7 @@ async function submitRijderAanvraag(event) {
         melding.innerHTML = '<div class="melding melding-succes">Aanvraag geplaatst!</div>';
         event.target.reset();
         setRijderType('Training');
+        resetDuur();
         document.querySelectorAll('#spec-grid input, #kwal-grid input').forEach(c => c.checked = false);
         toggleRijderFormulier();
         laadMijnRijderAanvragen();
@@ -753,7 +755,7 @@ async function submitCoachAanbod(event) {
         beschrijving: document.getElementById('c-beschrijving').value.trim(),
         datum: new Date(document.getElementById('c-datum').value).toISOString(),
         locatie: document.getElementById('c-locatie').value.trim(),
-        categorieen: coachType === 'Wedstrijd' ? `Wedstrijd,${cWedSoort}` : coachType,
+        categorieen: coachType === 'Wedstrijd' ? ['Wedstrijd', cWedSoort, leesDuur('ctype-wed-soort')].filter(Boolean).join(',') : coachType,
         disciplines: getGekozen('c-disc-grid').join(','),
         maxRijders: 1,
         prijsPerRijder: parseFloat(document.getElementById('c-prijs').value) || null,
@@ -781,6 +783,7 @@ async function submitCoachAanbod(event) {
         melding.innerHTML = '<div class="melding melding-succes">Aanbieding geplaatst!</div>';
         event.target.reset();
         setCoachType('Training');
+        resetDuur();
         _uitgenodigdeCoaches = [];
         renderCoachTags();
         toggleCoachFormulier();
@@ -888,7 +891,7 @@ function rijderKaartHTML(a) {
             <div style="font-size:0.82rem;color:var(--kleur-subtekst);margin-bottom:0.5rem">${meta}</div>
             <div class="chips">
                 ${specs.map(s => `<span class="chip chip-primair">${esc(s)}</span>`).join('')}
-                ${kwals.map(k => `<span class="chip">${esc(k)}</span>`).join('')}
+                ${kwals.map(k => `<span class="chip">${esc(toonKenmerk(k))}</span>`).join('')}
                 ${a.maxPrijs ? `<span class="chip" style="background:#f3e5f5;color:#6a1b9a">Max €${a.maxPrijs}</span>` : ''}
             </div>
         </div>
@@ -919,7 +922,7 @@ function toonAanvraagPopup(id) {
     const kwals = (a.kwaliteiten || '').split(',').filter(Boolean);
     document.getElementById('pm-chips').innerHTML =
         specs.map(s => `<span class="chip chip-primair">${esc(s)}</span>`).join('') +
-        kwals.map(k => `<span class="chip">${esc(k)}</span>`).join('');
+        kwals.map(k => `<span class="chip">${esc(toonKenmerk(k))}</span>`).join('');
     document.getElementById('pm-knoppen').innerHTML = aanvraagReageerKnop(a, 'font-size:0.88rem');
     document.getElementById('aanbod-popup').style.display = 'flex';
     document.body.style.overflow = 'hidden';
@@ -1025,7 +1028,8 @@ function coachKaartHTML(a) {
     const mnd = d.toLocaleDateString('nl-NL', { month: 'short' });
     const volledigeDatum = d.toLocaleDateString('nl-NL', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
     const discs = (a.disciplines || '').split(',').filter(Boolean);
-    const soortLabel = (a.categorieen || '').includes('Wedstrijd') ? '🏁 Wedstrijd' : '🎯 Training';
+    const duur = duurUit(a.categorieen);
+    const soortLabel = (a.categorieen || '').includes('Wedstrijd') ? '🏁 Wedstrijd' + (duur ? ' · ' + duur : '') : '🎯 Training';
 
     const prijsTag = a.isGratis
         ? '<span class="chip chip-groep">Gratis</span>'
@@ -1115,7 +1119,7 @@ function toonAanbodPopup(id) {
     const cats = (a.categorieen || '').split(',').filter(Boolean);
     const discs = (a.disciplines || '').split(',').filter(Boolean);
     document.getElementById('pm-chips').innerHTML =
-        cats.map(c => `<span class="chip chip-training">${esc(c)}</span>`).join('') +
+        cats.map(c => `<span class="chip chip-training">${esc(toonKenmerk(c))}</span>`).join('') +
         discs.map(d => `<span class="chip chip-training">${esc(d)}</span>`).join('') +
         (prijs ? `<span class="chip" style="background:#f3e5f5;color:#6a1b9a">${prijs}</span>` : '');
     document.getElementById('pm-knoppen').innerHTML = a.coachProfielId
