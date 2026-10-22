@@ -207,22 +207,22 @@
 
                     <div class="formulier-rij">
                         <div class="formulier-groep">
-                            <label>Woonplaats</label>
-                            <input type="text" id="woonplaats">
+                            <label>Woonplaats *</label>
+                            <input type="text" id="woonplaats" required>
                         </div>
                         <div class="formulier-groep">
-                            <label>Nationaliteit</label>
-                            <input type="text" id="nationaliteit">
+                            <label>Nationaliteit *</label>
+                            <input type="text" id="nationaliteit" required>
                         </div>
                     </div>
                     <div class="formulier-rij">
                         <div class="formulier-groep">
-                            <label>Leeftijd</label>
-                            <input type="number" id="leeftijd" min="8" max="99">
+                            <label>Leeftijd *</label>
+                            <input type="number" id="leeftijd" min="8" max="99" required>
                         </div>
                         <div class="formulier-groep">
-                            <label>Niveau</label>
-                            <select id="niveau">
+                            <label>Niveau *</label>
+                            <select id="niveau" required>
                                 <option value="">– Kies –</option>
                                 <option>First timer</option>
                                 <option>Beginner</option>
@@ -233,19 +233,19 @@
                         </div>
                     </div>
                     <div class="formulier-groep">
-                        <label>Talen</label>
-                        <input type="text" id="talen" placeholder="bijv. Nederlands, Engels">
+                        <label>Talen *</label>
+                        <input type="text" id="talen" placeholder="bijv. Nederlands, Engels" required>
                     </div>
                     <div class="formulier-groep">
                         <label>Voertuig <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel)</span></label>
                         <div id="specialisaties-kiezer"></div>
                     </div>
                     <div class="formulier-groep">
-                        <label>Bio</label>
+                        <label>Bio <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel)</span></label>
                         <textarea id="bio" rows="3" placeholder="Vertel iets over jezelf als rijder"></textarea>
                     </div>
                     <div class="formulier-groep">
-                        <label>Doelen</label>
+                        <label>Doelen <span style="font-weight:400;color:var(--kleur-subtekst)">(optioneel)</span></label>
                         <textarea id="doelen" rows="2" placeholder="bijv. Mijn ronde-tijden verbeteren, racetechniek leren"></textarea>
                     </div>
                     <div class="formulier-groep">
@@ -485,6 +485,9 @@ function annuleer() {
 
 async function slaanProfiel(event) {
     event.preventDefault();
+    // Alleen spaties telt niet als ingevuld
+    ['woonplaats', 'nationaliteit', 'talen'].forEach(id => { const el = document.getElementById(id); el.value = el.value.trim(); });
+    if (!event.target.checkValidity()) { event.target.reportValidity(); return; }
     const gegevens = {
         naam: gebruiker.naam,
         email: gebruiker.email,
