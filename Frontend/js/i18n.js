@@ -117,7 +117,7 @@
         'Snel naar:': 'Quick links:',
         'Wat wil je doen?': 'What would you like to do?',
         'Coach zoeken': 'Find a coach',
-        'Bekijk profielen, ervaring, prijzen en reviews van kartcoaches en neem direct contact op.': 'View profiles, experience, prices and reviews of kart coaches and get in touch directly.',
+        'Bekijk profielen, ervaring, prijzen en reviews van racecoaches en neem direct contact op.': 'View profiles, experience, prices and reviews of race coaches and get in touch directly.',
         'Naar coaches': 'Go to coaches',
         'Rijders plaatsen een aanvraag voor één-op-één begeleiding. Coaches bieden aan wanneer en waar ze beschikbaar zijn.': 'Riders post a request for one-to-one coaching. Coaches offer when and where they are available.',
         'Naar persoonlijk coachen': 'Go to personal coaching',
