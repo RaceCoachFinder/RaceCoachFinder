@@ -1195,7 +1195,7 @@ let _ledenZoekResultaten = [];
 // Rijders zien het voorstel en wie er coacht, maar geen percentages.
 
 const TV_CATEGORIEEN = ['Wedstrijddag', 'Sprint', 'Endurance', 'Trainingsdag'];
-const TV_NIVEAUS = ['Eerste keer', 'Beginner', 'Gevorderd', 'Ervaren', 'Zeer ervaren', 'Professioneel'];
+const TV_NIVEAUS = ['Alle niveaus', 'Eerste keer', 'Beginner', 'Gevorderd', 'Ervaren', 'Zeer ervaren', 'Professioneel'];
 const TV_DISCIPLINES = ['Huurkart', 'Rotax Max', 'OK / Junior', 'KZ / Shifter', 'Superkart', 'Simracing', 'Algemeen'];
 let _tv = null;          // huidig voorstel van de server
 let _tvBewerken = false; // organisator heeft het formulier open
@@ -1283,7 +1283,7 @@ function renderTrainingVoorstel() {
 function tvFormulierHtml(v) {
     const checks = (naam, opties, gekozen) => {
         const set = new Set((gekozen || '').split(',').filter(Boolean));
-        return `<div class="tv-checks">${opties.map(o => `<label><input type="checkbox" name="${naam}" value="${esc(o)}" ${set.has(o) ? 'checked' : ''}> ${esc(o)}</label>`).join('')}</div>`;
+        return `<div class="tv-checks">${opties.map(o => `<label><input type="checkbox" name="${naam}" value="${esc(o)}" ${set.has(o) ? 'checked' : ''}> ${o === 'Alle niveaus' ? 'Maakt niet uit' : esc(o)}</label>`).join('')}</div>`;
     };
     const datum = v.datum ? v.datum.substring(0, 10) : '';
     const coachRijen = v.coaches.map(c => `

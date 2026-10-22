@@ -683,6 +683,7 @@ const API = 'https://racecoachfinder-production.up.railway.app/api';
 const CATEGORIEEN = ['Wedstrijddag', 'Trainingsdag'];
 // Niveau van de rijders voor wie de groepscoaching bedoeld is (opgeslagen bij de categorieën)
 const NIVEAUS = ['Eerste keer', 'Beginner', 'Gevorderd', 'Ervaren', 'Zeer ervaren', 'Professioneel'];
+const ALLE_NIVEAUS = 'Alle niveaus'; // keuze 'Maakt niet uit': past bij elk niveau
 const DISCIPLINES = ['Huurkart', 'Rotax Max', 'OK / Junior', 'KZ / Shifter', 'Superkart', 'Simracing', 'Algemeen'];
 
 // Bouw filter checkboxes
@@ -706,7 +707,16 @@ function bouwFormCheckboxes(containerId, opties) {
 }
 
 // Wedstrijddag/Trainingsdag kies je met de knop 'Soort'; hier alleen het niveau
-bouwFormCheckboxes('cat-grid', NIVEAUS);
+bouwFormCheckboxes('cat-grid', [ALLE_NIVEAUS, ...NIVEAUS]);
+document.querySelector(`#cat-grid input[value="${ALLE_NIVEAUS}"]`).parentElement.lastChild.textContent = ' Maakt niet uit';
+// 'Maakt niet uit' en losse niveaus sluiten elkaar uit
+document.getElementById('cat-grid').addEventListener('change', e => {
+    if (!e.target.checked) return;
+    const alles = e.target.value === ALLE_NIVEAUS;
+    document.querySelectorAll('#cat-grid input').forEach(c => {
+        if (c !== e.target && (alles || c.value === ALLE_NIVEAUS)) c.checked = false;
+    });
+});
 bouwFormCheckboxes('disc-grid', DISCIPLINES);
 
 document.getElementById('datum').min = new Date().toISOString().split('T')[0];
@@ -777,7 +787,10 @@ async function laadAanbod() {
         // Client-side filter voor meerdere categorieën/disciplines tegelijk
         const gekozenNiveaus = [...document.querySelectorAll('#f-niveau input:checked')].map(c => c.value);
         if (gekozenNiveaus.length) {
-            aanbod = aanbod.filter(a => gekozenNiveaus.some(n => (a.categorieen || '').split(',').map(x => x.trim()).includes(n)));
+            aanbod = aanbod.filter(a => {
+                const cats = (a.categorieen || '').split(',').map(x => x.trim());
+                return cats.includes(ALLE_NIVEAUS) || gekozenNiveaus.some(n => cats.includes(n));
+            });
         }
         if (gekozenCats.length > 1) {
             aanbod = aanbod.filter(a => gekozenCats.some(c => (a.categorieen || '').includes(c)));
