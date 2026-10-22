@@ -447,6 +447,7 @@
                         <label><input type="radio" name="f-prijs" value="gratis" onchange="laadAanbod()"> Gratis</label>
                         <label><input type="radio" name="f-prijs" value="betaald" onchange="laadAanbod()"> Betaald</label>
                     </div>
+                    <div id="f-prijs-slider"></div>
                 </div>
 
                 <button class="filter-reset" onclick="resetFilters()">Filters wissen</button>
@@ -675,6 +676,7 @@
 <script src="js/i18n.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/push.js"></script>
+<script src="js/prijs-slider.js"></script>
 <script src="js/filter-dropdown.js" defer></script>
 <script src="js/stappen-popup.js"></script>
 <script src="js/endurance-duur.js" defer></script>
@@ -698,6 +700,7 @@ function bouwFilterCheckboxes(containerId, opties, onChange) {
 bouwFilterCheckboxes('f-cat', CATEGORIEEN, 'laadAanbod()');
 bouwFilterCheckboxes('f-niveau', NIVEAUS, 'laadAanbod()');
 bouwFilterCheckboxes('f-disc', DISCIPLINES, 'laadAanbod()');
+const prijsSlider = maakPrijsSlider('f-prijs-slider', laadAanbod);
 
 // Bouw formulier checkboxes
 function bouwFormCheckboxes(containerId, opties) {
@@ -740,6 +743,7 @@ function resetFilters() {
     document.getElementById('f-datum').value = '';
     document.querySelectorAll('#f-cat input, #f-niveau input, #f-disc input').forEach(c => c.checked = false);
     document.querySelector('input[name="f-prijs"][value=""]').checked = true;
+    prijsSlider.reset();
     laadAanbod();
 }
 
@@ -799,6 +803,7 @@ async function laadAanbod() {
         if (gekozenDiscs.length > 1) {
             aanbod = aanbod.filter(a => gekozenDiscs.some(d => (a.disciplines || '').includes(d)));
         }
+        aanbod = aanbod.filter(a => prijsSlider.past(a.isGratis ? 0 : a.prijsPerRijder));
 
         window._huidigAanbod = aanbod;
         sorteerEnRender();

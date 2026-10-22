@@ -722,3 +722,17 @@ footer {
 }
 .toast-melding { position: fixed; left: 50%; bottom: 1.5rem; transform: translateX(-50%); z-index: 9999; background: #1f2937; color: #fff; padding: 0.7rem 1.2rem; border-radius: 10px; font-weight: 600; font-size: 0.9rem; box-shadow: 0 6px 20px rgba(0,0,0,0.25); transition: opacity 0.5s; }
 .toast-melding.weg { opacity: 0; }
+
+/* ===== Prijsslider in filters (js/prijs-slider.js) ===== */
+.prijs-slider { margin-top: 0.6rem; }
+.ps-waarden { display: flex; justify-content: space-between; font-size: 0.82rem; font-weight: 700; color: var(--kleur-tekst); margin-bottom: 0.35rem; }
+.ps-baan { position: relative; height: 22px; }
+.ps-baan::before { content: ''; position: absolute; left: 0; right: 0; top: 9px; height: 4px; border-radius: 2px; background: #e5e5e5; }
+.ps-vulling { position: absolute; top: 9px; height: 4px; border-radius: 2px; background: var(--kleur-primair); }
+.ps-baan input[type="range"] { position: absolute; left: 0; top: 0; width: 100%; height: 22px; margin: 0; padding: 0; border: none; background: none; pointer-events: none; -webkit-appearance: none; appearance: none; z-index: 3; }
+.ps-baan input[type="range"]:focus { outline: none; }
+.ps-baan input[type="range"]::-webkit-slider-runnable-track { background: none; border: none; height: 22px; }
+.ps-baan input[type="range"]::-moz-range-track { background: none; border: none; }
+.ps-baan input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; pointer-events: auto; width: 18px; height: 18px; margin-top: 2px; border-radius: 50%; background: #fff; border: 2px solid var(--kleur-primair); box-shadow: 0 1px 4px rgba(0,0,0,0.2); cursor: grab; }
+.ps-baan input[type="range"]::-moz-range-thumb { pointer-events: auto; width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 2px solid var(--kleur-primair); box-shadow: 0 1px 4px rgba(0,0,0,0.2); cursor: grab; }
+.ps-baan input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px rgba(245,196,0,0.35); }

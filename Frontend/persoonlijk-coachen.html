@@ -502,6 +502,7 @@
                                 <label><input type="radio" name="cf-prijs" value="gratis" onchange="filterCoachAanbod()"> Gratis</label>
                                 <label><input type="radio" name="cf-prijs" value="betaald" onchange="filterCoachAanbod()"> Betaald</label>
                             </div>
+                            <div id="cf-prijs-slider"></div>
                         </div>
                         <button type="button" class="filter-reset" onclick="resetCoachFilter()">Filters wissen</button>
                     </div>
@@ -563,6 +564,7 @@
 <script src="js/i18n.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/push.js"></script>
+<script src="js/prijs-slider.js"></script>
 <script src="js/filter-dropdown.js" defer></script>
 <script src="js/stappen-popup.js"></script>
 <script src="js/endurance-duur.js" defer></script>
@@ -594,6 +596,7 @@ bouwFilterChecks('rf-kart', SPECIALISATIES, 'filterRijderAanvragen()');
 bouwFilterChecks('rf-kwal', KWALITEITEN, 'filterRijderAanvragen()');
 bouwFilterChecks('cf-soort', ['Training', 'Wedstrijd'], 'filterCoachAanbod()');
 bouwFilterChecks('cf-disc', DISCIPLINES, 'filterCoachAanbod()');
+const coachPrijsSlider = maakPrijsSlider('cf-prijs-slider', filterCoachAanbod);
 
 function toggleFilterPaneel(id) {
     document.getElementById(id).classList.toggle('ingeklapt');
@@ -1077,7 +1080,8 @@ function filterCoachAanbod() {
         (soorten.length === 0 || soorten.includes((a.categorieen || '').includes('Wedstrijd') ? 'Wedstrijd' : 'Training')) &&
         lijstBevat(a.disciplines, discs) &&
         (!vanaf || (a.datum || '').substring(0, 10) >= vanaf) &&
-        (!prijs || (prijs === 'gratis' ? a.isGratis : !a.isGratis)));
+        (!prijs || (prijs === 'gratis' ? a.isGratis : !a.isGratis)) &&
+        coachPrijsSlider.past(a.isGratis ? 0 : a.prijsPerRijder));
     const teller = document.getElementById('coach-teller');
     teller.textContent = alles.length === 0 ? 'Geen aanbiedingen'
         : lijst.length === alles.length ? `${alles.length} beschikbaar` : `${lijst.length} van ${alles.length}`;
@@ -1092,6 +1096,7 @@ function resetCoachFilter() {
     ['cf-locatie', 'cf-datum'].forEach(id => document.getElementById(id).value = '');
     document.querySelectorAll('#cf-paneel input[type=checkbox]').forEach(c => c.checked = false);
     document.querySelector('input[name="cf-prijs"][value=""]').checked = true;
+    coachPrijsSlider.reset();
     filterCoachAanbod();
 }
 
