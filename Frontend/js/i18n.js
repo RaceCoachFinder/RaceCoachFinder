@@ -108,7 +108,7 @@
         'Niet beschikbaar': 'Not available',
         '🔔 Zet meldingen aan op je telefoon': '🔔 Turn on notifications on your phone',
         'Vind jouw': 'Find your',
-        'kartcoach': 'kart coach',
+        'racecoach': 'race coach',
         'Eén platform voor rijders en coaches: vind een coach, regel persoonlijke begeleiding of doe mee aan een groepstraining. Alles via chat.': 'One platform for riders and coaches: find a coach, arrange personal coaching or join a group training. All through chat.',
         'Word coach': 'Become a coach',
         'Groepstrainingen': 'Group trainings',
