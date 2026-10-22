@@ -206,6 +206,7 @@ function updateNav() {
     } else {
         navLinks.innerHTML +=
             '<li class="nav-auth"><a href="trainingen.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Groepstraining</a></li>' +
+            '<li class="nav-auth"><a href="persoonlijk-coachen.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Persoonlijk coachen</a></li>' +
             '<li class="nav-auth"><a href="inloggen.html">Inloggen</a></li>' +
             '<li class="nav-auth"><a href="registreren.html" style="background:var(--kleur-primair);color:#fff;padding:0.3rem 0.9rem;border-radius:6px;font-weight:600">Registreren</a></li>';
     }
