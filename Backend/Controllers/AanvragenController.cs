@@ -58,6 +58,7 @@ public class AanvragenController : ControllerBase
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
         var user = await _context.Users.FindAsync(userId) as ApplicationUser;
         aanvraag.RijderId = userId;
+        aanvraag.Titel = aanvraag.Titel?.Trim() ?? string.Empty;
         aanvraag.RijderNaam = user?.Naam ?? user?.Email ?? "Onbekend";
         aanvraag.AangemaaktOp = DateTime.UtcNow;
         aanvraag.IsGesloten = false;
@@ -144,7 +145,7 @@ public class AanvragenController : ControllerBase
         {
             CoachAanbodId = 0,
             RijderAanvraagId = id,
-            Naam = $"Groepscoaching: {korteBeschrijving}",
+            Naam = string.IsNullOrWhiteSpace(aanvraag.Titel) ? $"Groepscoaching: {korteBeschrijving}" : aanvraag.Titel,
             AangemaaktDoorId = coachId,
             AangemaaktOp = DateTime.UtcNow
         };

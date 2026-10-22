@@ -5,6 +5,7 @@ public class RijderAanvraag
     public int Id { get; set; }
     public string RijderId { get; set; } = string.Empty;
     public string RijderNaam { get; set; } = string.Empty;
+    public string Titel { get; set; } = string.Empty;
     public string Locatie { get; set; } = string.Empty;
     public DateTime? Datum { get; set; }
     public decimal? MaxPrijs { get; set; }

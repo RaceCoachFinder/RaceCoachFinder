@@ -65,7 +65,8 @@ public class TrainingVoorstelController : ControllerBase
                 GroepsgesprekId = groepId,
                 RijderAanvraagId = aanvraag.Id,
                 OrganisatorId = groep.AangemaaktDoorId,
-                Titel = isWedstrijd && wedstrijdNaam != "" ? wedstrijdNaam : (isWedstrijd ? "Wedstrijdbegeleiding" : "Groepscoaching"),
+                Titel = !string.IsNullOrWhiteSpace(aanvraag.Titel) ? aanvraag.Titel
+                    : isWedstrijd && wedstrijdNaam != "" ? wedstrijdNaam : (isWedstrijd ? "Wedstrijdbegeleiding" : "Groepscoaching"),
                 Beschrijving = aanvraag.Beschrijving,
                 Locatie = aanvraag.Locatie,
                 Datum = aanvraag.Datum,

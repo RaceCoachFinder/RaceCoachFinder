@@ -823,6 +823,10 @@ namespace Backend.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Titel")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("UitgenodigdeRijders")
                         .IsRequired()
                         .HasColumnType("TEXT");

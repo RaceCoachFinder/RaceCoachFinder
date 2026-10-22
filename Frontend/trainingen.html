@@ -545,6 +545,10 @@
                         </div>
 </div>
 <div class="wiz-stap" data-label="Wanneer &amp; waar">
+<div class="formulier-groep">
+    <label for="groep-titel">Titel *</label>
+    <input type="text" id="groep-titel" maxlength="80" placeholder="bijv. Met 4 vrienden regenrijden leren" required>
+</div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
 <div class="formulier-groep">
                             <label for="groep-locatie">Locatie <span id="groep-locatie-req" style="color:var(--kleur-subtekst);font-weight:400">(optioneel)</span></label>
@@ -1598,6 +1602,7 @@ async function submitGroepRijder(event) {
     const kwaliteiten = [...(groepType === 'Wedstrijd' ? [wedSoort, leesDuur('groep-wed-soort')] : []), ...gekozenNiveaus, ...gekozenKwals]
         .filter(Boolean).join(',');
     const body = {
+        titel: document.getElementById('groep-titel').value.trim(),
         locatie: document.getElementById('groep-locatie').value.trim(),
         datum: datumVal ? new Date(datumVal).toISOString() : null,
         maxPrijs: parseFloat(document.getElementById('groep-maxprijs').value) || null,
@@ -1678,6 +1683,7 @@ function resetGroepFilters() {
 }
 
 function groepAanvraagTitel(a) {
+    if (a.titel) return a.titel;
     if ((a.soortOpdracht || 'Training') === 'Wedstrijd') {
         const naam = [a.wedstrijdOrganisatie, a.wedstrijdNaam].filter(Boolean).join(' — ');
         return naam || 'Groep zoekt coach voor een wedstrijd';
@@ -1782,7 +1788,7 @@ async function laadMijnGroepAanvragen() {
                 <div style="flex:1;min-width:0">
                     <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.2rem;flex-wrap:wrap">
                         ${badge}
-                        <span style="font-size:0.95rem;font-weight:700">${a.locatie ? esc(a.locatie) : esc(a.beschrijving).substring(0, 50)}</span>
+                        <span style="font-size:0.95rem;font-weight:700">${a.titel ? esc(a.titel) : a.locatie ? esc(a.locatie) : esc(a.beschrijving).substring(0, 50)}</span>
                     </div>
                     <div style="font-size:0.82rem;color:var(--kleur-subtekst)">
                         ${datum !== '—' ? `📅 ${datum}` : ''}
