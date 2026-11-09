@@ -64,9 +64,11 @@ public class CoachAanbodController : ControllerBase
         var gebruikerIds = lijst.Select(a => a.CoachGebruikerId).Distinct().ToList();
         var profielGebruikerIds = gebruikerIds.Concat(uitgenodigdeIds).Distinct().ToList();
 
-        var profielIds = await _context.Coaches
+        var profielIds = (await _context.Coaches
             .Where(c => c.GebruikerId != null && profielGebruikerIds.Contains(c.GebruikerId))
-            .ToDictionaryAsync(c => c.GebruikerId!, c => c.Id);
+            .Select(c => new { c.GebruikerId, c.Id })
+            .ToListAsync())
+            .GroupBy(c => c.GebruikerId!).ToDictionary(g => g.Key, g => g.First().Id);
 
         var reviewStats = await _context.Reviews
             .Where(r => gebruikerIds.Contains(r.CoachGebruikerId))
@@ -76,9 +78,10 @@ public class CoachAanbodController : ControllerBase
 
         // Groepsgesprekken + geaccepteerde leden per aanbod
         var aanbodIds = lijst.Select(a => a.Id).ToList();
-        var groepen = await _context.Groepsgesprekken
+        var groepen = (await _context.Groepsgesprekken
             .Where(g => aanbodIds.Contains(g.CoachAanbodId))
-            .ToDictionaryAsync(g => g.CoachAanbodId);
+            .ToListAsync())
+            .GroupBy(g => g.CoachAanbodId).ToDictionary(g => g.Key, g => g.OrderBy(x => x.Id).First());
 
         var groepIds = groepen.Values.Select(g => g.Id).ToList();
         var alleLeden = await _context.GroepsgesprekLeden
@@ -173,6 +176,9 @@ public class CoachAanbodController : ControllerBase
         var aanbod = await _context.CoachAanboden.FindAsync(id);
         if (aanbod == null) return NotFound();
         if (aanbod.CoachGebruikerId != userId) return Forbid();
+        if (string.IsNullOrWhiteSpace(verzoek.Titel)) return BadRequest("Titel is verplicht.");
+        if (string.IsNullOrWhiteSpace(verzoek.Locatie)) return BadRequest("Locatie is verplicht.");
+        if (verzoek.Datum == default) return BadRequest("Datum is verplicht.");
 
         aanbod.Titel = verzoek.Titel.Trim();
         aanbod.KorteOmschrijving = verzoek.KorteOmschrijving?.Trim() ?? string.Empty;
@@ -196,7 +202,7 @@ public class CoachAanbodController : ControllerBase
         foreach (var u in afgewezen)
         {
             u.Status = "Openstaand";
-            var datumStr = aanbod.Datum.ToString("d MMM yyyy");
+            var datumStr = aanbod.Datum.ToString("d MMM yyyy", new System.Globalization.CultureInfo("nl-NL"));
             var prijsStr = aanbod.IsGratis ? "Gratis" : (aanbod.PrijsPerRijder.HasValue ? $"€{aanbod.PrijsPerRijder} p.p." : "");
             _context.Berichten.Add(new Bericht
             {
@@ -242,7 +248,7 @@ public class CoachAanbodController : ControllerBase
         if (percentages.Sum() > 100)
             return BadRequest("De aandelen van de coaches komen samen boven de 100%.");
 
-        var heeftUitnodigingen = verzoek.UitgenodigdeCoaches?.Any() == true;
+        var heeftUitnodigingen = verzoek.UitgenodigdeCoaches?.Any(c => !string.IsNullOrWhiteSpace(c.Id) && c.Id != userId) == true;
         var aanbod = new CoachAanbod
         {
             CoachGebruikerId = userId!,
@@ -294,9 +300,9 @@ public class CoachAanbodController : ControllerBase
             var gezienIds = new HashSet<string>();
             foreach (var uitnodigingVerzoek in verzoek.UitgenodigdeCoaches)
             {
-                if (!gezienIds.Add(uitnodigingVerzoek.Id)) continue;
+                if (string.IsNullOrWhiteSpace(uitnodigingVerzoek.Id) || uitnodigingVerzoek.Id == userId || !gezienIds.Add(uitnodigingVerzoek.Id)) continue;
                 var coach = await _userManager.FindByIdAsync(uitnodigingVerzoek.Id);
-                if (coach == null) continue;
+                if (coach == null || !coach.Rol.Split(',').Any(r => r.Trim() == "Coach")) continue;
 
                 var uitnodiging = new CoachUitnodiging
                 {
@@ -313,7 +319,7 @@ public class CoachAanbodController : ControllerBase
                 _context.CoachAanbodUitnodigingen.Add(uitnodiging);
                 await _context.SaveChangesAsync();
 
-                var datumStr = aanbod.Datum.ToString("d MMM yyyy");
+                var datumStr = aanbod.Datum.ToString("d MMM yyyy", new System.Globalization.CultureInfo("nl-NL"));
                 var prijsStr = aanbod.IsGratis ? "Gratis" : (aanbod.PrijsPerRijder.HasValue ? $"€{aanbod.PrijsPerRijder} p.p." : "");
                 var percStr = uitnodigingVerzoek.Percentage.HasValue ? $"\n💰 Jouw aandeel: {uitnodigingVerzoek.Percentage}%" : "";
                 _context.Berichten.Add(new Bericht
@@ -335,7 +341,7 @@ public class CoachAanbodController : ControllerBase
 
     private static string UitnodigingTekst(CoachAanbod aanbod, CoachUitnodiging u, string makerNaam, string inleiding)
     {
-        var datumStr = aanbod.Datum.ToString("d MMM yyyy");
+        var datumStr = aanbod.Datum.ToString("d MMM yyyy", new System.Globalization.CultureInfo("nl-NL"));
         var prijsStr = aanbod.IsGratis ? "Gratis" : (aanbod.PrijsPerRijder.HasValue ? $"€{aanbod.PrijsPerRijder} p.p." : "");
         var percStr = u.Percentage.HasValue ? $"\n💰 Jouw aandeel: {u.Percentage}%" : "";
         return $"🎯 UITNODIGING:{u.Id}\n{makerNaam} {inleiding}: {aanbod.Titel}\n📍 {aanbod.Locatie} | 📅 {datumStr}{(prijsStr != "" ? " | " + prijsStr : "")}{percStr}";

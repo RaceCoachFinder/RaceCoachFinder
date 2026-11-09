@@ -858,12 +858,12 @@ async function laadGesprekken() {
         }
     } catch (e) {
         document.getElementById('gesprekken-lijst').innerHTML =
-            `<div class="geen-gesprekken">Fout bij laden.<br><small style="color:#aaa">Zorg dat de backend draait en de migratie is uitgevoerd.</small></div>`;
+            `<div class="geen-gesprekken">Je gesprekken konden niet worden geladen.<br><small style="color:#aaa">Controleer je internetverbinding en probeer het opnieuw.</small></div>`;
     }
 }
 
 async function verwijderGesprek(partnerId) {
-    if (!confirm('Gesprek verwijderen? Alle berichten worden permanent gewist.')) return;
+    if (!confirm('Gesprek verwijderen? Het verdwijnt alleen bij jou; de ander houdt het gesprek.')) return;
     try {
         await authVerzoek(`/chat/gesprek/${encodeURIComponent(partnerId)}`, 'DELETE');
         if (huidigPartnerId === partnerId) mobieleTerug();
@@ -897,6 +897,16 @@ function renderGesprekkenLijst(gesprekken, groepen = []) {
         lijst.innerHTML = `<div class="geen-gesprekken">Nog geen berichten.<br><br>
             Ga naar een <a href="coaches.html">coachprofiel</a> om een gesprek te starten.</div>`;
         return;
+    }
+
+    // Technische berichten (uitnodigingen) leesbaar maken in de gesprekkenlijst
+    function leesbarePreview(t) {
+        t = t || '';
+        if (t.startsWith('🎯 UITNODIGING:')) {
+            const regel = (t.split('\n')[1] || '').replace(/^.*?(nodigt je uit voor|nodigt je opnieuw uit voor|nodigt je opnieuw uit):\s*/, '');
+            return '🎯 Uitnodiging: ' + (regel || 'training');
+        }
+        return t;
     }
 
     const groepRijen = groepen.map(g => {
@@ -936,7 +946,7 @@ function renderGesprekkenLijst(gesprekken, groepen = []) {
             </div>
             <div class="gesprek-info">
                 <div class="gesprek-naam">${esc(g.partnerNaam)}</div>
-                <div class="gesprek-preview ${heeftOngelezen ? 'ongelezen' : ''}">${esc(g.laatsteBericht)}</div>
+                <div class="gesprek-preview ${heeftOngelezen ? 'ongelezen' : ''}">${esc(leesbarePreview(g.laatsteBericht))}</div>
             </div>
             <div class="gesprek-meta">
                 <div class="gesprek-tijd">${formatTijd(g.laatsteTijd)}</div>
@@ -1663,6 +1673,9 @@ function renderBericht(b) {
                 ${citaatHtml}
             </div>
             ${esc(berichtPart).replace(/\n/g, '<br>')}`;
+    } else if (vanMij && b.tekst.startsWith(UITNODIGING_PREFIX)) {
+        // Eigen verstuurde uitnodiging: zonder de technische code op de eerste regel
+        tekstHtml = '<strong>🎯 Uitnodiging verstuurd</strong><br>' + esc(b.tekst.split('\n').slice(1).join('\n')).replace(/\n/g, '<br>');
     } else {
         tekstHtml = esc(b.tekst).replace(/\n/g, '<br>');
     }
@@ -1700,10 +1713,8 @@ function renderBoeking(b) {
             acties += `<button class="btn btn-primair" onclick="betaal(${b.id})" style="font-size:0.8rem;padding:0.3rem 0.85rem">Betalen</button>`;
         acties += `<button class="btn btn-secundair" onclick="annuleer(${b.id})" style="font-size:0.8rem;padding:0.3rem 0.85rem">Annuleren</button>`;
     }
+    // Na betalen kan er niet meer geannuleerd worden; de activiteit bevestigen kan pas na betalen
     if (b.status === 'Betaald') {
-        acties += `<button class="btn btn-secundair" onclick="annuleer(${b.id})" style="font-size:0.8rem;padding:0.3rem 0.85rem">Annuleren</button>`;
-    }
-    if (b.status === 'Openstaand' || b.status === 'Betaald') {
         if (heeftBevestigd) {
             acties += `<span class="boeking-wacht">Wacht op andere partij...</span>`;
         } else {
@@ -1988,7 +1999,9 @@ function renderUitnodigingDetails() {
 // ── Activiteit bevestigen ──────────────────────────────────────
 async function bevestigActiviteit(id) {
     const boeking = huidigeBoekingen.find(b => b.id === id);
-    if (gebruiker.rol === 'Rijder') {
+    // Ben ik de rijder van deze boeking? (ook juist bij iemand met zowel coach- als rijderrol)
+    const ikBenRijder = boeking ? boeking.rijderGebruikerId === gebruiker.id : heeftRol('Rijder') && !heeftRol('Coach');
+    if (ikBenRijder) {
         pendingBevestigId = id;
         pendingCoachGebruikerId = boeking?.coachGebruikerId || huidigPartnerId;
         toonReviewPopup();
@@ -2084,7 +2097,7 @@ function toggleVerzoekFormulier() {
         initFactuurFormulier();
         const titel = document.getElementById('verzoek-formulier-titel');
         if (huidigGroepsId) {
-            titel.textContent = '📄 Factuur opstellen — per deelnemer';
+            titel.textContent = '📄 Factuur opstellen — per rijder';
         } else {
             titel.textContent = '📄 Factuur opstellen';
         }
@@ -2133,7 +2146,7 @@ async function stuurGroepsBetaalverzoek() {
         });
         sluitVerzoekFormulier();
         await laadGroepsBerichten(huidigGroepsId);
-        alert(`Betaalverzoek verstuurd aan ${data.aantalVerstuurd} deelnemer(s).`);
+        alert(`Betaalverzoek verstuurd aan ${data.aantalVerstuurd} rijder${data.aantalVerstuurd === 1 ? '' : 's'}.`);
     } catch (e) {
         alert('Fout bij versturen: ' + e.message);
     }

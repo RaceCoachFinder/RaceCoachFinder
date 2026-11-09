@@ -50,6 +50,7 @@
         .abo-knoppen .btn { width: 100%; }
 
         .stat-rij { display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 2rem; }
+        @media (max-width: 600px) { .stat-rij { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; } .stat-kaartje { min-width: 0; padding: 1rem 0.5rem; } .stat-kaartje .label { font-size: 0.7rem; } }
         .stat-kaartje {
             background: var(--kleur-wit);
             border-radius: var(--rand);
@@ -61,7 +62,7 @@
         .stat-kaartje .getal { font-size: 2rem; font-weight: 800; color: var(--kleur-primair); }
         .stat-kaartje .label { font-size: 0.8rem; color: var(--kleur-subtekst); text-transform: uppercase; letter-spacing: 0.4px; }
 
-        .dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; max-width: 750px; margin: 0 auto; }
+        .dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
         .dashboard-kaart { background: var(--kleur-wit); border-radius: var(--rand); box-shadow: var(--schaduw); padding: 1.75rem; }
         .dashboard-kaart h3 { font-size: 1.1rem; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid #f0f0f0; }
 
@@ -239,6 +240,8 @@
             -ms-overflow-style: none;
         }
         .tab-balk::-webkit-scrollbar { display: none; }
+        /* Op de telefoon alle tabbladen zichtbaar (naar een tweede regel) i.p.v. onzichtbaar wegschuiven */
+        @media (max-width: 600px) { .tab-balk { flex-wrap: wrap; overflow-x: visible; } }
         .tab-knop {
             display: inline-flex;
             align-items: center;
@@ -338,7 +341,7 @@
     </div>
 
     <!-- Boekingen overzicht -->
-    <div id="boekingen-sectie" style="display:none;max-width:750px;margin:0 auto 2rem">
+    <div id="boekingen-sectie" style="display:none;margin:0 0 2rem">
         <div class="dashboard-kaart">
             <h3>Boekingen</h3>
             <div class="filter-rij" id="filter-rij"></div>
@@ -347,7 +350,7 @@
     </div>
 
     <!-- Agenda -->
-    <div id="agenda-sectie" style="display:none;max-width:750px;margin:0 auto 2rem">
+    <div id="agenda-sectie" style="display:none;margin:0 0 2rem">
         <div class="dashboard-kaart">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
                 <h3 style="margin:0">Agenda</h3>
@@ -385,7 +388,7 @@
     </div>
 
     <!-- Passende aanvragen widget -->
-    <div id="aanvragen-widget" style="display:none;max-width:750px;margin:0 auto 2rem">
+    <div id="aanvragen-widget" style="display:none;margin:0 0 2rem">
         <div class="dashboard-kaart">
             <h3 style="display:flex;justify-content:space-between;align-items:center">
                 <span>Recente aanvragen</span>

@@ -357,6 +357,8 @@ nav.nav-compact .nav-hamburger,
 
 /* ===== Container ===== */
 .container { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem; }
+/* body is een flex-kolom (footer onderaan): zonder width zou de container krimpen tot zijn inhoud */
+body > .container, body > main.container { width: 100%; }
 
 /* ===== Sectietitel ===== */
 .sectie-titel {
@@ -411,7 +413,9 @@ input, select, textarea {
     transition: border-color 0.2s;
     background: var(--kleur-wit);
     color: var(--kleur-tekst);
+    font-family: inherit;
 }
+button { font-family: inherit; }
 
 input:focus, select:focus, textarea:focus {
     outline: none;
@@ -782,7 +786,8 @@ footer {
     max-width: 1100px; margin: 0 auto;
     display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;
 }
-.footer-links { display: flex; gap: 1.5rem; }
+.footer-links { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; }
+@media (max-width: 700px) { footer { padding: 1.5rem 1.25rem; } .footer-links { gap: 0.5rem 1.1rem; } }
 .footer-links a { color: #888; transition: color 0.2s; }
 .footer-links a:hover { color: #fff; text-decoration: none; }
 
@@ -823,7 +828,8 @@ footer {
 
     /* Aanbod kaart layout aanpassen */
     .aanbod-kaart { flex-direction: column; gap: 0.75rem; }
-    .aanbod-acties { flex-direction: row; flex-wrap: wrap; }
+    .aanbod-acties { width: 100%; flex-direction: column; align-items: stretch; }
+    .aanbod-acties > .btn, .aanbod-acties > a, .aanbod-acties > button { width: 100%; text-align: center; justify-content: center; }
 
     /* Stats balk scrollen */
     .stats-balk { flex-wrap: wrap; gap: 1rem; padding: 1.5rem 1rem; }

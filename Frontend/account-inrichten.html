@@ -77,7 +77,7 @@
             <div class="stap-nummer">2</div>
             <div class="stap-blok-inhoud">
                 <label for="wachtwoord">Nieuw wachtwoord</label>
-                <input type="password" id="wachtwoord" placeholder="Minimaal 4 tekens" style="width:100%">
+                <input type="password" id="wachtwoord" placeholder="Minimaal 8 tekens" style="width:100%">
             </div>
         </div>
 
@@ -111,6 +111,7 @@
 
 <script src="js/i18n.js"></script>
 <script src="js/auth.js"></script>
+<script>updateNav(); // zelfde logo als de rest van de site</script>
 <script src="js/push.js"></script>
 <script>
 const gebruiker = getGebruiker();
@@ -123,7 +124,7 @@ async function richtIn() {
     const herhaal = document.getElementById('wachtwoord-herhaal').value;
 
     if (!email)                     { toonMelding('Vul je e-mailadres in.', 'fout'); return; }
-    if (wachtwoord.length < 4)      { toonMelding('Wachtwoord moet minimaal 4 tekens zijn.', 'fout'); return; }
+    if (wachtwoord.length < 8)      { toonMelding('Wachtwoord moet minimaal 8 tekens zijn.', 'fout'); return; }
     if (wachtwoord !== herhaal)     { toonMelding('Wachtwoorden komen niet overeen.', 'fout'); return; }
 
     try {

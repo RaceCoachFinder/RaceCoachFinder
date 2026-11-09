@@ -31,6 +31,8 @@
         .admin-tabel th, .admin-tabel td { white-space: nowrap; }
 
         .badge-rol { padding: 0.18rem 0.55rem; border-radius: 20px; font-size: 0.72rem; font-weight: 700; }
+        .admin-twee-kolommen { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1.5rem; align-items: start; }
+        @media (max-width: 800px) { .admin-twee-kolommen { grid-template-columns: 1fr; } }
         .badge-coach { background: #e3f0ff; color: #1565c0; }
         .badge-rijder { background: #e8f5e9; color: #2e7d32; }
         .badge-admin { background: #fde8ea; color: #c62828; }
@@ -106,8 +108,10 @@
 <div class="container" style="padding-bottom:3rem">
     <div id="melding"></div>
 
+    <!-- Mollie + coach-uitnodiging naast elkaar (op telefoon onder elkaar) -->
+    <div class="admin-twee-kolommen">
     <!-- Mollie diagnose -->
-    <div class="admin-sectie" style="max-width:480px">
+    <div class="admin-sectie">
         <h3>Mollie betaalmethoden controleren</h3>
         <p style="font-size:0.88rem;color:var(--kleur-subtekst);margin-bottom:1rem">Laat zien welke betaalmethoden Mollie toestaat voor een abonnement.</p>
         <button class="btn btn-donker" onclick="mollieDiagnose()">Controleren</button>
@@ -115,7 +119,7 @@
     </div>
 
     <!-- Coach uitnodiging -->
-    <div class="admin-sectie" style="max-width:480px">
+    <div class="admin-sectie">
         <h3>Coach uitnodiging aanmaken</h3>
         <p style="font-size:0.88rem;color:var(--kleur-subtekst);margin-bottom:1.25rem">
             Vul de naam van de coach in. Er wordt automatisch een inlogcode en wachtwoord gegenereerd die je deelt met de coach.
@@ -158,6 +162,7 @@
             </button>
         </div>
     </div>
+    </div><!-- /admin-twee-kolommen -->
 
     <!-- Stats -->
     <div class="stats-strook">
@@ -294,7 +299,7 @@ async function laadGebruikers() {
         document.getElementById('stat-gebruikers').textContent = gebruikers.length;
         document.getElementById('badge-gebruikers').textContent = gebruikers.length;
 
-        const rijders = gebruikers.filter(g => g.rol === 'Rijder').length;
+        const rijders = gebruikers.filter(g => (g.rol || '').split(',').map(r => r.trim()).includes('Rijder')).length;
         document.getElementById('stat-rijders-totaal').textContent = rijders;
 
         if (gebruikers.length === 0) {
@@ -320,7 +325,7 @@ async function laadGebruikers() {
                         <tr>
                             <td>${esc(g.naam)}</td>
                             <td>${esc(g.email)}</td>
-                            <td><span class="badge-rol badge-${g.rol.toLowerCase()}">${esc(g.rol)}</span></td>
+                            <td style="white-space:nowrap">${(g.rol || '').split(',').map(r => r.trim()).filter(Boolean).map(r => `<span class="badge-rol badge-${r.toLowerCase()}">${esc(r)}</span>`).join(' ')}</td>
                             <td style="font-size:0.82rem;color:var(--kleur-subtekst)">${lidSinds(g.aangemaaktOp)}</td>
                             <td style="font-size:0.82rem">${volgendeBetaling(g)}</td>
                             <td style="font-size:0.82rem">

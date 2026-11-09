@@ -69,10 +69,22 @@ function heeftRol(rol) {
     return (g.rol || '').split(',').map(function(r) { return r.trim(); }).indexOf(rol) !== -1;
 }
 
+// Naar inloggen, en daarna terug naar deze pagina (bijv. een link uit een mail naar een gesprek of factuur)
+function naarInloggen() {
+    const hier = (location.pathname.split('/').pop() || 'index.html') + location.search;
+    location.href = 'inloggen.html?terug=' + encodeURIComponent(hier);
+}
+
+// Alleen een pagina binnen deze site (geen andere websites) als 'terug'-adres toestaan
+function terugAdres() {
+    const t = new URLSearchParams(location.search).get('terug') || '';
+    return /^[a-z0-9-]+\.html(\?[^#]*)?$/i.test(t) && !/^inloggen\.html/i.test(t) ? t : null;
+}
+
 function vereisAuth(vereistRol) {
     vereistRol = vereistRol || null;
     const gebruiker = getGebruiker();
-    if (!gebruiker) { location.href = 'inloggen.html'; return false; }
+    if (!gebruiker) { naarInloggen(); return false; }
     if (gebruiker.heeftAccountIngericht === false) { location.href = 'account-inrichten.html'; return false; }
     if (vereistRol) {
         const rollen = (gebruiker.rol || '').split(',').map(function(r) { return r.trim(); });

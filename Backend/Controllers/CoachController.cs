@@ -33,7 +33,8 @@ public class CoachController : ControllerBase
     public async Task<IActionResult> GetCoaches(
         string? naam, string? locatie, string? discipline, string? specialisatie, bool? onlineCoaching)
     {
-        var query = _context.Coaches.Where(c => c.IsGepubliceerd).AsQueryable();
+        var query = _context.Coaches.Where(c => c.IsGepubliceerd
+            && !_context.GebruikerInstellingen.Any(i => i.GebruikerId == c.GebruikerId && !i.ProfielOpenbaar)).AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(naam))
             query = query.Where(c => c.Naam.ToLower().Contains(naam.ToLower()));
@@ -46,8 +47,9 @@ public class CoachController : ControllerBase
         if (onlineCoaching.HasValue)
             query = query.Where(c => c.OnlineCoaching == onlineCoaching.Value);
 
-        var coaches = await query.OrderBy(c => c.Naam).ToListAsync();
+        var coaches = await query.AsNoTracking().OrderBy(c => c.Naam).ToListAsync();
         await VoegRatingsToe(coaches);
+        coaches.ForEach(VerbergPriveGegevens);
         return Ok(coaches);
     }
 
@@ -60,8 +62,7 @@ public class CoachController : ControllerBase
         if (!coach.IsGepubliceerd)
         {
             var gebruikerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var rol = User.FindFirstValue(ClaimTypes.Role);
-            if (coach.GebruikerId != gebruikerId && rol != "Admin")
+            if (coach.GebruikerId != gebruikerId && !User.IsInRole("Admin"))
                 return NotFound();
         }
         else
@@ -71,7 +72,26 @@ public class CoachController : ControllerBase
         }
         await VoegRatingsToe([coach]);
         coach.GemiddeldeReactietijdUren = await BerekenReactietijd(coach.GebruikerId);
+        // Factuurgegevens en e-mail alleen voor de coach zelf (en de admin)
+        if (coach.GebruikerId != User.FindFirstValue(ClaimTypes.NameIdentifier) && !User.IsInRole("Admin"))
+        {
+            _context.Entry(coach).State = EntityState.Detached;
+            VerbergPriveGegevens(coach);
+        }
         return Ok(coach);
+    }
+
+    // Niet openbaar: e-mail, adres, telefoon, KvK en btw van de coach
+    private static void VerbergPriveGegevens(Coach c)
+    {
+        c.Email = string.Empty;
+        c.FactuurAdres = null;
+        c.FactuurPostcode = null;
+        c.FactuurStad = null;
+        c.FactuurLand = null;
+        c.FactuurTelefoon = null;
+        c.KvkNummer = null;
+        c.BtwNummer = null;
     }
 
     private async Task<double> BerekenReactietijd(string? coachId)
@@ -140,6 +160,7 @@ public class CoachController : ControllerBase
         if (await _context.Coaches.AnyAsync(c => c.GebruikerId == gebruikerId))
             return BadRequest("Je hebt al een coachprofiel.");
 
+        coach.Id = 0;
         coach.GebruikerId = gebruikerId;
         coach.IsGepubliceerd = false;
         coach.AantalWeergaven = 0;

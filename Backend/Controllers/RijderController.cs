@@ -30,8 +30,10 @@ public class RijderController : ControllerBase
     [HttpGet("profiel/{gebruikerId}")]
     public async Task<IActionResult> GetProfiel(string gebruikerId)
     {
-        var rijder = await _context.Rijders.FirstOrDefaultAsync(r => r.GebruikerId == gebruikerId);
+        var rijder = await _context.Rijders.AsNoTracking().FirstOrDefaultAsync(r => r.GebruikerId == gebruikerId);
         if (rijder == null) return NotFound();
+        // E-mailadres is niet openbaar
+        if (rijder.GebruikerId != User.FindFirstValue(ClaimTypes.NameIdentifier)) rijder.Email = string.Empty;
         return Ok(rijder);
     }
 
@@ -55,6 +57,7 @@ public class RijderController : ControllerBase
         if (await _context.Rijders.AnyAsync(r => r.GebruikerId == gebruikerId))
             return BadRequest("Je hebt al een rijderprofiel.");
 
+        rijder.Id = 0;
         rijder.GebruikerId = gebruikerId;
         _context.Rijders.Add(rijder);
         await _context.SaveChangesAsync();

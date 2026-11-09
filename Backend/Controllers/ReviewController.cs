@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using Backend.Data;
 using Backend.Models;
+using Backend.Services;
 
 namespace Backend.Controllers;
 
@@ -12,10 +13,14 @@ namespace Backend.Controllers;
 public class ReviewController : ControllerBase
 {
     private readonly AppDbContext _context;
+    private readonly IEmailService _email;
+    private readonly ILogger<ReviewController> _logger;
 
-    public ReviewController(AppDbContext context)
+    public ReviewController(AppDbContext context, IEmailService email, ILogger<ReviewController> logger)
     {
         _context = context;
+        _email = email;
+        _logger = logger;
     }
 
     [HttpPost]
@@ -26,6 +31,13 @@ public class ReviewController : ControllerBase
 
         if (verzoek.Sterren < 1 || verzoek.Sterren > 5)
             return BadRequest("Sterren moet tussen 1 en 5 zijn.");
+        if (verzoek.CoachGebruikerId == rijderId)
+            return BadRequest("Je kunt jezelf niet beoordelen.");
+        var coach = await _context.Users.FirstOrDefaultAsync(u => u.Id == verzoek.CoachGebruikerId);
+        if (coach == null || !(coach.Rol ?? "").Split(',').Any(r => r.Trim() == "Coach"))
+            return BadRequest("Coach niet gevonden.");
+        if ((verzoek.Tekst ?? "").Length > 2000)
+            return BadRequest("Je review mag maximaal 2000 tekens zijn.");
 
         var bestaand = await _context.Reviews.AnyAsync(r =>
             r.CoachGebruikerId == verzoek.CoachGebruikerId && r.RijderGebruikerId == rijderId);
@@ -43,6 +55,19 @@ public class ReviewController : ControllerBase
 
         _context.Reviews.Add(review);
         await _context.SaveChangesAsync();
+
+        // Mail naar de coach (instelling 'Nieuwe beoordeling')
+        var inst = await _context.GebruikerInstellingen.FirstOrDefaultAsync(i => i.GebruikerId == coach.Id);
+        if ((inst?.EmailAan ?? true) && (inst?.EmailBijNieuweReview ?? true) && !string.IsNullOrEmpty(coach.Email) && coach.Email.Contains('@'))
+        {
+            var rijderNaam = await _context.Users.Where(u => u.Id == rijderId).Select(u => u.Naam).FirstOrDefaultAsync() ?? "Een rijder";
+            var profielId = await _context.Coaches.Where(c => c.GebruikerId == coach.Id).Select(c => (int?)c.Id).FirstOrDefaultAsync();
+            var url = profielId != null ? $"https://www.racecoachfinder.nl/coach-detail.html?id={profielId}" : "https://www.racecoachfinder.nl/dashboard-coach.html";
+            _ = _email.VerstuurAsync(coach.Email, coach.Naam, $"Nieuwe review van {rijderNaam} – RaceCoachFinder",
+                    EmailTemplates.ReviewOntvangen(coach.Naam, rijderNaam, review.Sterren, review.Tekst, url))
+                .ContinueWith(t => _logger.LogWarning("Review-mail mislukt: {Fout}", t.Exception?.GetBaseException().Message),
+                    TaskContinuationOptions.OnlyOnFaulted);
+        }
         return Ok(review);
     }
 
@@ -55,6 +80,7 @@ public class ReviewController : ControllerBase
             .Select(r => new
             {
                 r.Id,
+                r.RijderGebruikerId,
                 r.Sterren,
                 r.Tekst,
                 r.AangemaaktOp,

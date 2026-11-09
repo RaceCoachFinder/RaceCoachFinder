@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace Backend.Models;
 
 public class GebruikerInstellingen
@@ -23,4 +25,7 @@ public class GebruikerInstellingen
     public bool AgendaReminderActief { get; set; } = false;
     public int AgendaReminderDagenVanTevoren { get; set; } = 1; // 1, 2, 3 of 7
     public DateTime? LaatsteReminderDatum { get; set; }
+
+    // Staat op het account (ApplicationUser), alleen hier om mee te sturen naar/van de instellingenpagina
+    [NotMapped] public bool? MarketingToestemming { get; set; }
 }

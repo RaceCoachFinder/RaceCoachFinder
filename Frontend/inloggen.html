@@ -98,7 +98,8 @@
 <script src="js/push.js"></script>
 <script>
 updateNav();
-if (isIngelogd()) {
+if (isIngelogd() && terugAdres()) location.href = terugAdres();
+else if (isIngelogd()) {
     const g = getGebruiker();
     if (g) {
         const rollen = (g.rol || '').split(',').map(function(r) { return r.trim(); });
@@ -170,13 +171,16 @@ async function submitInloggen(event) {
             body: JSON.stringify({ email: email, wachtwoord: document.getElementById('wachtwoord').value })
         });
 
-        if (antwoord.status === 401) {
-            const foutData = await antwoord.json().catch(() => ({}));
+        if (!antwoord.ok) {
+            const tekst = await antwoord.text().catch(() => '');
+            let foutData = {};
+            try { foutData = JSON.parse(tekst); } catch {}
             if (foutData.fout === 'email_niet_bevestigd') {
                 location.href = 'bevestig-email.html?email=' + encodeURIComponent(foutData.email || email);
                 return;
             }
-            throw new Error('Onjuist e-mailadres of wachtwoord.');
+            // 401 = onjuiste gegevens, 429 = tijdelijk geblokkeerd na te veel pogingen
+            throw new Error(tekst && !tekst.startsWith('{') && tekst.length < 300 ? tekst : 'Onjuist e-mailadres of wachtwoord.');
         }
 
         const data = await antwoord.json();
@@ -190,6 +194,9 @@ async function submitInloggen(event) {
 
         if (data.heeftAccountIngericht === false) { location.href = 'account-inrichten.html'; return; }
         const rollen = (data.rol || '').split(',').map(function(r) { return r.trim(); });
+        // Kwam je via een link (bijv. uit een mail)? Dan daar verder
+        const terug = terugAdres();
+        if (terug && !(rollen.indexOf('Coach') !== -1 && rollen.indexOf('Rijder') !== -1 && !getActieveRol())) { location.href = terug; return; }
         if (rollen.indexOf('Coach') !== -1 && rollen.indexOf('Rijder') !== -1) {
             const actief = getActieveRol();
             if (actief === 'Coach') location.href = 'dashboard-coach.html';
@@ -201,8 +208,8 @@ async function submitInloggen(event) {
 
     } catch (e) {
         const bericht = (e && e.message && e.message.indexOf('fetch') !== -1)
-            ? 'Server niet bereikbaar. Start de backend en probeer opnieuw.'
-            : 'Onjuist e-mailadres of wachtwoord.';
+            ? 'Kan geen verbinding maken met de server. Probeer het zo opnieuw.'
+            : (e && e.message) || 'Onjuist e-mailadres of wachtwoord.';
         document.getElementById('melding').innerHTML = '<div class="melding melding-fout">' + bericht + '</div>';
     }
 }

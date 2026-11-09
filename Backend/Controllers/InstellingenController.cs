@@ -33,6 +33,7 @@ public class InstellingenController : ControllerBase
             await _context.SaveChangesAsync();
         }
 
+        inst.MarketingToestemming = await _context.Users.Where(u => u.Id == gebruikerId).Select(u => (bool?)u.MarketingToestemming).FirstOrDefaultAsync();
         return Ok(inst);
     }
 
@@ -60,7 +61,15 @@ public class InstellingenController : ControllerBase
         inst.AgendaReminderActief           = update.AgendaReminderActief;
         inst.AgendaReminderDagenVanTevoren  = Math.Clamp(update.AgendaReminderDagenVanTevoren, 1, 30);
 
+        // Toestemming voor promotie (op het account zelf); null = niet meegestuurd
+        if (update.MarketingToestemming.HasValue)
+        {
+            var gebruiker = await _context.Users.FirstOrDefaultAsync(u => u.Id == gebruikerId);
+            if (gebruiker != null) gebruiker.MarketingToestemming = update.MarketingToestemming.Value;
+        }
+
         await _context.SaveChangesAsync();
+        inst.MarketingToestemming = update.MarketingToestemming;
         return Ok(inst);
     }
 }

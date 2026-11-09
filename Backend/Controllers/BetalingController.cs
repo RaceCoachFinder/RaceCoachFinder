@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Backend.Data;
 using Backend.Models;
+using Backend.Services;
 using Mollie.Api.Client;
 using Mollie.Api.Models;
 using Mollie.Api.Models.Customer;
@@ -21,12 +22,35 @@ public class BetalingController : ControllerBase
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IConfiguration _config;
     private readonly AppDbContext _context;
+    private readonly IEmailService _email;
 
-    public BetalingController(UserManager<ApplicationUser> userManager, IConfiguration config, AppDbContext context)
+    public BetalingController(UserManager<ApplicationUser> userManager, IConfiguration config, AppDbContext context, IEmailService email)
     {
         _userManager = userManager;
         _config = config;
         _context = context;
+        _email = email;
+    }
+
+    // Factuur is betaald: coach een mail sturen (instelling 'Betaalverzoek updates')
+    private async Task MeldFactuurBetaald(Boeking boeking)
+    {
+        try
+        {
+            var coach = await _userManager.FindByIdAsync(boeking.CoachGebruikerId);
+            if (coach == null || string.IsNullOrEmpty(coach.Email) || !coach.Email.Contains('@')) return;
+            var inst = await _context.GebruikerInstellingen.FirstOrDefaultAsync(i => i.GebruikerId == coach.Id);
+            if (!(inst?.EmailAan ?? true) || !(inst?.EmailBijBetaalUpdate ?? true)) return;
+            var rijderNaam = (await _userManager.FindByIdAsync(boeking.RijderGebruikerId))?.Naam ?? "De rijder";
+            var factuurnummer = boeking.FactuurnummerTekst ?? $"F-{boeking.AangemaaktOp:yyyy}-{boeking.Id:D4}";
+            await _email.VerstuurAsync(coach.Email, coach.Naam, $"Factuur {factuurnummer} is betaald – RaceCoachFinder",
+                EmailTemplates.FactuurBetaald(coach.Naam, rijderNaam, factuurnummer, boeking.Omschrijving, boeking.Bedrag,
+                    $"{FrontendUrl}/berichten.html?partner={Uri.EscapeDataString(boeking.RijderGebruikerId)}"));
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine("Mail factuur betaald mislukt: " + ex.Message);
+        }
     }
 
     private string ApiKey =>
@@ -93,7 +117,7 @@ public class BetalingController : ControllerBase
         catch (Exception ex)
         {
             Console.Error.WriteLine("StartAbonnement fout: " + ex.ToString());
-            return StatusCode(500, ex.Message);
+            return StatusCode(500, "Het abonnement kon niet gestart worden. Probeer het later opnieuw of neem contact met ons op.");
         }
     }
 
@@ -249,6 +273,7 @@ public class BetalingController : ControllerBase
             {
                 boeking.Status = "Betaald";
                 await _context.SaveChangesAsync();
+                await MeldFactuurBetaald(boeking);
             }
             return Ok(new { status = betaling.Status });
         }
@@ -292,7 +317,7 @@ public class BetalingController : ControllerBase
         catch (Exception ex)
         {
             Console.Error.WriteLine("StartFactuur fout: " + ex.ToString());
-            return StatusCode(500, ex.Message);
+            return StatusCode(500, "Betalen lukt op dit moment niet. Probeer het later opnieuw of neem contact met ons op.");
         }
     }
 
@@ -307,10 +332,12 @@ public class BetalingController : ControllerBase
             if (betaling.Status?.ToString().ToLower() != "paid") return Ok();
 
             var boeking = await _context.Boekingen.FirstOrDefaultAsync(b => b.MollieBetalingId == id);
-            if (boeking == null) return Ok();
+            // Al verwerkt (Mollie roept de webhook soms vaker aan): niets doen, ook geen tweede mail
+            if (boeking == null || boeking.Status == "Betaald" || boeking.Status == "Voldaan") return Ok();
 
             boeking.Status = "Betaald";
             await _context.SaveChangesAsync();
+            await MeldFactuurBetaald(boeking);
         }
         catch (Exception ex)
         {

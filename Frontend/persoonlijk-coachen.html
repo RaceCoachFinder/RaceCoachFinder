@@ -1321,7 +1321,8 @@ document.addEventListener('click', function(e) {
 
 updateNav();
 laadRijderAanvragen();
-toonTab('coach'); // net als bij Groepscoaching staat het coach-aanbod eerst
+// Net als bij Groepscoaching staat het coach-aanbod eerst; persoonlijk-coachen.html?tab=rijder opent meteen de rijders
+toonTab(new URLSearchParams(location.search).get('tab') === 'rijder' ? 'rijder' : 'coach');
 
 const gebruiker = JSON.parse(localStorage.getItem('kcf_gebruiker') || 'null');
 if (gebruiker) {

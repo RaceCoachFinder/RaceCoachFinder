@@ -184,6 +184,12 @@ namespace Backend.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("VerborgenVoorNaar")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("VerborgenVoorVan")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
                     b.ToTable("Berichten");

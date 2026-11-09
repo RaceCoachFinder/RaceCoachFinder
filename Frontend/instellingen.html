@@ -147,6 +147,8 @@
             z-index: 100;
         }
         .opslaan-status { font-size: 0.88rem; color: var(--kleur-subtekst); }
+        /* Knop en status in dezelfde kolom als de instellingen */
+        @media (min-width: 760px) { .opslaan-balk { padding-left: calc(50% - 340px); padding-right: calc(50% - 340px); } }
     </style>
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
@@ -215,10 +217,10 @@
                     </label>
                 </div>
 
-                <div class="inst-rij">
+                <div class="inst-rij" id="rij-betaal">
                     <div class="inst-rij-label">
-                        <strong>Betaalverzoek updates</strong>
-                        <span>Mail bij statuswijziging van een boeking of betaalverzoek.</span>
+                        <strong>Betaalde facturen</strong>
+                        <span>Ontvang een mail als een rijder een factuur van jou heeft betaald.</span>
                     </div>
                     <label class="schakelaar">
                         <input type="checkbox" id="emailBijBetaalUpdate">
@@ -312,6 +314,17 @@
                 </div>
                 <label class="schakelaar">
                     <input type="checkbox" id="profielOpenbaar">
+                    <span class="schakelaar-slider"></span>
+                </label>
+            </div>
+
+            <div class="inst-rij" id="rij-marketing" style="display:none">
+                <div class="inst-rij-label">
+                    <strong>Promotie op social media</strong>
+                    <span>RaceCoachFinder mag je naam en openbare foto gebruiken om je als coach te promoten (bijv. op Instagram).</span>
+                </div>
+                <label class="schakelaar">
+                    <input type="checkbox" id="marketingToestemming">
                     <span class="schakelaar-slider"></span>
                 </label>
             </div>
@@ -411,8 +424,10 @@ document.getElementById('acc-rol').textContent   = (gebruiker.rol || '—').repl
 if (!heeftRol('Coach')) {
     document.getElementById('rij-aanvraag').style.display    = 'none';
     document.getElementById('rij-review').style.display      = 'none';
+    document.getElementById('rij-betaal').style.display      = 'none';
 } else {
     document.getElementById('sectie-reminder').style.display = '';
+    document.getElementById('rij-marketing').style.display = '';
 }
 
 function updateEmailAan() {
@@ -449,6 +464,7 @@ async function laadInstellingen() {
         document.getElementById('emailBijNieuweReview').checked    = inst.emailBijNieuweReview;
         document.getElementById('berichtenVanOnbekenden').checked  = inst.berichtenVanOnbekenden;
         document.getElementById('profielOpenbaar').checked         = inst.profielOpenbaar;
+        document.getElementById('marketingToestemming').checked    = !!inst.marketingToestemming;
         kiesDrempel(inst.berichtenDrempel || 1);
         document.getElementById('agendaReminderActief').checked = inst.agendaReminderActief || false;
         kiesDagen(inst.agendaReminderDagenVanTevoren || 1);
@@ -469,6 +485,7 @@ async function slaOp() {
         emailBijNieuweReview:   document.getElementById('emailBijNieuweReview').checked,
         berichtenVanOnbekenden:         document.getElementById('berichtenVanOnbekenden').checked,
         profielOpenbaar:                document.getElementById('profielOpenbaar').checked,
+        marketingToestemming:           heeftRol('Coach') ? document.getElementById('marketingToestemming').checked : null,
         agendaReminderActief:           document.getElementById('agendaReminderActief').checked,
         agendaReminderDagenVanTevoren:  huidigeDagen,
     };

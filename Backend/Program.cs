@@ -32,8 +32,11 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     options.Password.RequireLowercase = false;
     options.Password.RequireUppercase = false;
     options.Password.RequireNonAlphanumeric = false;
-    options.Password.RequiredLength = 4;
+    options.Password.RequiredLength = 8; // geldt voor nieuwe wachtwoorden; bestaande blijven werken
     options.User.RequireUniqueEmail = true;
+    options.Lockout.MaxFailedAccessAttempts = 5;
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+    options.Lockout.AllowedForNewUsers = true;
     options.SignIn.RequireConfirmedEmail = false;
 })
 .AddEntityFrameworkStores<AppDbContext>()
@@ -81,14 +84,17 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();
 }
 
-// Admin account aanmaken bij opstarten
+// Admin-account: het wachtwoord komt uit de omgevingsvariabele ADMIN_WACHTWOORD (in Railway instellen).
+// Het oude standaardwachtwoord staat in deze openbare code en wordt daarom bij inloggen geweigerd (zie AuthController).
 using (var scope = app.Services.CreateScope())
 {
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
     var adminEmail = "admin@mail";
-    if (await userManager.FindByEmailAsync(adminEmail) == null)
+    var adminWachtwoord = Environment.GetEnvironmentVariable("ADMIN_WACHTWOORD");
+    var admin = await userManager.FindByEmailAsync(adminEmail);
+    if (admin == null && !string.IsNullOrWhiteSpace(adminWachtwoord))
     {
-        var admin = new ApplicationUser
+        admin = new ApplicationUser
         {
             UserName = adminEmail,
             Email = adminEmail,
@@ -96,7 +102,14 @@ using (var scope = app.Services.CreateScope())
             Rol = "Admin",
             EmailConfirmed = true
         };
-        await userManager.CreateAsync(admin, "Admin");
+        await userManager.CreateAsync(admin, adminWachtwoord);
+    }
+    else if (admin != null && !string.IsNullOrWhiteSpace(adminWachtwoord) && !await userManager.CheckPasswordAsync(admin, adminWachtwoord))
+    {
+        var resetToken = await userManager.GeneratePasswordResetTokenAsync(admin);
+        var resultaat = await userManager.ResetPasswordAsync(admin, resetToken, adminWachtwoord);
+        if (!resultaat.Succeeded)
+            app.Logger.LogWarning("ADMIN_WACHTWOORD kon niet worden ingesteld: {Fout}", string.Join(", ", resultaat.Errors.Select(e => e.Description)));
     }
 }
 

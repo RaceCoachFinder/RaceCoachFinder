@@ -238,6 +238,37 @@ public static class EmailTemplates
         return Omhulsel(inhoud);
     }
 
+    public static string ReviewOntvangen(string coachNaam, string rijderNaam, int sterren, string tekst, string profielUrl)
+    {
+        var voornaam = (coachNaam ?? "").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
+        var ster = new string('★', Math.Clamp(sterren, 0, 5)) + new string('☆', 5 - Math.Clamp(sterren, 0, 5));
+        var inhoud =
+            "<h2 style=\"margin:0 0 8px;color:#111111;font-size:1.2rem\">Je hebt een nieuwe review!</h2>" +
+            "<p style=\"color:#555;margin:0 0 16px\">Hoi " + Esc(voornaam) + ", <strong>" + Esc(rijderNaam) + "</strong> heeft een review op je profiel geplaatst:</p>" +
+            "<div style=\"font-size:1.4rem;color:#F5C200;letter-spacing:2px;margin:0 0 8px\">" + ster + "</div>" +
+            (string.IsNullOrWhiteSpace(tekst) ? "" :
+            "<div style=\"background:#f5f5f5;border-left:4px solid #F5C200;padding:14px 18px;border-radius:4px;color:#333;font-style:italic;margin-bottom:24px\">&#8220;" + Esc(tekst) + "&#8221;</div>") +
+            "<div style=\"text-align:center;margin-top:16px\">" + Knop(profielUrl, "Bekijk je profiel") + "</div>";
+        return Omhulsel(inhoud);
+    }
+
+    public static string FactuurBetaald(string coachNaam, string rijderNaam, string factuurnummer, string omschrijving, decimal bedrag, string berichtenUrl)
+    {
+        var voornaam = (coachNaam ?? "").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
+        var inhoud =
+            "<h2 style=\"margin:0 0 8px;color:#111111;font-size:1.2rem\">Factuur betaald ✅</h2>" +
+            "<p style=\"color:#555;margin:0 0 16px\">Hoi " + Esc(voornaam) + ", <strong>" + Esc(rijderNaam) + "</strong> heeft factuur <strong>" + Esc(factuurnummer) + "</strong> betaald.</p>" +
+            "<table style=\"width:100%;border-collapse:collapse;margin-bottom:20px\">" +
+            "<tr><td style=\"padding:8px 12px;background:#f9f9f9;font-weight:700;width:130px;border:1px solid #eee\">Omschrijving</td>" +
+            "<td style=\"padding:8px 12px;border:1px solid #eee\">" + Esc(omschrijving) + "</td></tr>" +
+            "<tr><td style=\"padding:8px 12px;background:#f9f9f9;font-weight:700;border:1px solid #eee\">Bedrag</td>" +
+            "<td style=\"padding:8px 12px;border:1px solid #eee\">€ " + bedrag.ToString("0.00", new System.Globalization.CultureInfo("nl-NL")) + "</td></tr>" +
+            "</table>" +
+            "<p style=\"color:#555;margin:0 0 24px\">Na de activiteit bevestigen jullie allebei in het gesprek dat de activiteit gedaan is.</p>" +
+            "<div style=\"text-align:center\">" + Knop(berichtenUrl, "Naar het gesprek") + "</div>";
+        return Omhulsel(inhoud);
+    }
+
     // Datum zoals in Nederland: "9 maart 2027"
     public static string NlDatum(DateTime utc)
     {

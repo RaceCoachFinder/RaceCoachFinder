@@ -50,8 +50,13 @@ public class AuthController : ControllerBase
             var bestaandeRollen = bestaand.Rol.Split(',').Select(r => r.Trim()).ToArray();
             if (bestaandeRollen.Contains(verzoek.Rol))
                 return BadRequest("Je hebt al een " + verzoek.Rol + " account met dit e-mailadres.");
+            if (await _userManager.IsLockedOutAsync(bestaand))
+                return StatusCode(429, "Te veel mislukte pogingen. Probeer het over 15 minuten opnieuw.");
             if (!await _userManager.CheckPasswordAsync(bestaand, verzoek.Wachtwoord))
+            {
+                await _userManager.AccessFailedAsync(bestaand);
                 return BadRequest("Onjuist wachtwoord voor het bestaande account.");
+            }
             bestaand.Rol = "Coach,Rijder";
             await _userManager.UpdateAsync(bestaand);
             return Ok(new { bericht = "Tweede rol toegevoegd. Je kan nu inloggen.", tweedeRol = true });
@@ -89,8 +94,21 @@ public class AuthController : ControllerBase
         // Probeer eerst op e-mail, daarna op gebruikersnaam (voor code-accounts)
         var gebruiker = await _userManager.FindByEmailAsync(verzoek.Email)
                      ?? await _userManager.FindByNameAsync(verzoek.Email);
-        if (gebruiker == null || !await _userManager.CheckPasswordAsync(gebruiker, verzoek.Wachtwoord))
+        if (gebruiker == null) return Unauthorized("Onjuist e-mailadres of wachtwoord.");
+
+        // Na 5 foute pogingen 15 minuten geblokkeerd (tegen het raden van wachtwoorden)
+        if (await _userManager.IsLockedOutAsync(gebruiker))
+            return StatusCode(429, "Te veel mislukte pogingen. Probeer het over 15 minuten opnieuw of stel een nieuw wachtwoord in.");
+        if (!await _userManager.CheckPasswordAsync(gebruiker, verzoek.Wachtwoord))
+        {
+            await _userManager.AccessFailedAsync(gebruiker);
             return Unauthorized("Onjuist e-mailadres of wachtwoord.");
+        }
+        if (gebruiker.AccessFailedCount > 0) await _userManager.ResetAccessFailedCountAsync(gebruiker);
+
+        // Het oude standaardwachtwoord van het admin-account staat in de openbare code: niet meer toestaan
+        if (gebruiker.Rol.Split(',').Any(r => r.Trim() == "Admin") && verzoek.Wachtwoord == "Admin")
+            return Unauthorized("Het standaardwachtwoord van het admin-account is uitgeschakeld. Stel een eigen wachtwoord in via ADMIN_WACHTWOORD bij Railway.");
 
         if (!gebruiker.EmailConfirmed)
         {
@@ -155,7 +173,7 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> WachtwoordReset([FromBody] WachtwoordResetVerzoek verzoek)
     {
         if (!_resetService.ValideerCode(verzoek.Email, verzoek.Code))
-            return BadRequest("Code is ongeldig of verlopen.");
+            return BadRequest("Code is ongeldig of verlopen. Na 5 foute pogingen moet je een nieuwe code aanvragen.");
 
         var gebruiker = await _userManager.FindByEmailAsync(verzoek.Email);
         if (gebruiker == null) return BadRequest("Gebruiker niet gevonden.");
@@ -167,6 +185,9 @@ public class AuthController : ControllerBase
             return BadRequest(string.Join(", ", resultaat.Errors.Select(e => e.Description)));
 
         _resetService.VerwijderCode(verzoek.Email);
+        // Nieuw wachtwoord = blokkade door foute inlogpogingen opheffen
+        await _userManager.SetLockoutEndDateAsync(gebruiker, null);
+        await _userManager.ResetAccessFailedCountAsync(gebruiker);
         return Ok();
     }
 
@@ -174,7 +195,7 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> BevestigEmail([FromBody] EmailBevestigenVerzoek verzoek)
     {
         if (!_verificatie.ValideerCode(verzoek.Email, verzoek.Code))
-            return BadRequest("Code is ongeldig of verlopen.");
+            return BadRequest("Code is ongeldig of verlopen. Na 5 foute pogingen moet je een nieuwe code aanvragen.");
 
         var gebruiker = await _userManager.FindByEmailAsync(verzoek.Email);
         if (gebruiker == null) return BadRequest("Gebruiker niet gevonden.");

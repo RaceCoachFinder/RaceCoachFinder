@@ -753,6 +753,8 @@ if (isCoach) {
 
 updateNav();
 laadAanbod();
+// Directe link naar het tabblad 'Rijder zoekt coach': trainingen.html?tab=rijder
+if (new URLSearchParams(location.search).get('tab') === 'rijder') window.addEventListener('DOMContentLoaded', () => toonGroepTab('rijder'));
 
 // ===================== FILTERS =====================
 
@@ -1721,6 +1723,7 @@ function groepAanvraagKaartHTML(a) {
         <div class="aanbod-inhoud">
             <div class="aanbod-deelnemers">${soortChip}${groepRijderLink(a)}</div>
             <div class="aanbod-titel">${esc(groepAanvraagTitel(a))}</div>
+            ${soort === 'Wedstrijd' && wedstrijdInfoTekst(a) ? `<div class="aanbod-meta" style="margin-bottom:0.2rem"><span>🏆 ${esc(wedstrijdInfoTekst(a))}</span></div>` : ''}
             <div class="aanbod-meta">
                 ${a.locatie ? `<span>📍 ${esc(a.locatie)}</span>` : ''}
                 <span>📅 ${volledigeDatum}</span>
@@ -1743,7 +1746,7 @@ function toonGroepAanvraagPopup(id) {
     document.getElementById('ga-rijder').innerHTML = groepRijderLink(a);
     document.getElementById('ga-titel').textContent = groepAanvraagTitel(a);
     document.getElementById('ga-meta').innerHTML =
-        `${a.locatie ? `<span>📍 ${esc(a.locatie)}</span>` : ''}<span>📅 ${datum}</span>`
+        `${a.soortOpdracht === 'Wedstrijd' && wedstrijdInfoTekst(a) ? `<span>🏆 ${esc(wedstrijdInfoTekst(a))}</span>` : ''}${a.locatie ? `<span>📍 ${esc(a.locatie)}</span>` : ''}<span>📅 ${datum}</span>`
         + `${a.groepGrootte ? `<span>👥 Al ${a.groepGrootte === 1 ? '1 rijder' : a.groepGrootte + ' rijders'}</span>` : ''}${a.maxPrijs ? `<span>💶 Max €${a.maxPrijs} p.p.</span>` : ''}`;
     document.getElementById('ga-beschrijving').textContent = a.beschrijving || 'Geen beschrijving.';
     document.getElementById('ga-rijders').innerHTML = uitgenodigdeRijdersHtml(a);
@@ -1824,7 +1827,7 @@ async function zoekGroepRijder(q) {
     try {
         const res = await authVerzoek(`/chat/zoek?q=${encodeURIComponent(q.trim())}`);
         const al = new Set(groepUitgenodigdeRijders.map(r => r.id));
-        const rijders = res.filter(u => u.rol === 'Rijder' && !al.has(u.id));
+        const rijders = res.filter(u => (u.rol || '').split(',').map(r => r.trim()).includes('Rijder') && !al.has(u.id));
         if (rijders.length === 0) { sugg.innerHTML = '<div style="padding:0.6rem 0.75rem;font-size:0.85rem;color:#999">Geen rijders gevonden</div>'; sugg.style.display = 'block'; return; }
         sugg.innerHTML = rijders.slice(0, 8).map(u => {
             const foto = u.fotoUrl ? `<img src="${esc(u.fotoUrl)}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0">` : `<div style="width:28px;height:28px;border-radius:50%;background:var(--kleur-primair);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.75rem;color:#fff;flex-shrink:0">${esc(u.naam.charAt(0).toUpperCase())}</div>`;

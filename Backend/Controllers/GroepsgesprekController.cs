@@ -396,9 +396,16 @@ public class GroepsgesprekController : ControllerBase
             .FirstOrDefaultAsync(l => l.GroepsgesprekId == id && l.GebruikerId == coachId);
         if (mijnLid == null) return Forbid();
 
-        var leden = await _context.GroepsgesprekLeden
+        var alleAnderen = await _context.GroepsgesprekLeden
             .Where(l => l.GroepsgesprekId == id && l.GebruikerId != coachId)
             .ToListAsync();
+        // Alleen de rijders krijgen een betaalverzoek, niet de (mede)coaches van de training
+        var groep = await _context.Groepsgesprekken.FindAsync(id);
+        var anderIds = alleAnderen.Select(l => l.GebruikerId).ToList();
+        var rollen = await _context.Users.Where(u => anderIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id, u => u.Rol ?? "");
+        var bepaalRol = await RolBepaler(groep!, rollen);
+        var leden = alleAnderen.Where(l => bepaalRol(l.GebruikerId) != "Coach").ToList();
+        if (leden.Count == 0) return BadRequest("Er zitten geen rijders in deze groep.");
 
         int aantalVerstuurd = 0;
         foreach (var rijderLid in leden)
@@ -423,7 +430,7 @@ public class GroepsgesprekController : ControllerBase
             GroepsgesprekId = id,
             VanGebruikerId = coachId!,
             VanNaam = coach.Naam,
-            Tekst = $"💶 Betaalverzoek verstuurd — {verzoek.Omschrijving.Trim()} — €{verzoek.Bedrag:F2} p.p.\n📲 Elke deelnemer kan betalen via het persoonlijk gesprek.",
+            Tekst = $"💶 Betaalverzoek verstuurd — {verzoek.Omschrijving.Trim()} — €{verzoek.Bedrag.ToString("0.00", new System.Globalization.CultureInfo("nl-NL"))} p.p.\n📲 Elke rijder kan betalen via het persoonlijk gesprek.",
             AangemaaktOp = DateTime.UtcNow
         });
 

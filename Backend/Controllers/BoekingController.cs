@@ -185,21 +185,6 @@ public class BoekingController : ControllerBase
         return Ok(boekingen);
     }
 
-    // Rijder markeert als betaald
-    [HttpPut("{id}/betaal")]
-    [Authorize(Roles = "Rijder")]
-    public async Task<IActionResult> Betaal(int id)
-    {
-        var rijderId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        var boeking = await _context.Boekingen.FindAsync(id);
-        if (boeking == null || boeking.RijderGebruikerId != rijderId) return NotFound();
-        if (boeking.Status != "Openstaand") return BadRequest("Boeking is niet meer openstaand.");
-
-        boeking.Status = "Betaald";
-        await _context.SaveChangesAsync();
-        return Ok(boeking);
-    }
-
     // Activiteit bevestigen (coach of rijder) — beide moeten bevestigen → "Voldaan"
     [HttpPut("{id}/bevestig")]
     public async Task<IActionResult> Bevestig(int id)
@@ -211,6 +196,8 @@ public class BoekingController : ControllerBase
             return Forbid();
         if (boeking.Status == "Geannuleerd" || boeking.Status == "Voldaan")
             return BadRequest("Boeking is al afgerond.");
+        if (boeking.Status != "Betaald")
+            return BadRequest("Bevestigen kan pas als er betaald is.");
 
         if (boeking.CoachGebruikerId == mijnId)
             boeking.CoachHeeftBevestigd = true;

@@ -182,7 +182,7 @@ public class AdminController : ControllerBase
         if (string.IsNullOrWhiteSpace(verzoek.Naam))
             return BadRequest("Naam is verplicht.");
 
-        var code = Random.Shared.Next(10000000, 99999999).ToString();
+        var code = System.Security.Cryptography.RandomNumberGenerator.GetInt32(10000000, 100000000).ToString();
         var wachtwoord = GenereerWachtwoord();
 
         var gebruiker = new ApplicationUser
@@ -211,7 +211,7 @@ public class AdminController : ControllerBase
     private static string GenereerWachtwoord()
     {
         const string tekens = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
-        return new string(Enumerable.Range(0, 10).Select(_ => tekens[Random.Shared.Next(tekens.Length)]).ToArray());
+        return new string(Enumerable.Range(0, 10).Select(_ => tekens[System.Security.Cryptography.RandomNumberGenerator.GetInt32(tekens.Length)]).ToArray());
     }
 }
 

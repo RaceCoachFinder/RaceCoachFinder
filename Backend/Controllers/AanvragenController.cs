@@ -57,6 +57,7 @@ public class AanvragenController : ControllerBase
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
         var user = await _context.Users.FindAsync(userId) as ApplicationUser;
+        aanvraag.Id = 0;
         aanvraag.RijderId = userId;
         aanvraag.Titel = aanvraag.Titel?.Trim() ?? string.Empty;
         aanvraag.RijderNaam = user?.Naam ?? user?.Email ?? "Onbekend";
@@ -103,6 +104,7 @@ public class AanvragenController : ControllerBase
         var coachId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
         var aanvraag = await _context.RijderAanvragen.FindAsync(id);
         if (aanvraag == null) return NotFound();
+        if (aanvraag.RijderId == coachId) return BadRequest("Dit is je eigen aanvraag.");
 
         var coach = await _userManager.FindByIdAsync(coachId);
         var rijder = await _userManager.FindByIdAsync(aanvraag.RijderId);

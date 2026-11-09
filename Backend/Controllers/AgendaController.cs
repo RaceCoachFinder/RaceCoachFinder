@@ -34,6 +34,7 @@ public class AgendaController : ControllerBase
     public async Task<IActionResult> VoegToe([FromBody] AgendaVerzoek verzoek)
     {
         var coachId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(verzoek.Titel)) return BadRequest("Geef de afspraak een titel.");
         var item = new AgendaItem
         {
             CoachGebruikerId = coachId!,

@@ -69,7 +69,7 @@
 
             <div class="formulier-groep" style="margin-top:1rem">
                 <label for="wachtwoord-nieuw">Nieuw wachtwoord</label>
-                <input type="password" id="wachtwoord-nieuw" required placeholder="Minimaal 4 tekens" minlength="4">
+                <input type="password" id="wachtwoord-nieuw" required placeholder="Minimaal 8 tekens" minlength="8">
             </div>
             <div class="formulier-groep">
                 <label for="wachtwoord-bevestig">Bevestig wachtwoord</label>
@@ -102,6 +102,9 @@
     </div>
 </footer>
 
+<script src="js/i18n.js"></script>
+<script src="js/auth.js"></script>
+<script>updateNav();</script>
 <script>
 const urlParams = new URLSearchParams(window.location.search);
 const emailParam = urlParams.get('email') || '';

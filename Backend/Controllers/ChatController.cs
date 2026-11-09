@@ -37,6 +37,18 @@ public class ChatController : ControllerBase
 
         if (string.IsNullOrWhiteSpace(verzoek.Tekst))
             return BadRequest("Bericht mag niet leeg zijn.");
+        if (verzoek.Tekst.Length > 5000)
+            return BadRequest("Je bericht is te lang (maximaal 5000 tekens).");
+
+        // Instellingen van de ontvanger
+        var instellingen = await _context.GebruikerInstellingen
+            .FirstOrDefaultAsync(i => i.GebruikerId == naarGebruikerId);
+        var isFavoriet = await IsFavorietVan(naarGebruikerId, mijnId!);
+
+        // 'Berichten van iedereen' uit: alleen favorieten, of iemand met wie de ontvanger zelf al een gesprek had
+        if (instellingen != null && !instellingen.BerichtenVanOnbekenden && !isFavoriet
+            && !await _context.Berichten.AnyAsync(b => b.VanGebruikerId == naarGebruikerId && b.NaarGebruikerId == mijnId))
+            return StatusCode(403, $"{ontvanger.Naam} ontvangt alleen berichten van favorieten.");
 
         var bericht = new Bericht
         {
@@ -50,18 +62,15 @@ public class ChatController : ControllerBase
         _context.Berichten.Add(bericht);
         await _context.SaveChangesAsync();
 
-        // Controleer e-mail instellingen van de ontvanger
-        var instellingen = await _context.GebruikerInstellingen
-            .FirstOrDefaultAsync(i => i.GebruikerId == naarGebruikerId);
-
-        var emailAan = instellingen?.EmailAan ?? true;
+        // E-mail: niet als de ontvanger alleen mails van favorieten wil en de afzender geen favoriet is
+        var emailAan = (instellingen?.EmailAan ?? true) && !(instellingen?.AlleenFavorieten == true && !isFavoriet);
         var drempel = instellingen?.BerichtenDrempel is > 0 ? instellingen.BerichtenDrempel : 1;
 
         if (emailAan && !string.IsNullOrEmpty(ontvanger.Email))
         {
             // Tel alle ongelezen berichten voor de ontvanger (van alle afzenders)
             var aantalOngelezen = await _context.Berichten
-                .CountAsync(b => b.NaarGebruikerId == naarGebruikerId && !b.Gelezen);
+                .CountAsync(b => b.NaarGebruikerId == naarGebruikerId && !b.Gelezen && !b.VerborgenVoorNaar);
 
             if (aantalOngelezen % drempel == 0)
             {
@@ -77,6 +86,15 @@ public class ChatController : ControllerBase
         return Ok(bericht);
     }
 
+    // Heeft 'eigenaarId' 'anderId' als favoriet? (rijder: favoriete coaches, coach: favoriete rijders)
+    private async Task<bool> IsFavorietVan(string eigenaarId, string anderId)
+    {
+        var coachProfielId = await _context.Coaches.Where(c => c.GebruikerId == anderId).Select(c => (int?)c.Id).FirstOrDefaultAsync();
+        if (coachProfielId != null && await _context.CoachFavorieten.AnyAsync(f => f.RijderId == eigenaarId && f.CoachId == coachProfielId))
+            return true;
+        return await _context.RijderFavorieten.AnyAsync(f => f.CoachId == eigenaarId && f.RijderId == anderId);
+    }
+
     // Haal alle berichten op in een gesprek met een specifieke gebruiker
     [HttpGet("gesprek/{partnerId}")]
     public async Task<IActionResult> GetGesprek(string partnerId)
@@ -85,8 +103,8 @@ public class ChatController : ControllerBase
 
         var berichten = await _context.Berichten
             .Where(b =>
-                (b.VanGebruikerId == mijnId && b.NaarGebruikerId == partnerId) ||
-                (b.VanGebruikerId == partnerId && b.NaarGebruikerId == mijnId))
+                (b.VanGebruikerId == mijnId && b.NaarGebruikerId == partnerId && !b.VerborgenVoorVan) ||
+                (b.VanGebruikerId == partnerId && b.NaarGebruikerId == mijnId && !b.VerborgenVoorNaar))
             .OrderBy(b => b.AangemaaktOp)
             .ToListAsync();
 
@@ -105,7 +123,7 @@ public class ChatController : ControllerBase
         var mijnId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
         var berichten = await _context.Berichten
-            .Where(b => b.VanGebruikerId == mijnId || b.NaarGebruikerId == mijnId)
+            .Where(b => (b.VanGebruikerId == mijnId && !b.VerborgenVoorVan) || (b.NaarGebruikerId == mijnId && !b.VerborgenVoorNaar))
             .OrderByDescending(b => b.AangemaaktOp)
             .ToListAsync();
 
@@ -155,7 +173,7 @@ public class ChatController : ControllerBase
         return Ok(resultaat);
     }
 
-    // Verwijder alle berichten in een gesprek (alleen voor de huidige gebruiker)
+    // Verwijder een gesprek: alleen voor de huidige gebruiker (de ander houdt het gesprek)
     [HttpDelete("gesprek/{partnerId}")]
     public async Task<IActionResult> VerwijderGesprek(string partnerId)
     {
@@ -165,7 +183,13 @@ public class ChatController : ControllerBase
                 (b.VanGebruikerId == mijnId && b.NaarGebruikerId == partnerId) ||
                 (b.VanGebruikerId == partnerId && b.NaarGebruikerId == mijnId))
             .ToListAsync();
-        _context.Berichten.RemoveRange(berichten);
+        foreach (var b in berichten)
+        {
+            if (b.VanGebruikerId == mijnId) b.VerborgenVoorVan = true;
+            else { b.VerborgenVoorNaar = true; b.Gelezen = true; }
+        }
+        // Alleen echt weggooien als beide kanten het gesprek hebben verwijderd
+        _context.Berichten.RemoveRange(berichten.Where(b => b.VerborgenVoorVan && b.VerborgenVoorNaar));
         await _context.SaveChangesAsync();
         return NoContent();
     }
@@ -179,7 +203,8 @@ public class ChatController : ControllerBase
         if (zoekterm.Length < 2) return Ok(Array.Empty<object>());
 
         var gebruikers = await _userManager.Users
-            .Where(u => u.Id != mijnId && u.Rol != "Admin" && EF.Functions.Like(u.Naam, $"%{zoekterm}%"))
+            .Where(u => u.Id != mijnId && u.Rol != "Admin" && EF.Functions.Like(u.Naam, $"%{zoekterm}%")
+                && !_context.GebruikerInstellingen.Any(i => i.GebruikerId == u.Id && !i.ProfielOpenbaar))
             .OrderBy(u => u.Naam)
             .Take(20)
             .Select(u => new { u.Id, u.Naam, u.Rol })
@@ -238,7 +263,7 @@ public class ChatController : ControllerBase
     {
         var mijnId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         var aantal = await _context.Berichten
-            .CountAsync(b => b.NaarGebruikerId == mijnId && !b.Gelezen);
+            .CountAsync(b => b.NaarGebruikerId == mijnId && !b.Gelezen && !b.VerborgenVoorNaar);
         return Ok(aantal);
     }
 }

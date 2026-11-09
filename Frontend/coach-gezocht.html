@@ -21,7 +21,9 @@
         .filter-checkbox input { width: auto; accent-color: var(--kleur-primair); }
         .aanvraag-kaart { background: var(--kleur-wit); border-radius: var(--rand); box-shadow: var(--schaduw); padding: 1.25rem 1.5rem; margin-bottom: 1rem; border-left: 4px solid transparent; position: relative; }
         .aanvraag-kaart.passend { border-left-color: var(--kleur-primair); }
-        .aanvraag-kaart-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem; margin-bottom: 0.45rem; }
+        .aanvraag-kaart-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem; margin-bottom: 0.45rem; padding-right: 1.75rem; }
+        .aanvraag-titel { font-weight: 700; font-size: 0.98rem; margin: -0.15rem 0 0.35rem; }
+        .aanvraag-groep-badge { font-size: 0.72rem; font-weight: 700; background: #e8f0fe; color: #1a56c4; padding: 0.15rem 0.6rem; border-radius: 20px; margin-left: 0.4rem; white-space: nowrap; }
         .aanvraag-rijder { font-weight: 700; font-size: 1rem; }
         .aanvraag-passend-badge { font-size: 0.72rem; font-weight: 700; background: #fff8e0; color: #9a7800; padding: 0.2rem 0.65rem; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
         .aanvraag-meta { font-size: 0.83rem; color: var(--kleur-subtekst); margin-bottom: 0.45rem; }
@@ -200,9 +202,10 @@ function aanvraagKaartHTML(a) {
     <div class="aanvraag-kaart${passend ? ' passend' : ''}">
         <button class="fav-rijder-knop${isFav ? ' actief' : ''}" onclick="toggleFavRijder('${esc(a.rijderId)}', this)" title="${isFav ? 'Verwijder uit favorieten' : 'Opslaan als favoriete rijder'}">${isFav ? '★' : '☆'}</button>
         <div class="aanvraag-kaart-header">
-            <a href="rijder-detail.html?id=${encodeURIComponent(a.rijderId)}" class="aanvraag-rijder" style="text-decoration:none;color:inherit">${esc(a.rijderNaam)}</a>
+            <div><a href="rijder-detail.html?id=${encodeURIComponent(a.rijderId)}" class="aanvraag-rijder" style="text-decoration:none;color:inherit">${esc(a.rijderNaam)}</a>${a.isGroep ? `<span class="aanvraag-groep-badge">👥 Groep${a.groepGrootte ? ' · ' + a.groepGrootte + ' rijders' : ''}</span>` : ''}</div>
             ${passend ? '<span class="aanvraag-passend-badge">★ Past bij jouw profiel</span>' : ''}
         </div>
+        ${a.titel ? `<div class="aanvraag-titel">${esc(a.titel)}</div>` : ''}
         <div class="aanvraag-meta">📍 ${esc(a.locatie)}  •  📅 ${datum}${prijs ? '  •  💶 ' + prijs : ''}</div>
         <div class="aanvraag-beschrijving">${esc(a.beschrijving)}</div>
         <div class="chips">
@@ -212,8 +215,10 @@ function aanvraagKaartHTML(a) {
         <div class="aanvraag-footer">
             <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
                 <a href="rijder-detail.html?id=${encodeURIComponent(a.rijderId)}" class="btn btn-donker" style="font-size:0.82rem;padding:0.35rem 0.85rem">Bekijk profiel</a>
-                <a href="berichten.html?partner=${encodeURIComponent(a.rijderId)}&naam=${encodeURIComponent(a.rijderNaam)}&rol=Rijder&aanvraag=${encodeURIComponent(a.beschrijving)}&alocatie=${encodeURIComponent(a.locatie)}${a.datum ? '&adatum=' + encodeURIComponent(a.datum) : ''}"
-                   class="btn btn-primair" style="font-size:0.82rem;padding:0.35rem 0.85rem">Stuur bericht</a>
+                ${a.isGroep
+                    ? `<a href="trainingen.html?tab=rijder" class="btn btn-primair" style="font-size:0.82rem;padding:0.35rem 0.85rem">Reageren bij Groepscoaching</a>`
+                    : `<a href="berichten.html?partner=${encodeURIComponent(a.rijderId)}&naam=${encodeURIComponent(a.rijderNaam)}&rol=Rijder&aanvraag=${encodeURIComponent(a.beschrijving)}&alocatie=${encodeURIComponent(a.locatie)}${a.datum ? '&adatum=' + encodeURIComponent(a.datum) : ''}"
+                   class="btn btn-primair" style="font-size:0.82rem;padding:0.35rem 0.85rem">Stuur bericht</a>`}
             </div>
             <small style="color:var(--kleur-subtekst);font-size:0.75rem">Geplaatst ${new Date(a.aangemaaktOp).toLocaleDateString('nl-NL')}</small>
         </div>
@@ -281,7 +286,7 @@ async function init() {
         renderAanvragen();
     } catch {
         document.getElementById('aanvragen-container').innerHTML =
-            '<div class="melding melding-fout">Kan aanvragen niet laden. Is de backend actief?</div>';
+            '<div class="melding melding-fout">De aanvragen konden niet worden geladen. Probeer het later opnieuw.</div>';
     }
 
     document.getElementById('f-fav-veld').style.display = '';

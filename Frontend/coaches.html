@@ -34,6 +34,10 @@
         .filter-sidebar .filter-veld {
             margin-bottom: 1rem;
         }
+        .filter-sidebar .filter-vinkje { flex-direction: row; }
+        .filter-sidebar .filter-vinkje label { display: inline; margin: 0; }
+        .filter-sidebar .filter-vinkje input { width: auto; margin: 0; flex-shrink: 0; }
+        .sorteer-rij span { white-space: nowrap; }
 
         .filter-sidebar label {
             display: block;
@@ -291,11 +295,11 @@
                     <option value="200">Tot €200</option>
                 </select>
             </div>
-            <div class="filter-veld" style="display:flex;align-items:center;gap:0.5rem;margin-top:0.25rem">
+            <div class="filter-veld filter-vinkje" style="display:flex;align-items:center;gap:0.5rem;margin-top:0.25rem">
                 <input type="checkbox" id="f-online" style="width:auto;accent-color:var(--kleur-primair)">
                 <label for="f-online" style="text-transform:none;font-size:0.88rem;font-weight:500;color:var(--kleur-tekst);margin:0;cursor:pointer">Alleen online coaching</label>
             </div>
-            <div class="filter-veld" id="f-favorieten-veld" style="display:none;align-items:center;gap:0.5rem;margin-top:0.25rem">
+            <div class="filter-veld filter-vinkje" id="f-favorieten-veld" style="display:none;align-items:center;gap:0.5rem;margin-top:0.25rem">
                 <input type="checkbox" id="f-favorieten" style="width:auto;accent-color:var(--kleur-primair)">
                 <label for="f-favorieten" style="text-transform:none;font-size:0.88rem;font-weight:500;color:var(--kleur-tekst);margin:0;cursor:pointer">★ Alleen favorieten</label>
             </div>
@@ -360,7 +364,7 @@ function maakMultiDropdown(containerId, opties, onChangeFn) {
     el.className = 'multi-dropdown';
     el.innerHTML = `
         <button type="button" class="multi-dropdown-knop">
-            <span class="md-label">Niets gekozen</span>
+            <span class="md-label">Alle</span>
             <span class="md-pijl">▾</span>
         </button>
         <div class="multi-dropdown-paneel" id="${containerId}-paneel">
@@ -378,7 +382,7 @@ function maakMultiDropdown(containerId, opties, onChangeFn) {
     });
     function updateLabel() {
         const g = getGekozen();
-        el.querySelector('.md-label').textContent = g.length === 0 ? 'Niets gekozen' : g.length === 1 ? g[0] : g.length + ' gekozen';
+        el.querySelector('.md-label').textContent = g.length === 0 ? 'Alle' : g.length === 1 ? g[0] : g.length + ' gekozen';
     }
     function getGekozen() { return [...el.querySelectorAll('input:checked')].map(c => c.value); }
     function setGekozen(waarden) {
@@ -437,8 +441,7 @@ async function zoekCoaches() {
         updateFilterBadge();
     } catch (e) {
         grid.innerHTML = `<div class="melding melding-fout">
-            Kan backend niet bereiken. Zorg dat de API draait op poort 5000.<br>
-            <small>${e.message}</small>
+            De coaches konden niet worden geladen. Controleer je internetverbinding en probeer het opnieuw.
         </div>`;
     }
 }
