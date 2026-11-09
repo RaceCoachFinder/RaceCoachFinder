@@ -162,6 +162,10 @@
         .leden-rij { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0; border-bottom: 1px solid #f2f2f2; }
         .leden-rij:last-child { border-bottom: none; }
         .leden-naam { flex: 1; min-width: 0; font-size: 0.92rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .rol-label { font-size: 0.7rem; font-weight: 700; border-radius: 999px; padding: 0.1rem 0.5rem; margin-left: 0.35rem; white-space: nowrap; }
+        .rol-coach { background: #e3f0ff; color: #1565c0; }
+        .rol-rijder { background: #e8f5e9; color: #2e7d32; }
+        .rol-beide { background: #f1f1f1; color: #555; }
         .leden-badge { font-size: 0.72rem; font-weight: 700; background: #fff3c4; color: #8a6d00; border-radius: 999px; padding: 0.1rem 0.5rem; margin-left: 0.35rem; }
         .btn-lid-verwijderen { flex-shrink: 0; background: #fff; color: #c62828; border: 1.5px solid #f3c1c1; border-radius: 8px; padding: 0.3rem 0.7rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
         .btn-lid-verwijderen:hover { background: #fdecec; }
@@ -1147,6 +1151,14 @@ function sluitLedenPopup() {
     document.getElementById('leden-popup').style.display = 'none';
 }
 
+// Label achter de naam: Coach of Rijder (rol in deze groep, bepaald door de server)
+function rolLabelHtml(rol) {
+    if (rol === 'Coach') return '<span class="rol-label rol-coach">Coach</span>';
+    if (rol === 'Rijder') return '<span class="rol-label rol-rijder">Rijder</span>';
+    if (rol === 'Coach & rijder') return '<span class="rol-label rol-beide">Coach &amp; rijder</span>';
+    return '';
+}
+
 function renderLedenLijst() {
     const g = _groepCache[huidigGroepsId];
     const lijst = document.getElementById('leden-lijst');
@@ -1162,7 +1174,7 @@ function renderLedenLijst() {
             const isBeheerder = l.gebruikerId === g.beheerderId;
             const isIk = l.gebruikerId === mijnId;
             return `<div class="leden-rij">
-                <span class="leden-naam">${esc(l.gebruikerNaam)}${isIk ? ' (jij)' : ''}${isBeheerder ? '<span class="leden-badge">Beheerder</span>' : ''}</span>
+                <span class="leden-naam">${esc(l.gebruikerNaam)}${isIk ? ' (jij)' : ''}${rolLabelHtml(l.rol)}${isBeheerder ? '<span class="leden-badge">Beheerder</span>' : ''}</span>
                 ${g.isBeheerder && !isBeheerder ? `<button class="btn-lid-verwijderen" onclick="verwijderGroepslid(${i})">Verwijderen</button>` : ''}
             </div>`;
         }).join('');

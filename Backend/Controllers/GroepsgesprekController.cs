@@ -38,11 +38,19 @@ public class GroepsgesprekController : ControllerBase
 
         var resultaat = new List<object>();
 
+        // Rollen van alle leden in één keer ophalen
+        var alleLeden = await _context.GroepsgesprekLeden
+            .Where(l => groepIds.Contains(l.GroepsgesprekId))
+            .ToListAsync();
+        var lidIds = alleLeden.Select(l => l.GebruikerId).Distinct().ToList();
+        var rollen = await _context.Users
+            .Where(u => lidIds.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id, u => u.Rol ?? "");
+
         foreach (var g in groepen)
         {
-            var leden = await _context.GroepsgesprekLeden
-                .Where(l => l.GroepsgesprekId == g.Id)
-                .ToListAsync();
+            var leden = alleLeden.Where(l => l.GroepsgesprekId == g.Id).ToList();
+            var bepaalRol = await RolBepaler(g, rollen);
 
             var jouwLid = leden.FirstOrDefault(l => l.GebruikerId == mijnId);
 
@@ -63,7 +71,7 @@ public class GroepsgesprekController : ControllerBase
                 g.CoachAanbodId,
                 g.RijderAanvraagId,
                 Leden = leden.Select(l => l.GebruikerNaam).ToList(),
-                LedenLijst = leden.Select(l => new { l.GebruikerId, l.GebruikerNaam }).ToList(),
+                LedenLijst = leden.Select(l => new { l.GebruikerId, l.GebruikerNaam, Rol = bepaalRol(l.GebruikerId) }).ToList(),
                 IsBeheerder = g.AangemaaktDoorId == mijnId,
                 BeheerderId = g.AangemaaktDoorId,
                 AantalOngelezen = aantalOngelezen,
@@ -73,6 +81,64 @@ public class GroepsgesprekController : ControllerBase
         }
 
         return Ok(resultaat);
+    }
+
+    // Rol van een lid in deze groep: "Coach" of "Rijder". Iemand met één rol krijgt die rol; bij iemand met
+    // beide rollen bepaalt zijn plek in de groep het (coach van de training, of de rijder(s) van het verzoek).
+    private async Task<Func<string, string>> RolBepaler(Groepsgesprek g, Dictionary<string, string> rollen)
+    {
+        var coaches = new HashSet<string>();
+        var rijders = new HashSet<string>();
+        if (g.CoachAanbodId > 0)
+        {
+            var aanbod = await _context.CoachAanboden.FindAsync(g.CoachAanbodId);
+            if (aanbod != null) coaches.Add(aanbod.CoachGebruikerId);
+            coaches.UnionWith(await _context.CoachAanbodUitnodigingen
+                .Where(u => u.CoachAanbodId == g.CoachAanbodId && u.Status != "Afgewezen")
+                .Select(u => u.CoachGebruikerId).ToListAsync());
+        }
+        if (g.RijderAanvraagId != null)
+        {
+            coaches.Add(g.AangemaaktDoorId); // de coach die op het verzoek reageerde
+            var voorstel = await _context.TrainingVoorstellen.FirstOrDefaultAsync(v => v.GroepsgesprekId == g.Id);
+            if (voorstel != null)
+            {
+                coaches.Add(voorstel.OrganisatorId);
+                try
+                {
+                    foreach (var c in System.Text.Json.JsonDocument.Parse(voorstel.CoachesJson).RootElement.EnumerateArray())
+                        if (c.TryGetProperty("id", out var id) && id.GetString() is string cid) coaches.Add(cid);
+                }
+                catch { }
+            }
+            var aanvraag = await _context.RijderAanvragen.FindAsync(g.RijderAanvraagId.Value);
+            if (aanvraag != null)
+            {
+                rijders.Add(aanvraag.RijderId);
+                try
+                {
+                    foreach (var r in System.Text.Json.JsonDocument.Parse(aanvraag.UitgenodigdeRijders).RootElement.EnumerateArray())
+                        if (r.TryGetProperty("id", out var id) && id.GetString() is string rid) rijders.Add(rid);
+                }
+                catch { }
+            }
+        }
+
+        return gebruikerId =>
+        {
+            var eigen = (rollen.GetValueOrDefault(gebruikerId) ?? "").Split(',').Select(x => x.Trim()).Where(x => x != "").ToList();
+            var isCoach = eigen.Contains("Coach");
+            var isRijder = eigen.Contains("Rijder");
+            if (isCoach && !isRijder) return "Coach";
+            if (isRijder && !isCoach) return "Rijder";
+            if (!isCoach && !isRijder) return eigen.FirstOrDefault() ?? "";
+            // Beide rollen: kijk naar de plek in deze groep
+            if (rijders.Contains(gebruikerId)) return "Rijder";
+            if (coaches.Contains(gebruikerId)) return "Coach";
+            if (g.CoachAanbodId > 0) return "Rijder";      // meegedaan via 'Reageren op activiteit'
+            if (g.RijderAanvraagId != null) return "Coach"; // gereageerd op het verzoek als coach
+            return "Coach & rijder";
+        };
     }
 
     // Maak zelf een groepsgesprek aan met gekozen gebruikers
