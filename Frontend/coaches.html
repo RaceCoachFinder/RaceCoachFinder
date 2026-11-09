@@ -443,7 +443,7 @@ async function zoekCoaches() {
     }
 }
 
-// Alle filters uit de zijbalk toepassen; voor de kaart zonder het locatiefilter
+// Alle filters uit de zijbalk toepassen (ook gebruikt voor de kaart)
 function filterCoaches(bron, metLocatie) {
     const taalFilter  = document.getElementById('f-taal').value.trim().toLowerCase();
     const minErvaring = parseInt(document.getElementById('f-ervaring').value) || 0;
@@ -475,14 +475,15 @@ function filterCoaches(bron, metLocatie) {
     });
 }
 
-// Kaart: alle coaches (los van een eerdere zoekopdracht op locatie), met de overige filters
+// Kaart: alle coaches (los van een eerdere zoekopdracht via de server), met dezelfde filters als de lijst
 let _kaartCoaches = null;
 async function openKaart() {
     if (!window.openCoachKaart) return;
     try { _kaartCoaches = _kaartCoaches || await CoachAPI.haalAlleOp({}); }
     catch { _kaartCoaches = alleCoaches; }
-    openCoachKaart(filterCoaches(_kaartCoaches, false), {
+    openCoachKaart(filterCoaches(_kaartCoaches, true), {
         prijsTekst: prijsBereik,
+        filters: document.getElementById('filter-sidebar'),
         onStadKies: stad => {
             document.getElementById('f-locatie').value = stad;
             zoekCoaches();
@@ -495,6 +496,8 @@ function renderCoaches() {
     const sortering   = document.getElementById('f-sortering').value;
 
     let lijst = filterCoaches(alleCoaches, true);
+    // Staat de kaart open (met de filters ernaast)? Dan de kaart meteen mee laten veranderen
+    if (window.coachKaartIsOpen && coachKaartIsOpen() && _kaartCoaches) verversCoachKaart(filterCoaches(_kaartCoaches, true));
 
     if (sortering === 'recensies') {
         // Bayesiaans gemiddelde: (n*r + m*C) / (n+m), m=5, C=4.0

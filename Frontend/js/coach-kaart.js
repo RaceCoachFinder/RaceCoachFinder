@@ -156,29 +156,60 @@
         overlay.innerHTML = `
             <div class="ck-venster" role="dialog" aria-modal="true" aria-label="Coaches op de kaart">
                 <div class="ck-kop">
+                    <button type="button" class="ck-filterknop">⚙ Filters</button>
                     <strong>🗺️ Coaches op de kaart</strong>
                     <span class="ck-info"></span>
                     <button type="button" class="ck-sluiten" title="Sluiten">✕</button>
                 </div>
-                <div class="ck-kaartvak">
-                    <div class="ck-kaart"></div>
-                    <div class="ck-hoverkaart"></div>
+                <div class="ck-hoofd">
+                    <div class="ck-zijkant">
+                        <div class="ck-zijkant-inhoud"></div>
+                        <button type="button" class="btn btn-primair ck-zijkant-klaar">Toon op de kaart</button>
+                    </div>
+                    <div class="ck-kaartvak">
+                        <div class="ck-kaart"></div>
+                        <div class="ck-hoverkaart"></div>
+                    </div>
                 </div>
                 <div class="ck-voet"></div>
             </div>`;
         document.body.appendChild(overlay);
         overlay.querySelector('.ck-sluiten').addEventListener('click', sluit);
         overlay.addEventListener('mousedown', e => { if (e.target === overlay) sluit(); });
+        const zijkant = overlay.querySelector('.ck-zijkant');
+        overlay.querySelector('.ck-filterknop').addEventListener('click', () => zijkant.classList.toggle('open'));
+        overlay.querySelector('.ck-zijkant-klaar').addEventListener('click', () => zijkant.classList.remove('open'));
         const hk = overlay.querySelector('.ck-hoverkaart');
         hk.addEventListener('mouseenter', () => clearTimeout(verbergTimer));
         hk.addEventListener('mouseleave', () => verbergHoverKaart());
         document.addEventListener('keydown', e => { if (e.key === 'Escape' && overlay.classList.contains('open')) sluit(); });
     }
 
+    // De filters van de pagina zelf verhuizen tijdens het kijken naar de kaart naar de zijkant
+    // (zelfde elementen, dus alle filters blijven werken) en gaan bij sluiten weer terug.
+    let filterPlek = null;
+    function leenFilters(el) {
+        if (!el || filterPlek) return;
+        filterPlek = document.createComment('filters');
+        el.parentNode.insertBefore(filterPlek, el);
+        overlay.querySelector('.ck-zijkant-inhoud').appendChild(el);
+        overlay.classList.add('met-filters');
+    }
+    function geefFiltersTerug() {
+        if (!filterPlek) return;
+        const el = overlay.querySelector('.ck-zijkant-inhoud').firstElementChild;
+        if (el) filterPlek.parentNode.insertBefore(el, filterPlek);
+        filterPlek.remove();
+        filterPlek = null;
+        overlay.classList.remove('met-filters');
+    }
+
     function sluit() {
         overlay.classList.remove('open');
+        overlay.querySelector('.ck-zijkant').classList.remove('open');
         document.body.style.overflow = '';
         verbergHoverKaart(true);
+        geefFiltersTerug();
     }
 
     function stadPopup(stad, lijst) {
@@ -203,32 +234,12 @@
         return el;
     }
 
-    window.openCoachKaart = async function (coaches, o = {}) {
-        opties = o;
-        if (!overlay) maakOverlay();
-        overlay.classList.add('open');
-        document.body.style.overflow = 'hidden';
+    // Pins tekenen. Bij het openen zoomt de kaart naar de coaches; bij een filterwijziging blijft hij staan.
+    let tekenVolgnummer = 0;
+    async function teken(coaches, inzoomen) {
+        const nr = ++tekenVolgnummer;
         const info = overlay.querySelector('.ck-info');
         const voet = overlay.querySelector('.ck-voet');
-        info.textContent = 'Kaart laden…';
-        voet.textContent = '';
-        try {
-            await laadLeaflet();
-        } catch (e) { info.textContent = e.message; return; }
-
-        if (!kaart) {
-            kaart = L.map(overlay.querySelector('.ck-kaart'), { minZoom: 5, maxZoom: 13, zoomSnap: 0.5 }).setView([51.6, 5.3], 7);
-            // Rustige lichtgrijze ondergrond met alleen grenzen, wegen en plaatsnamen (geen sleutel nodig)
-            const esri = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/';
-            L.tileLayer(esri + 'World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-                maxZoom: 16, attribution: 'Kaart © Esri, HERE, Garmin, © OpenStreetMap'
-            }).addTo(kaart);
-            L.tileLayer(esri + 'World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16 }).addTo(kaart);
-            kaart.on('click movestart zoomstart', () => verbergHoverKaart(true));
-        }
-        setTimeout(() => kaart.invalidateSize(), 0);
-        if (laag) laag.remove();
-        laag = L.layerGroup().addTo(kaart);
 
         // Coaches per stad groeperen (hoofdletters/spaties maken niet uit)
         const perStad = new Map();
@@ -241,8 +252,14 @@
             perStad.get(sleutel).coaches.push(c);
         });
 
-        info.textContent = perStad.size ? 'Plaatsen zoeken…' : '';
+        if (perStad.size) info.textContent = 'Plaatsen zoeken…';
         const plekken = await zoekSteden([...perStad.keys()]);
+        if (nr !== tekenVolgnummer) return; // intussen weer een filter gewijzigd
+
+        verbergHoverKaart(true);
+        kaart.closePopup();
+        if (laag) laag.remove();
+        laag = L.layerGroup().addTo(kaart);
         const punten = [];
         let onbekend = zonderStad.length;
 
@@ -264,13 +281,55 @@
             }
         });
 
-        if (punten.length > 1) kaart.fitBounds(punten, { padding: [60, 60], maxZoom: 10 });
-        else if (punten.length === 1) kaart.setView(punten[0], 9);
+        // Bij openen, of als na een filterwijziging geen enkele coach meer in beeld is: naar de coaches toe
+        const zichtbaar = punten.some(pt => kaart.getBounds().contains(pt));
+        if (inzoomen || (punten.length && !zichtbaar)) {
+            if (punten.length > 1) kaart.fitBounds(punten, { padding: [60, 60], maxZoom: 10 });
+            else if (punten.length === 1) kaart.setView(punten[0], 9);
+        }
 
         const totaal = coaches.length - onbekend;
-        info.textContent = `${totaal} coach${totaal === 1 ? '' : 'es'} in ${punten.length} plaats${punten.length === 1 ? '' : 'en'}`;
+        info.textContent = totaal === 0
+            ? 'Geen coaches met deze filters'
+            : `${totaal} coach${totaal === 1 ? '' : 'es'} in ${punten.length} plaats${punten.length === 1 ? '' : 'en'}`;
+        overlay.querySelector('.ck-filterknop').textContent = `⚙ Filters · ${totaal}`;
         voet.textContent = (isAanraak() ? 'Tik op een coach voor zijn kaart. ' : 'Ga met je muis over een coach voor zijn kaart, klik om het profiel te openen. ')
             + 'Een getal = meerdere coaches in die plaats.'
             + (onbekend ? ` ${onbekend} coach${onbekend === 1 ? ' staat' : 'es staan'} niet op de kaart (woonplaats onbekend).` : '');
+    }
+
+    // opties: prijsTekst(c), onStadKies(stad), filters (element dat tijdens de kaart in de zijkant komt)
+    window.openCoachKaart = async function (coaches, o = {}) {
+        opties = o;
+        if (!overlay) maakOverlay();
+        overlay.classList.add('open');
+        document.body.style.overflow = 'hidden';
+        leenFilters(o.filters);
+        const info = overlay.querySelector('.ck-info');
+        overlay.querySelector('.ck-voet').textContent = '';
+        info.textContent = 'Kaart laden…';
+        try {
+            await laadLeaflet();
+        } catch (e) { info.textContent = e.message; return; }
+
+        if (!kaart) {
+            kaart = L.map(overlay.querySelector('.ck-kaart'), { minZoom: 5, maxZoom: 13, zoomSnap: 0.5 }).setView([51.6, 5.3], 7);
+            // Rustige lichtgrijze ondergrond met alleen grenzen, wegen en plaatsnamen (geen sleutel nodig)
+            const esri = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/';
+            L.tileLayer(esri + 'World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 16, attribution: 'Kaart © Esri, HERE, Garmin, © OpenStreetMap'
+            }).addTo(kaart);
+            L.tileLayer(esri + 'World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16 }).addTo(kaart);
+            kaart.on('click movestart zoomstart', () => verbergHoverKaart(true));
+            kaart.on('click', () => overlay.querySelector('.ck-zijkant').classList.remove('open'));
+        }
+        setTimeout(() => kaart.invalidateSize(), 0);
+        await teken(coaches, true);
     };
+
+    // Na een filterwijziging: pins bijwerken als de kaart open is
+    window.verversCoachKaart = function (coaches) {
+        if (overlay && overlay.classList.contains('open') && kaart) teken(coaches, false);
+    };
+    window.coachKaartIsOpen = () => !!(overlay && overlay.classList.contains('open'));
 })();

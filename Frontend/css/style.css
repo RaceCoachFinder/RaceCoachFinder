@@ -745,7 +745,15 @@ footer {
 .ck-kop strong { font-size: 1.02rem; }
 .ck-info { font-size: 0.82rem; color: var(--kleur-subtekst); flex: 1; }
 .ck-sluiten { margin-left: auto; background: none; border: none; font-size: 1.3rem; color: #777; cursor: pointer; line-height: 1; }
+.ck-hoofd { position: relative; flex: 1; min-height: 0; display: flex; }
 .ck-kaartvak { position: relative; flex: 1; min-height: 0; }
+/* Filters naast de kaart (computer) of als uitschuifpaneel (telefoon) */
+.ck-zijkant, .ck-filterknop, .ck-zijkant-klaar { display: none; }
+.ck-overlay.met-filters .ck-venster { max-width: 1240px; }
+.ck-overlay.met-filters .ck-zijkant { display: flex; flex-direction: column; width: 280px; flex-shrink: 0; border-right: 1px solid #eee; overflow-y: auto; background: #fff; }
+.ck-zijkant .filter-sidebar { display: block !important; position: static; box-shadow: none; border-radius: 0; padding: 1rem 1.1rem; margin: 0; }
+.ck-zijkant .kaart-open-knop { display: none; }
+.ck-filterknop { background: #fff; border: 1.5px solid var(--kleur-primair); border-radius: 8px; padding: 0.35rem 0.7rem; font-family: inherit; font-size: 0.85rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
 .ck-kaart { position: absolute; inset: 0; background: #f2f0eb; }
 .ck-voet { font-size: 0.78rem; color: var(--kleur-subtekst); padding: 0.5rem 1rem; border-top: 1px solid #eee; }
 .ck-icoon { background: none; border: none; }
@@ -774,6 +782,11 @@ footer {
 .ck-hk-bio { color: var(--kleur-subtekst); font-size: 0.8rem; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 0.5rem; }
 .ck-hk-knop { display: block; text-align: center; padding: 0.4rem; font-size: 0.82rem; }
 @media (max-width: 700px) {
+    .ck-overlay.met-filters .ck-filterknop { display: inline-block; }
+    .ck-overlay.met-filters .ck-zijkant { position: absolute; top: 0; bottom: 0; left: 0; z-index: 1100; width: min(86%, 330px); border-right: none; box-shadow: 4px 0 24px rgba(0,0,0,0.25); transform: translateX(-105%); transition: transform 0.25s ease; }
+    .ck-overlay.met-filters .ck-zijkant.open { transform: none; }
+    .ck-overlay.met-filters .ck-zijkant-klaar { display: block; position: sticky; bottom: 0; margin: auto 1rem 1rem; }
+    .ck-kop strong { font-size: 0.95rem; }
     .ck-overlay { padding: 0; }
     .ck-venster { height: 100%; max-height: none; border-radius: 0; }
     .ck-info { display: none; }
