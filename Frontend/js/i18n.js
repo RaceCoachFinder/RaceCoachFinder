@@ -19,6 +19,11 @@
         'Registreren': 'Register',
         'Uitloggen': 'Log out',
         'Instellingen': 'Settings',
+        'Wissel naar rijder': 'Switch to rider',
+        'Wissel naar coach': 'Switch to coach',
+        'Actief als coach': 'Active as coach',
+        'Actief als rijder': 'Active as rider',
+        'Beheerder': 'Admin',
 
         // ===== FOOTER =====
         'Hoe werkt het': 'How it works',
@@ -111,7 +116,7 @@
         'racecoach': 'race coach',
         'Eén platform voor rijders en coaches: vind een coach, regel persoonlijke begeleiding of doe mee aan groepscoaching. Alles via chat.': 'One platform for riders and coaches: find a coach, arrange personal coaching or join group coaching. All through chat.',
         'Word coach': 'Become a coach',
-        'Groepscoaching': 'Group coaching',
+        'Groepscoaching': 'Group Coaching',
         'Open aanvragen': 'Open requests',
         'Welkom terug,': 'Welcome back,',
         'Snel naar:': 'Quick links:',

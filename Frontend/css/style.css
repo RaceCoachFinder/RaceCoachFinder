@@ -40,6 +40,7 @@ a { color: var(--kleur-primair); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
 /* ===== Navigatie ===== */
+:root { --nav-hoogte: 90px; }
 nav,
 .navbar {
     background: #000;
@@ -47,21 +48,22 @@ nav,
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 90px;
+    gap: 2rem;
+    height: var(--nav-hoogte);
     position: sticky;
     top: 0;
-    z-index: 100;
+    z-index: 300; /* boven plakkende tabbalken, onder pop-ups */
     box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
+/* Pagina's met een extra binnenvak: zelfde breedte en uitlijning als de rest */
 .nav-container {
     width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 2rem;
+    min-width: 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 2rem;
 }
 
 .nav-logo {
@@ -74,12 +76,147 @@ nav,
     transition: opacity 0.15s;
     display: flex;
     align-items: center;
+    flex-shrink: 0;
 }
 .nav-logo:hover { opacity: 0.85; text-decoration: none; }
-
 .nav-logo span { color: var(--kleur-primair); }
 
-.nav-links { display: flex; gap: 1.5rem; list-style: none; align-items: center; }
+/* Alles rechts, op één regel */
+.nav-links {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.25rem;
+    list-style: none;
+    margin: 0 0 0 auto;
+    padding: 0;
+    flex-shrink: 0;
+}
+.nav-links li { display: flex; align-items: center; }
+
+.nav-links a {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    color: #c8c8c8;
+    font-size: 0.93rem;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: color 0.15s, background 0.15s;
+}
+.nav-links a:hover { color: #fff; background: rgba(255,255,255,0.07); text-decoration: none; }
+.nav-links a.actief { color: #fff; }
+.nav-links a.actief::after {
+    content: '';
+    position: absolute;
+    left: 0.75rem; right: 0.75rem; bottom: 0.2rem;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--kleur-primair);
+}
+
+.nav-badge {
+    background: #e53935;
+    color: #fff;
+    border-radius: 999px;
+    min-width: 1.15rem;
+    padding: 0.05rem 0.35rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1.4;
+    text-align: center;
+    margin-left: 0.4rem;
+}
+
+.nav-scheiding { width: 1px; height: 22px; background: rgba(255,255,255,0.16); margin: 0 0.6rem; }
+
+/* Taalknop op de donkere balk */
+.nav-links .taal-toggle { border: 1px solid rgba(255,255,255,0.2); border-radius: 999px; overflow: hidden; display: flex; }
+.nav-links .taal-optie { color: #9a9a9a; padding: 0.2rem 0.6rem; }
+.nav-links .taal-optie:hover:not(.actief) { color: #fff; background: rgba(255,255,255,0.08); }
+.nav-taal { margin-right: 0.35rem; }
+
+/* Registreren: de enige gele knop */
+.nav-links a.nav-cta {
+    background: var(--kleur-primair);
+    color: var(--kleur-donker);
+    font-weight: 700;
+    padding: 0.5rem 1.1rem;
+    margin-left: 0.25rem;
+}
+.nav-links a.nav-cta:hover { background: var(--kleur-primair); filter: brightness(1.08); color: var(--kleur-donker); }
+
+/* Accountmenu */
+.nav-account { position: relative; margin-left: 0.25rem; }
+.nav-account-knop {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 999px;
+    padding: 0.22rem 0.75rem 0.22rem 0.22rem;
+    color: #fff;
+    font-family: inherit;
+    font-size: 0.93rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+.nav-account-knop:hover,
+.nav-account.open .nav-account-knop { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.25); }
+.nav-avatar {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: var(--kleur-primair);
+    color: var(--kleur-donker);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    flex-shrink: 0;
+}
+.nav-account-naam { max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nav-pijl { font-size: 0.7rem; color: #aaa; transition: transform 0.15s; }
+.nav-account.open .nav-pijl { transform: rotate(180deg); }
+
+.nav-account-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    min-width: 230px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.22);
+    padding: 0.4rem;
+    z-index: 120;
+}
+.nav-account.open .nav-account-menu { display: block; }
+.nav-account-kop {
+    display: flex;
+    flex-direction: column;
+    padding: 0.6rem 0.75rem 0.7rem;
+    margin-bottom: 0.3rem;
+    border-bottom: 1px solid #eee;
+}
+.nav-account-kop strong { color: var(--kleur-donker); font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nav-account-kop span { color: #888; font-size: 0.8rem; margin-top: 0.1rem; }
+.nav-links .nav-account-menu a {
+    display: flex;
+    gap: 0.6rem;
+    width: 100%;
+    padding: 0.55rem 0.75rem;
+    color: var(--kleur-donker);
+    font-size: 0.92rem;
+}
+.nav-links .nav-account-menu a:hover { background: #f4f4f4; color: var(--kleur-donker); }
+.nav-links .nav-account-menu a.actief::after { display: none; }
+.nav-menu-icoon { width: 1.1rem; text-align: center; color: #999; }
+.nav-links .nav-account-menu a.nav-uitloggen { color: #c62828; }
+.nav-links .nav-account-menu a.nav-uitloggen .nav-menu-icoon { color: #c62828; }
 
 /* Hamburger knop */
 .nav-hamburger {
@@ -91,6 +228,7 @@ nav,
     border: none;
     cursor: pointer;
     padding: 6px;
+    flex-shrink: 0;
 }
 .nav-hamburger span {
     display: block;
@@ -104,44 +242,71 @@ nav,
 .nav-hamburger.open span:nth-child(2) { opacity: 0; }
 .nav-hamburger.open span:nth-child(3) { transform: translateY(-7.5px) rotate(-45deg); }
 
+/* Te smal voor alles naast elkaar (auth.js zet .nav-compact): uitklapmenu */
+nav.nav-compact .nav-hamburger,
+.navbar.nav-compact .nav-hamburger { display: flex; }
+.nav-compact .nav-links {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0; right: 0;
+    background: #000;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    margin: 0;
+    padding: 0.5rem 0 1rem;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    max-height: calc(100vh - var(--nav-hoogte));
+    overflow-y: auto;
+    z-index: 99;
+}
+.nav-compact .nav-links.open { display: flex; }
+.nav-compact .nav-links li { width: 100%; display: block; }
+.nav-compact .nav-links a {
+    display: flex;
+    width: 100%;
+    padding: 0.8rem 1.5rem;
+    border-radius: 0;
+    font-size: 1rem;
+    border-bottom: 1px solid #1a1a1a;
+}
+.nav-compact .nav-links a.actief { color: var(--kleur-primair); }
+.nav-compact .nav-links a.actief::after { display: none; }
+.nav-compact .nav-links .nav-scheiding { display: none; }
+.nav-compact .nav-taal { padding: 0.8rem 1.5rem; margin: 0; border-bottom: 1px solid #1a1a1a; }
+.nav-compact .nav-taal .taal-toggle { display: inline-flex; }
+.nav-compact .nav-links a.nav-cta {
+    width: auto;
+    margin: 0.9rem 1.5rem 0;
+    justify-content: center;
+    border-radius: 8px;
+    border-bottom: none;
+}
+.nav-compact .nav-account { margin: 0; }
+.nav-compact .nav-account-knop { display: none; }
+.nav-compact .nav-account-menu {
+    display: block;
+    position: static;
+    min-width: 0;
+    background: none;
+    box-shadow: none;
+    border-radius: 0;
+    padding: 0;
+}
+.nav-compact .nav-account-kop { padding: 0.9rem 1.5rem 0.6rem; margin: 0; border-bottom: 1px solid #1a1a1a; }
+.nav-compact .nav-account-kop strong { color: #fff; }
+.nav-compact .nav-account-kop span { color: #888; }
+.nav-compact .nav-links .nav-account-menu a { color: #c8c8c8; padding: 0.8rem 1.5rem; gap: 0.75rem; }
+.nav-compact .nav-links .nav-account-menu a:hover { background: rgba(255,255,255,0.07); color: #fff; }
+.nav-compact .nav-links .nav-account-menu a.nav-uitloggen,
+.nav-compact .nav-links .nav-account-menu a.nav-uitloggen .nav-menu-icoon { color: #ff6b6b; border-bottom: none; }
+
 @media (max-width: 768px) {
-    nav, .navbar { height: 64px; padding: 0 1.25rem; }
-
-    .nav-hamburger { display: flex; }
-
-    .nav-links {
-        display: none;
-        position: absolute;
-        top: 64px;
-        left: 0; right: 0;
-        background: #000;
-        flex-direction: column;
-        gap: 0;
-        padding: 0.5rem 0 1rem;
-        box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-        z-index: 99;
-    }
-    .nav-links.open { display: flex; }
-    .nav-links li { width: 100%; }
-    .nav-links a {
-        display: block;
-        padding: 0.75rem 1.5rem;
-        font-size: 1rem;
-        border-bottom: 1px solid #1a1a1a;
-    }
-    .nav-links li:last-child a { border-bottom: none; }
-
+    :root { --nav-hoogte: 64px; }
+    nav, .navbar { padding: 0 1.25rem; }
     .nav-logo img { height: 52px !important; }
 }
-
-.nav-links a {
-    color: #ccc;
-    font-size: 0.95rem;
-    transition: color 0.2s;
-}
-
-.nav-links a:hover,
-.nav-links a.actief { color: var(--kleur-wit); text-decoration: none; }
 
 /* ===== Hero ===== */
 .hero {

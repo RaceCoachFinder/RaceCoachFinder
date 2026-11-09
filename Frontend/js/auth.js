@@ -133,82 +133,130 @@ function updateNav() {
     }
 
     if (!navLinks) return;
-    navLinks.querySelectorAll('.nav-auth').forEach(function(el) { el.remove(); });
 
-    // Voeg vaste nav-items toe als ze er nog niet zijn
-    if (!navLinks.querySelector('a[href="coaches.html"]')) {
-        var vaste = '<li><a href="index.html">Home</a></li>' +
-                    '<li><a href="coaches.html">Coaches</a></li>';
-        navLinks.innerHTML = vaste + navLinks.innerHTML;
+    // Huidige pagina (werkt met en zonder .html in de url)
+    var pagina = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
+    if (pagina.indexOf('.') === -1) pagina += '.html';
+    var actiefVoor = { 'coach-detail.html': 'coaches.html' };
+    var huidige = actiefVoor[pagina] || pagina;
+    function link(href, tekst, extra) {
+        return '<li><a href="' + href + '"' + (href === huidige ? ' class="actief" aria-current="page"' : '') + '>' +
+               tekst + (extra || '') + '</a></li>';
     }
-    // Verwijder eventuele plain Trainingen link (wordt als gele knop toegevoegd)
-    var bestaandRn = navLinks.querySelector('a[href="trainingen.html"]');
-    if (bestaandRn) bestaandRn.closest('li').remove();
 
-    // Taalwissel (NL / EN)
-    if (!navLinks.querySelector('.taal-toggle')) {
-        var actieveTaal = (window.I18N && window.I18N.taal) || localStorage.getItem('kcf_taal') || 'nl';
-        navLinks.innerHTML +=
-            '<li class="nav-auth" style="display:flex;align-items:center">' +
-            '<div class="taal-toggle">' +
-            '<button type="button" class="taal-optie' + (actieveTaal === 'nl' ? ' actief' : '') + '" id="taal-nl-btn" onclick="window.I18N&&window.I18N.setTaal(\'nl\')">NL</button>' +
-            '<button type="button" class="taal-optie' + (actieveTaal === 'en' ? ' actief' : '') + '" id="taal-en-btn" onclick="window.I18N&&window.I18N.setTaal(\'en\')">EN</button>' +
-            '</div></li>';
-    }
+    var actieveTaal = (window.I18N && window.I18N.taal) || localStorage.getItem('kcf_taal') || 'nl';
+    var taalHtml =
+        '<li class="nav-taal"><div class="taal-toggle">' +
+        '<button type="button" class="taal-optie' + (actieveTaal === 'nl' ? ' actief' : '') + '" id="taal-nl-btn" onclick="window.I18N&&window.I18N.setTaal(\'nl\')">NL</button>' +
+        '<button type="button" class="taal-optie' + (actieveTaal === 'en' ? ' actief' : '') + '" id="taal-en-btn" onclick="window.I18N&&window.I18N.setTaal(\'en\')">EN</button>' +
+        '</div></li>';
+
+    var html =
+        link('index.html', 'Home') +
+        link('coaches.html', 'Coaches') +
+        link('trainingen.html', 'Groepscoaching') +
+        link('persoonlijk-coachen.html', 'Persoonlijk coachen');
 
     if (gebruiker) {
-        const rollen = (gebruiker.rol || '').split(',').map(function(r) { return r.trim(); });
-        const heeftBeide = rollen.indexOf('Coach') !== -1 && rollen.indexOf('Rijder') !== -1;
-
-        let dashboardHtml = '';
-        let rolKnoppenHtml = '';
+        var rollen = (gebruiker.rol || '').split(',').map(function(r) { return r.trim(); });
+        var heeftBeide = rollen.indexOf('Coach') !== -1 && rollen.indexOf('Rijder') !== -1;
+        var dashUrl, rolTekst, wisselHtml = '';
         if (heeftBeide) {
-            const actief = getActieveRol();
-            const andereRol = actief === 'Coach' ? 'Rijder' : 'Coach';
-            const icoon = actief === 'Coach' ? '🏁' : '🏎️';
-            const dashUrl = actief === 'Coach' ? 'dashboard-coach.html' : 'dashboard-rijder.html';
-            dashboardHtml =
-                '<li class="nav-auth"><a href="' + dashUrl + '">' + icoon + ' ' + _esc(gebruiker.naam) + '</a></li>' +
-                '<li class="nav-auth"><a href="#" onclick="wisselRol();return false;" style="background:#f0f0f0;color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700;font-size:0.82rem;white-space:nowrap">⇄ ' + andereRol + '</a></li>';
-            // Only show role-specific buttons based on active role
-            if (actief === 'Rijder') {
-                rolKnoppenHtml = '<li class="nav-auth"><a href="trainingen.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Groepscoaching</a></li>' +
-                                 '<li class="nav-auth"><a href="persoonlijk-coachen.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Persoonlijk coachen</a></li>';
-            } else if (actief === 'Coach') {
-                rolKnoppenHtml = '<li class="nav-auth"><a href="trainingen.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Groepscoaching</a></li>' +
-                                 '<li class="nav-auth"><a href="persoonlijk-coachen.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Persoonlijk coachen</a></li>';
-            }
+            var actief = getActieveRol() === 'Coach' ? 'Coach' : 'Rijder';
+            dashUrl = actief === 'Coach' ? 'dashboard-coach.html' : 'dashboard-rijder.html';
+            rolTekst = actief === 'Coach' ? 'Actief als coach' : 'Actief als rijder';
+            wisselHtml = '<a href="#" onclick="wisselRol();return false;"><span class="nav-menu-icoon">⇄</span><span>' +
+                         (actief === 'Coach' ? 'Wissel naar rijder' : 'Wissel naar coach') + '</span></a>';
+        } else if (rollen.indexOf('Admin') !== -1) {
+            dashUrl = 'admin.html'; rolTekst = 'Beheerder';
+        } else if (rollen.indexOf('Coach') !== -1) {
+            dashUrl = 'dashboard-coach.html'; rolTekst = 'Coach';
         } else {
-            let dashboardUrl = 'dashboard-rijder.html';
-            if (rollen.indexOf('Coach') !== -1) dashboardUrl = 'dashboard-coach.html';
-            if (rollen.indexOf('Admin') !== -1) dashboardUrl = 'admin.html';
-            dashboardHtml = '<li class="nav-auth"><a href="' + dashboardUrl + '">' + _esc(gebruiker.naam) + '</a></li>';
-            if (rollen.indexOf('Rijder') !== -1) {
-                rolKnoppenHtml += '<li class="nav-auth"><a href="trainingen.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Groepscoaching</a></li>' +
-                                  '<li class="nav-auth"><a href="persoonlijk-coachen.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Persoonlijk coachen</a></li>';
-            }
-            if (rollen.indexOf('Coach') !== -1) {
-                rolKnoppenHtml += '<li class="nav-auth"><a href="trainingen.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Groepscoaching</a></li>' +
-                                  '<li class="nav-auth"><a href="persoonlijk-coachen.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Persoonlijk coachen</a></li>';
-            }
+            dashUrl = 'dashboard-rijder.html'; rolTekst = 'Rijder';
         }
+        var naam = String(gebruiker.naam || '').trim() || 'Account';
+        var delen = naam.split(/\s+/);
+        var initialen = (delen[0].charAt(0) + (delen.length > 1 ? delen[delen.length - 1].charAt(0) : '')).toUpperCase();
 
-        navLinks.innerHTML +=
-            '<li class="nav-auth"><a href="berichten.html">Berichten' +
-            '<span id="nav-badge" style="display:none;background:#c62828;color:#fff;border-radius:50%;padding:0.05rem 0.42rem;font-size:0.7rem;font-weight:700;margin-left:0.35rem;vertical-align:middle"></span>' +
-            '</a></li>' +
-            dashboardHtml +
-            rolKnoppenHtml +
-            '<li class="nav-auth"><a href="instellingen.html" title="Instellingen">⚙</a></li>' +
-            '<li class="nav-auth"><a href="#" onclick="uitloggen();return false;" style="color:var(--kleur-primair)">Uitloggen</a></li>';
-
-        laadBerichtenBadge();
+        html +=
+            link('berichten.html', 'Berichten', '<span id="nav-badge" class="nav-badge" style="display:none"></span>') +
+            '<li class="nav-scheiding" aria-hidden="true"></li>' +
+            taalHtml +
+            '<li class="nav-account">' +
+                '<button type="button" class="nav-account-knop" aria-haspopup="true" aria-expanded="false" title="' + _esc(naam) + '">' +
+                    '<span class="nav-avatar">' + _esc(initialen) + '</span>' +
+                    '<span class="nav-account-naam">' + _esc(delen[0]) + '</span>' +
+                    '<span class="nav-pijl" aria-hidden="true">▾</span>' +
+                '</button>' +
+                '<div class="nav-account-menu">' +
+                    '<div class="nav-account-kop"><strong>' + _esc(naam) + '</strong><span>' + rolTekst + '</span></div>' +
+                    '<a href="' + dashUrl + '"><span class="nav-menu-icoon">▦</span><span>Mijn dashboard</span></a>' +
+                    wisselHtml +
+                    '<a href="instellingen.html"><span class="nav-menu-icoon">⚙</span><span>Instellingen</span></a>' +
+                    '<a href="#" class="nav-uitloggen" onclick="uitloggen();return false;"><span class="nav-menu-icoon">↪</span><span>Uitloggen</span></a>' +
+                '</div>' +
+            '</li>';
     } else {
-        navLinks.innerHTML +=
-            '<li class="nav-auth"><a href="trainingen.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Groepscoaching</a></li>' +
-            '<li class="nav-auth"><a href="persoonlijk-coachen.html" style="background:var(--kleur-primair);color:var(--kleur-donker);padding:0.25rem 0.9rem;border-radius:6px;font-weight:700">Persoonlijk coachen</a></li>' +
-            '<li class="nav-auth"><a href="inloggen.html">Inloggen</a></li>' +
-            '<li class="nav-auth"><a href="registreren.html" style="background:var(--kleur-primair);color:#fff;padding:0.3rem 0.9rem;border-radius:6px;font-weight:600">Registreren</a></li>';
+        html +=
+            '<li class="nav-scheiding" aria-hidden="true"></li>' +
+            taalHtml +
+            link('inloggen.html', 'Inloggen') +
+            '<li><a href="registreren.html" class="nav-cta">Registreren</a></li>';
+    }
+    navLinks.innerHTML = html;
+
+    // Accountmenu open/dicht
+    var account = navLinks.querySelector('.nav-account');
+    if (account) {
+        var knop = account.querySelector('.nav-account-knop');
+        knop.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var open = account.classList.toggle('open');
+            knop.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+    }
+    if (!window._navMenuLuisteraar) {
+        window._navMenuLuisteraar = true;
+        document.addEventListener('click', function(e) {
+            document.querySelectorAll('.nav-account.open').forEach(function(a) {
+                if (!a.contains(e.target)) { a.classList.remove('open'); a.querySelector('.nav-account-knop').setAttribute('aria-expanded', 'false'); }
+            });
+        });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') document.querySelectorAll('.nav-account.open').forEach(function(a) { a.classList.remove('open'); });
+        });
+        var wacht = null;
+        window.addEventListener('resize', function() { cancelAnimationFrame(wacht); wacht = requestAnimationFrame(pasNavAan); });
+        if (document.fonts && document.fonts.ready) document.fonts.ready.then(pasNavAan);
+        var logoImg = document.querySelector('.nav-logo img');
+        if (logoImg && !logoImg.complete) logoImg.addEventListener('load', pasNavAan);
+        setTimeout(pasNavAan, 400); // na vertaling naar het Engels
+    }
+    pasNavAan();
+
+    if (gebruiker) laadBerichtenBadge();
+}
+
+// Past alles naast het logo? Zo niet: menuknop (hamburger) gebruiken.
+function pasNavAan() {
+    var nav = document.querySelector('nav, .navbar');
+    var links = nav && nav.querySelector('.nav-links');
+    var logo = nav && nav.querySelector('.nav-logo');
+    if (!links || !logo) return;
+    var vak = nav.querySelector('.nav-container') || nav;
+    var wasOpen = links.classList.contains('open');
+    nav.classList.remove('nav-compact');
+    var stijl = getComputedStyle(vak);
+    var ruimte = vak.clientWidth - parseFloat(stijl.paddingLeft) - parseFloat(stijl.paddingRight);
+    var nodig = logo.getBoundingClientRect().width + 32 + links.scrollWidth;
+    var compact = window.innerWidth <= 768 || nodig > ruimte;
+    nav.classList.toggle('nav-compact', compact);
+    if (!compact) {
+        links.classList.remove('open');
+        var h = nav.querySelector('.nav-hamburger');
+        if (h) h.classList.remove('open');
+    } else if (wasOpen) {
+        links.classList.add('open');
     }
 }
 
