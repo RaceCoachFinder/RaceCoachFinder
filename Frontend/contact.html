@@ -88,6 +88,7 @@
             <div class="formulier-groep">
                 <label for="bericht">Bericht *</label>
                 <textarea id="bericht" placeholder="Schrijf hier je bericht..."></textarea>
+                <input type="text" id="website-veld" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
             </div>
             <button class="btn btn-primair" style="width:100%;margin-top:0.25rem" onclick="verstuur()">
                 Verstuur bericht
@@ -137,17 +138,19 @@ async function verstuur() {
         const res = await fetch('https://racecoachfinder-production.up.railway.app/api/contact', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ naam, email, onderwerp: onderwerp || null, bericht })
+            body: JSON.stringify({ naam, email, onderwerp: onderwerp || null, bericht, website: document.getElementById('website-veld').value })
         });
-        if (!res.ok) throw new Error(await res.text());
+        if (!res.ok) { const fout = new Error(await res.text()); fout.status = res.status; throw fout; }
 
         meldingEl.innerHTML = '<div class="melding melding-succes">Bericht verstuurd! We reageren zo snel mogelijk.</div>';
         document.getElementById('naam').value = '';
         document.getElementById('email').value = '';
         document.getElementById('onderwerp').value = '';
         document.getElementById('bericht').value = '';
-    } catch {
-        meldingEl.innerHTML = '<div class="melding melding-fout">Versturen mislukt. Probeer het opnieuw of mail ons direct.</div>';
+    } catch (e) {
+        // 429 = te vaak verstuurd, 400 = invoer klopt niet: die melding van de server tonen
+        const tekst = (e.status === 429 || e.status === 400) && e.message ? e.message : 'Versturen mislukt. Probeer het opnieuw of mail ons direct.';
+        meldingEl.innerHTML = '<div class="melding melding-fout">' + tekst.replace(/</g, '&lt;') + '</div>';
     } finally {
         btn.disabled = false;
         btn.textContent = 'Verstuur bericht';

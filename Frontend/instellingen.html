@@ -147,6 +147,12 @@
             z-index: 100;
         }
         .opslaan-status { font-size: 0.88rem; color: var(--kleur-subtekst); }
+        .ww-blok { margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid #f0f0f0; display: flex; flex-direction: column; }
+        .ww-blok label { font-size: 0.82rem; color: var(--kleur-subtekst); margin: 0.5rem 0 0.25rem; }
+        .ww-blok input { max-width: 360px; }
+        .verwijder-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 1000; align-items: center; justify-content: center; padding: 1rem; }
+        .verwijder-overlay.open { display: flex; }
+        .verwijder-kaart { background: #fff; border-radius: 14px; padding: 1.5rem; width: 100%; max-width: 420px; box-shadow: 0 8px 32px rgba(0,0,0,0.25); }
         /* Knop en status in dezelfde kolom als de instellingen */
         @media (min-width: 760px) { .opslaan-balk { padding-left: calc(50% - 340px); padding-right: calc(50% - 340px); } }
     </style>
@@ -193,6 +199,17 @@
         <!-- Notificaties -->
         <div class="inst-sectie">
             <div class="inst-sectie-titel">E-mail notificaties</div>
+
+            <div class="inst-rij">
+                <div class="inst-rij-label">
+                    <strong>Taal van e-mails</strong>
+                    <span>In welke taal wil je de mails van RaceCoachFinder ontvangen?</span>
+                </div>
+                <select id="emailTaal" style="width:auto;min-width:130px">
+                    <option value="nl">Nederlands</option>
+                    <option value="en">English</option>
+                </select>
+            </div>
 
             <div class="inst-rij">
                 <div class="inst-rij-label">
@@ -338,13 +355,50 @@
             <div class="acc-rij"><span>E-mailadres</span><span id="acc-email">—</span></div>
             <div class="acc-rij"><span>Accounttype</span><span id="acc-rol">—</span></div>
 
-            <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid #f0f0f0">
-                <p style="font-size:0.85rem;color:var(--kleur-subtekst);margin-bottom:0.9rem">Wil je je wachtwoord wijzigen?</p>
-                <a href="wachtwoord-vergeten.html" class="btn btn-donker" style="font-size:0.85rem;display:inline-block">Wachtwoord wijzigen</a>
-            </div>
+            <form class="ww-blok" onsubmit="wijzigWachtwoord(event)" autocomplete="on">
+                <strong style="display:block;margin-bottom:0.75rem">Wachtwoord wijzigen</strong>
+                <label for="ww-huidig">Huidig wachtwoord</label>
+                <input type="password" id="ww-huidig" autocomplete="current-password" required>
+                <label for="ww-nieuw">Nieuw wachtwoord</label>
+                <input type="password" id="ww-nieuw" autocomplete="new-password" minlength="8" placeholder="Minimaal 8 tekens" required>
+                <label for="ww-herhaal">Herhaal nieuw wachtwoord</label>
+                <input type="password" id="ww-herhaal" autocomplete="new-password" minlength="8" required>
+                <div id="ww-melding" style="font-size:0.85rem;margin:0.5rem 0 0"></div>
+                <div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;margin-top:0.75rem">
+                    <button type="submit" class="btn btn-donker" id="ww-knop" style="font-size:0.85rem">Wachtwoord wijzigen</button>
+                    <a href="wachtwoord-vergeten.html" style="font-size:0.82rem">Huidig wachtwoord vergeten?</a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Account verwijderen -->
+        <div class="inst-sectie" id="sectie-verwijderen">
+            <div class="inst-sectie-titel" style="color:#c62828">Account verwijderen</div>
+            <p style="font-size:0.85rem;color:var(--kleur-subtekst);margin:0 0 0.9rem;line-height:1.6">
+                Hiermee verwijder je je account en alles wat erbij hoort: je profiel, berichten, groepsberichten, boekingen, reviews, aanvragen en aanbiedingen.
+                Een lopend abonnement wordt opgezegd. Dit kan niet ongedaan worden gemaakt.
+            </p>
+            <button type="button" class="btn btn-gevaar" style="font-size:0.85rem" onclick="openVerwijderPopup()">Account verwijderen…</button>
         </div>
 
     </div>
+</div>
+
+<!-- Bevestiging account verwijderen -->
+<div id="verwijder-popup" class="verwijder-overlay" onclick="if(event.target===this)sluitVerwijderPopup()">
+    <form class="verwijder-kaart" onsubmit="verwijderAccount(event)">
+        <h3 style="margin:0 0 0.6rem;color:#c62828">Account definitief verwijderen?</h3>
+        <p style="font-size:0.88rem;color:var(--kleur-subtekst);line-height:1.6;margin:0 0 1rem">
+            Al je gegevens worden direct verwijderd, ook je berichten en boekingen. Dit kan niet ongedaan worden gemaakt.
+            Vul ter bevestiging je wachtwoord in.
+        </p>
+        <input type="password" id="verwijder-wachtwoord" placeholder="Je wachtwoord" autocomplete="current-password" required>
+        <div id="verwijder-melding" style="font-size:0.85rem;color:#c62828;margin-top:0.5rem"></div>
+        <div style="display:flex;gap:0.6rem;margin-top:1rem">
+            <button type="button" class="btn btn-secundair" style="flex:1;color:#555;border-color:#ccc" onclick="sluitVerwijderPopup()">Annuleren</button>
+            <button type="submit" class="btn btn-gevaar" style="flex:1.4;white-space:nowrap" id="verwijder-knop">Definitief verwijderen</button>
+        </div>
+    </form>
 </div>
 
 <!-- Vaste opslaan-balk -->
@@ -357,6 +411,51 @@
 <script src="js/auth.js"></script>
 <script src="js/push.js"></script>
 <script>
+// ── Wachtwoord wijzigen ──
+async function wijzigWachtwoord(e) {
+    e.preventDefault();
+    const melding = document.getElementById('ww-melding');
+    const huidig = document.getElementById('ww-huidig').value;
+    const nieuw = document.getElementById('ww-nieuw').value;
+    const herhaal = document.getElementById('ww-herhaal').value;
+    melding.style.color = '#c62828';
+    if (nieuw !== herhaal) { melding.textContent = 'De nieuwe wachtwoorden zijn niet hetzelfde.'; return; }
+    const knop = document.getElementById('ww-knop');
+    knop.disabled = true;
+    try {
+        await authVerzoek('/auth/wachtwoord-wijzigen', 'POST', { huidig, nieuw });
+        melding.style.color = '#2e7d32';
+        melding.textContent = '✓ Je wachtwoord is gewijzigd.';
+        e.target.reset();
+    } catch (err) {
+        melding.textContent = err.message || 'Wijzigen is niet gelukt.';
+    }
+    knop.disabled = false;
+}
+
+// ── Account verwijderen ──
+function openVerwijderPopup() {
+    document.getElementById('verwijder-wachtwoord').value = '';
+    document.getElementById('verwijder-melding').textContent = '';
+    document.getElementById('verwijder-popup').classList.add('open');
+    setTimeout(() => document.getElementById('verwijder-wachtwoord').focus(), 50);
+}
+function sluitVerwijderPopup() { document.getElementById('verwijder-popup').classList.remove('open'); }
+async function verwijderAccount(e) {
+    e.preventDefault();
+    const knop = document.getElementById('verwijder-knop');
+    knop.disabled = true; knop.textContent = 'Bezig…';
+    try {
+        await authVerzoek('/auth/account-verwijderen', 'POST', { wachtwoord: document.getElementById('verwijder-wachtwoord').value });
+        ['kcf_token', 'kcf_gebruiker', 'kcf_actieve_rol'].forEach(k => localStorage.removeItem(k));
+        alert('Je account en al je gegevens zijn verwijderd.');
+        location.href = 'index.html';
+    } catch (err) {
+        document.getElementById('verwijder-melding').textContent = err.message || 'Verwijderen is niet gelukt.';
+        knop.disabled = false; knop.textContent = 'Definitief verwijderen';
+    }
+}
+
 // ── Pushmeldingen ──
 async function toonPushInstellingen(melding, fout) {
     const el = document.getElementById('push-inhoud');
@@ -421,6 +520,8 @@ document.getElementById('acc-naam').textContent  = gebruiker.naam  || '—';
 document.getElementById('acc-email').textContent = gebruiker.email || '—';
 document.getElementById('acc-rol').textContent   = (gebruiker.rol || '—').replace(',', ' & ');
 
+if (heeftRol('Admin')) document.getElementById('sectie-verwijderen').style.display = 'none';
+
 if (!heeftRol('Coach')) {
     document.getElementById('rij-aanvraag').style.display    = 'none';
     document.getElementById('rij-review').style.display      = 'none';
@@ -458,6 +559,7 @@ async function laadInstellingen() {
     try {
         const inst = await authVerzoek('/instellingen');
         document.getElementById('emailAan').checked               = inst.emailAan;
+        document.getElementById('emailTaal').value                = inst.emailTaal === 'en' ? 'en' : 'nl';
         document.getElementById('alleenFavorieten').checked        = inst.alleenFavorieten;
         document.getElementById('emailBijBetaalUpdate').checked    = inst.emailBijBetaalUpdate;
         document.getElementById('emailBijNieuweAanvraag').checked  = inst.emailBijNieuweAanvraag;
@@ -478,6 +580,7 @@ async function laadInstellingen() {
 async function slaOp() {
     const body = {
         emailAan:               document.getElementById('emailAan').checked,
+        emailTaal:              document.getElementById('emailTaal').value,
         berichtenDrempel:       huidigeDrempel,
         alleenFavorieten:       document.getElementById('alleenFavorieten').checked,
         emailBijBetaalUpdate:   document.getElementById('emailBijBetaalUpdate').checked,

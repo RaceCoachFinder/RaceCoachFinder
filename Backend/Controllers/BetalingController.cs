@@ -43,9 +43,10 @@ public class BetalingController : ControllerBase
             if (!(inst?.EmailAan ?? true) || !(inst?.EmailBijBetaalUpdate ?? true)) return;
             var rijderNaam = (await _userManager.FindByIdAsync(boeking.RijderGebruikerId))?.Naam ?? "De rijder";
             var factuurnummer = boeking.FactuurnummerTekst ?? $"F-{boeking.AangemaaktOp:yyyy}-{boeking.Id:D4}";
-            await _email.VerstuurAsync(coach.Email, coach.Naam, $"Factuur {factuurnummer} is betaald – RaceCoachFinder",
+            var taal = inst?.EmailTaal == "en" ? "en" : "nl";
+            await _email.VerstuurAsync(coach.Email, coach.Naam, EmailTemplates.FactuurBetaaldOnderwerp(factuurnummer, taal),
                 EmailTemplates.FactuurBetaald(coach.Naam, rijderNaam, factuurnummer, boeking.Omschrijving, boeking.Bedrag,
-                    $"{FrontendUrl}/berichten.html?partner={Uri.EscapeDataString(boeking.RijderGebruikerId)}"));
+                    $"{FrontendUrl}/berichten.html?partner={Uri.EscapeDataString(boeking.RijderGebruikerId)}", taal));
         }
         catch (Exception ex)
         {

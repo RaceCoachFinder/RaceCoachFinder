@@ -288,7 +288,7 @@ public class GroepsgesprekController : ControllerBase
 
     // Beheerder (aanmaker van de groep) verwijdert een lid uit de groep
     [HttpDelete("{id}/leden/{gebruikerId}")]
-    public async Task<IActionResult> VerwijderLid(int id, string gebruikerId)
+    public async Task<IActionResult> VerwijderLid(int id, string gebruikerId, [FromServices] Backend.Services.WachtlijstMelder melder)
     {
         var mijnId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         var groep = await _context.Groepsgesprekken.FindAsync(id);
@@ -323,6 +323,7 @@ public class GroepsgesprekController : ControllerBase
             AangemaaktOp = DateTime.UtcNow
         });
         await _context.SaveChangesAsync();
+        if (groep.CoachAanbodId > 0) await melder.MeldAlsPlekVrijAsync(groep.CoachAanbodId);
         return NoContent();
     }
 
@@ -370,20 +371,29 @@ public class GroepsgesprekController : ControllerBase
     }
 
     [HttpDelete("{id}/verlaten")]
-    public async Task<IActionResult> Verlaten(int id)
+    public async Task<IActionResult> Verlaten(int id, [FromServices] Backend.Services.WachtlijstMelder melder)
     {
         var mijnId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         var lid = await _context.GroepsgesprekLeden
             .FirstOrDefaultAsync(l => l.GroepsgesprekId == id && l.GebruikerId == mijnId);
         if (lid == null) return NotFound();
+        var groep = await _context.Groepsgesprekken.FindAsync(id);
         _context.GroepsgesprekLeden.Remove(lid);
+        _context.Groepsberichten.Add(new Groepsbericht
+        {
+            GroepsgesprekId = id, VanGebruikerId = mijnId!, VanNaam = lid.GebruikerNaam,
+            Tekst = $"👋 {lid.GebruikerNaam} heeft de groep verlaten.", AangemaaktOp = DateTime.UtcNow
+        });
         await _context.SaveChangesAsync();
+        // Leeg? Dan gaat de groep met alle berichten uit de database. Anders: misschien een plek vrij voor de wachtlijst.
+        await Backend.Services.GroepOpruimer.VerwijderLegeGroepenAsync(_context, new[] { id });
+        if (groep?.CoachAanbodId > 0) await melder.MeldAlsPlekVrijAsync(groep.CoachAanbodId);
         return NoContent();
     }
 
     [HttpPost("{id}/betaalverzoek")]
     [Authorize(Roles = "Coach")]
-    public async Task<IActionResult> StuurBetaalverzoek(int id, [FromBody] GroepsBetaalverzoekVerzoek verzoek)
+    public async Task<IActionResult> StuurBetaalverzoek(int id, [FromBody] GroepsBetaalverzoekVerzoek verzoek, [FromServices] Backend.Services.FactuurService facturen)
     {
         var coachId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         var coach = await _userManager.FindByIdAsync(coachId!);
@@ -404,24 +414,20 @@ public class GroepsgesprekController : ControllerBase
         var anderIds = alleAnderen.Select(l => l.GebruikerId).ToList();
         var rollen = await _context.Users.Where(u => anderIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id, u => u.Rol ?? "");
         var bepaalRol = await RolBepaler(groep!, rollen);
-        var leden = alleAnderen.Where(l => bepaalRol(l.GebruikerId) != "Coach").ToList();
-        if (leden.Count == 0) return BadRequest("Er zitten geen rijders in deze groep.");
+        var rijderIds = alleAnderen.Where(l => bepaalRol(l.GebruikerId) != "Coach").Select(l => l.GebruikerId).ToList();
+        if (rijderIds.Count == 0) return BadRequest("Er zitten geen rijders in deze groep.");
 
+        // Elke rijder krijgt een eigen factuur (PDF + mail) met het volgende doorlopende factuurnummer
         int aantalVerstuurd = 0;
-        foreach (var rijderLid in leden)
+        var fouten = new List<string>();
+        foreach (var rijderId in rijderIds)
         {
-            _context.Boekingen.Add(new Boeking
-            {
-                CoachGebruikerId = coachId!,
-                RijderGebruikerId = rijderLid.GebruikerId,
-                Omschrijving = verzoek.Omschrijving.Trim(),
-                Bedrag = verzoek.Bedrag,
-                Status = "Openstaand",
-                AangemaaktOp = DateTime.UtcNow,
-                BetalingsTermijn = verzoek.BetalingsTermijn > 0 ? verzoek.BetalingsTermijn : 14,
-                FactuurnummerTekst = verzoek.FactuurnummerTekst,
-                FactuurJson = verzoek.FactuurJson
-            });
+            var rijder = await _userManager.FindByIdAsync(rijderId);
+            if (rijder == null) continue;
+            var nummer = await facturen.VolgendNummerAsync(coach.Id);
+            var (_, fout) = await facturen.MaakEnVerstuurAsync(coach, rijder, verzoek.Omschrijving, verzoek.Bedrag,
+                nummer, verzoek.BetalingsTermijn, verzoek.FactuurJson);
+            if (!string.IsNullOrEmpty(fout)) fouten.Add($"{rijder.Naam}: {fout}");
             aantalVerstuurd++;
         }
 
@@ -435,7 +441,7 @@ public class GroepsgesprekController : ControllerBase
         });
 
         await _context.SaveChangesAsync();
-        return Ok(new { aantalVerstuurd });
+        return Ok(new { aantalVerstuurd, emailFout = string.Join(" | ", fouten) });
     }
 
     // Geeft de uitgenodigde rijders terug van de aanvraag waarmee deze chat gekoppeld is
@@ -472,6 +478,9 @@ public class GroepsgesprekController : ControllerBase
         var gebruiker = await _userManager.FindByIdAsync(mijnId!);
         if (gebruiker == null) return Unauthorized();
 
+        var aanbod = await _context.CoachAanboden.FindAsync(aanbodId);
+        if (aanbod == null) return NotFound("Deze training bestaat niet meer.");
+
         var groep = await _context.Groepsgesprekken
             .FirstOrDefaultAsync(g => g.CoachAanbodId == aanbodId);
 
@@ -486,6 +495,18 @@ public class GroepsgesprekController : ControllerBase
 
         if (!isAlLid)
         {
+            // Nieuwe deelnemer: training moet nog online staan en mag niet vol zijn (coaches mogen altijd)
+            var isCoach = await Backend.Services.AanbodPlekken.IsCoachVanAsync(_context, aanbod, mijnId!);
+            if (!isCoach)
+            {
+                if (!aanbod.IsActief || aanbod.Datum.Date < DateTime.UtcNow.Date)
+                    return BadRequest("Op deze training kun je niet meer reageren.");
+                if (aanbod.MaxRijders.HasValue && await Backend.Services.AanbodPlekken.AantalRijdersAsync(_context, aanbod) >= aanbod.MaxRijders.Value)
+                    return StatusCode(409, "Deze training zit vol. Zet een melding aan, dan hoor je het als er een plek vrijkomt.");
+            }
+            // Van de wachtlijst af: je doet nu mee
+            _context.AanbodWachtlijsten.RemoveRange(_context.AanbodWachtlijsten.Where(w => w.CoachAanbodId == aanbodId && w.GebruikerId == mijnId));
+
             _context.GroepsgesprekLeden.Add(new GroepsgesprekLid
             {
                 GroepsgesprekId = groep.Id,

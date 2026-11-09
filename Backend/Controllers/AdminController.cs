@@ -71,21 +71,15 @@ public class AdminController : ControllerBase
     }
 
     [HttpDelete("gebruikers/{id}")]
-    public async Task<IActionResult> VerwijderGebruiker(string id)
+    public async Task<IActionResult> VerwijderGebruiker(string id, [FromServices] AccountVerwijderService verwijderService)
     {
         var gebruiker = await _userManager.FindByIdAsync(id);
         if (gebruiker == null) return NotFound();
-        if (gebruiker.Email == "admin@mail") return BadRequest("Admin account kan niet verwijderd worden.");
+        if ((gebruiker.Rol ?? "").Split(',').Any(r => r.Trim() == "Admin")) return BadRequest("Het admin-account kan niet verwijderd worden.");
 
-        // Verwijder gekoppeld profiel
-        var coach = await _context.Coaches.FirstOrDefaultAsync(c => c.GebruikerId == id);
-        if (coach != null) _context.Coaches.Remove(coach);
-
-        var rijder = await _context.Rijders.FirstOrDefaultAsync(r => r.GebruikerId == id);
-        if (rijder != null) _context.Rijders.Remove(rijder);
-
-        await _context.SaveChangesAsync();
-        await _userManager.DeleteAsync(gebruiker);
+        // Alles van deze gebruiker weg (profiel, berichten, boekingen, reviews, ...), net als bij zelf verwijderen
+        var fout = await verwijderService.VerwijderAsync(id);
+        if (fout != null) return BadRequest(fout);
         return NoContent();
     }
 

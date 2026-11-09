@@ -17,6 +17,27 @@ namespace Backend.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
 
+            modelBuilder.Entity("Backend.Models.AanbodWachtlijst", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("AangemaaktOp")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("CoachAanbodId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("GebruikerId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AanbodWachtlijsten");
+                });
+
             modelBuilder.Entity("Backend.Models.AgendaItem", b =>
                 {
                     b.Property<int>("Id")
@@ -521,6 +542,10 @@ namespace Backend.Migrations
 
                     b.Property<bool>("EmailBijNieuweReview")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("EmailTaal")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("GebruikerId")
                         .IsRequired()

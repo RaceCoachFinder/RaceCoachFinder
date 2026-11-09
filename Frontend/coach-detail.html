@@ -135,6 +135,7 @@
             <div id="d-reviews-stroom"><p style="color:var(--kleur-subtekst);font-size:0.88rem">Laden...</p></div>
 
             <!-- Review schrijven (alleen zichtbaar voor Rijders) -->
+            <p id="review-hint" style="display:none;margin-top:1.25rem;font-size:0.85rem;color:var(--kleur-subtekst)">Je kunt een review schrijven nadat je een coaching met deze coach hebt betaald en als gedaan hebt bevestigd.</p>
             <div id="review-formulier" style="display:none;margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid #f0f0f0">
                 <h4 style="margin-bottom:0.75rem;font-size:0.95rem">Schrijf een beoordeling</h4>
                 <div id="review-melding"></div>
@@ -161,6 +162,7 @@
         <h3 style="margin:0 0 0.5rem;font-size:1.1rem">Coach rapporteren</h3>
         <p style="color:#666;font-size:0.88rem;margin:0 0 1rem">Beschrijf waarom je deze coach wilt melden. RaceCoachFinder beoordeelt elke melding.</p>
         <textarea id="rapporteer-tekst" rows="4" placeholder="Beschrijf het probleem..." style="width:100%;padding:0.6rem 0.75rem;border:1px solid #ddd;border-radius:6px;font-family:inherit;font-size:0.9rem;box-sizing:border-box;resize:vertical"></textarea>
+        <input type="text" id="rapporteer-website" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
         <div id="rapporteer-melding" style="margin-top:0.5rem;font-size:0.85rem"></div>
         <div style="display:flex;gap:0.75rem;margin-top:1rem;justify-content:flex-end">
             <button onclick="sluitRapportModal()" style="background:none;border:1px solid #ddd;border-radius:6px;padding:0.5rem 1.1rem;cursor:pointer;font-size:0.9rem">Annuleren</button>
@@ -366,17 +368,17 @@ async function verstuurRapport() {
         const r = await fetch(`https://racecoachfinder-production.up.railway.app/api/coach/${coachId}/rapporteren`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ reden })
+            body: JSON.stringify({ reden, website: document.getElementById('rapporteer-website').value })
         });
-        if (!r.ok) throw new Error(await r.text());
+        if (!r.ok) { const fout = new Error(await r.text()); fout.status = r.status; throw fout; }
         sluitRapportModal();
         meldingEl.style.color = '#2e7d32';
         meldingEl.textContent = 'Melding verstuurd. Bedankt!';
         document.getElementById('rapporteer-link-wrapper').querySelector('button').textContent = 'Melding verstuurd';
         document.getElementById('rapporteer-link-wrapper').querySelector('button').disabled = true;
-    } catch {
+    } catch (e) {
         meldingEl.style.color = '#c62828';
-        meldingEl.textContent = 'Er ging iets mis. Probeer het opnieuw.';
+        meldingEl.textContent = (e.status === 429 || e.status === 400) && e.message ? e.message : 'Er ging iets mis. Probeer het opnieuw.';
         knop.disabled = false;
         knop.textContent = 'Versturen';
     }
@@ -558,8 +560,16 @@ function toonReviewFormulier(coachGebruikerId) {
     if (gebruiker.id === coachGebruikerId) return;
     if (window._alBeoordeeld) return;
     reviewCoachGebruikerId = coachGebruikerId;
-    document.getElementById('review-formulier').style.display = '';
-    initSterKiezer();
+    // Alleen na een betaalde coaching die je als gedaan hebt bevestigd
+    authVerzoek(`/review/mag/${encodeURIComponent(coachGebruikerId)}`).then(r => {
+        if (r && r.mag) {
+            document.getElementById('review-formulier').style.display = '';
+            initSterKiezer();
+        } else if (r && !r.alGeschreven) {
+            const hint = document.getElementById('review-hint');
+            if (hint) hint.style.display = '';
+        }
+    }).catch(() => {});
 }
 
 updateNav();

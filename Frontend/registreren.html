@@ -387,7 +387,8 @@ async function submitRegistreren() {
                 email: document.getElementById('email').value.trim(),
                 wachtwoord: document.getElementById('wachtwoord').value,
                 rol: gekozenRol,
-                marketingToestemming: gekozenRol === 'Coach' && document.getElementById('marketing-vinkje').checked
+                marketingToestemming: gekozenRol === 'Coach' && document.getElementById('marketing-vinkje').checked,
+                taal: (window.I18N && window.I18N.taal) === 'en' ? 'en' : 'nl' // mails in de taal van de site
             })
         });
         if (!regAntwoord.ok) throw new Error(await regAntwoord.text());

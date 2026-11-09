@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Backend.Data;
 using Backend.Models;
 using System.Security.Claims;
+using Backend.Services;
 
 namespace Backend.Controllers;
 
@@ -88,6 +89,9 @@ public class CoachAanbodController : ControllerBase
             .Where(l => groepIds.Contains(l.GroepsgesprekId))
             .ToListAsync();
 
+        // Aantal rijders per training (voor 'vol' en '3/8 rijders')
+        var aantalRijders = await AanbodPlekken.AantalRijdersAsync(_context, lijst);
+
         // Uitgenodigde coaches (ook nog niet geaccepteerd)
         var alleUitnodigingen = await _context.CoachAanbodUitnodigingen
             .Where(u => aanbodIds.Contains(u.CoachAanbodId) && u.Status != "Afgewezen")
@@ -116,6 +120,8 @@ public class CoachAanbodController : ControllerBase
                 a.WedstrijdOrganisatie,
                 a.WedstrijdNaam,
                 a.MaxRijders,
+                AantalRijders = aantalRijders.GetValueOrDefault(a.Id),
+                IsVol = a.MaxRijders.HasValue && aantalRijders.GetValueOrDefault(a.Id) >= a.MaxRijders.Value,
                 a.PrijsPerRijder,
                 a.IsGratis,
                 a.AangemaaktOp,
@@ -167,7 +173,7 @@ public class CoachAanbodController : ControllerBase
 
     [HttpPut("{id:int}")]
     [Authorize(Roles = "Coach")]
-    public async Task<IActionResult> Bewerken(int id, [FromBody] CoachAanbodVerzoek verzoek)
+    public async Task<IActionResult> Bewerken(int id, [FromBody] CoachAanbodVerzoek verzoek, [FromServices] WachtlijstMelder melder)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         var gebruiker = await _userManager.FindByIdAsync(userId!);
@@ -180,6 +186,7 @@ public class CoachAanbodController : ControllerBase
         if (string.IsNullOrWhiteSpace(verzoek.Locatie)) return BadRequest("Locatie is verplicht.");
         if (verzoek.Datum == default) return BadRequest("Datum is verplicht.");
 
+        var oudMax = aanbod.MaxRijders;
         aanbod.Titel = verzoek.Titel.Trim();
         aanbod.KorteOmschrijving = verzoek.KorteOmschrijving?.Trim() ?? string.Empty;
         aanbod.Beschrijving = verzoek.Beschrijving?.Trim() ?? string.Empty;
@@ -222,6 +229,9 @@ public class CoachAanbodController : ControllerBase
         aanbod.IsActief = !aanbod.WachtOpCoaches;
 
         await _context.SaveChangesAsync();
+        // Meer plekken (of geen maximum meer)? Dan krijgt de wachtlijst een melding
+        if (oudMax.HasValue && (aanbod.MaxRijders == null || aanbod.MaxRijders > oudMax))
+            await melder.MeldAlsPlekVrijAsync(aanbod.Id);
         return Ok(new { aanbod.Id, aanbod.IsActief, aanbod.WachtOpCoaches });
     }
 
@@ -494,6 +504,46 @@ public class CoachAanbodController : ControllerBase
         return NoContent();
     }
 
+    // Voor ingelogde bezoekers: aan welke trainingen doe ik mee en voor welke sta ik op de wachtlijst?
+    [HttpGet("mijn-status")]
+    [Authorize]
+    public async Task<IActionResult> MijnStatus()
+    {
+        var mijnId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var deelnemer = await (from l in _context.GroepsgesprekLeden
+                               join g in _context.Groepsgesprekken on l.GroepsgesprekId equals g.Id
+                               where l.GebruikerId == mijnId && g.CoachAanbodId > 0
+                               select g.CoachAanbodId).Distinct().ToListAsync();
+        var wachtlijst = await _context.AanbodWachtlijsten.Where(w => w.GebruikerId == mijnId).Select(w => w.CoachAanbodId).ToListAsync();
+        return Ok(new { deelnemer, wachtlijst });
+    }
+
+    // Melding als er een plek vrijkomt bij een volle training
+    [HttpPost("{id:int}/wachtlijst")]
+    [Authorize]
+    public async Task<IActionResult> OpWachtlijst(int id)
+    {
+        var mijnId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var aanbod = await _context.CoachAanboden.FindAsync(id);
+        if (aanbod == null || !aanbod.IsActief) return NotFound("Deze training bestaat niet meer.");
+        if (!await _context.AanbodWachtlijsten.AnyAsync(w => w.CoachAanbodId == id && w.GebruikerId == mijnId))
+        {
+            _context.AanbodWachtlijsten.Add(new AanbodWachtlijst { CoachAanbodId = id, GebruikerId = mijnId });
+            await _context.SaveChangesAsync();
+        }
+        return Ok(new { opWachtlijst = true });
+    }
+
+    [HttpDelete("{id:int}/wachtlijst")]
+    [Authorize]
+    public async Task<IActionResult> VanWachtlijst(int id)
+    {
+        var mijnId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        _context.AanbodWachtlijsten.RemoveRange(_context.AanbodWachtlijsten.Where(w => w.CoachAanbodId == id && w.GebruikerId == mijnId));
+        await _context.SaveChangesAsync();
+        return Ok(new { opWachtlijst = false });
+    }
+
     [HttpDelete("{id:int}")]
     [Authorize(Roles = "Coach")]
     public async Task<IActionResult> Verwijderen(int id)
@@ -503,6 +553,8 @@ public class CoachAanbodController : ControllerBase
         if (aanbod == null) return NotFound();
         if (aanbod.CoachGebruikerId != userId) return Forbid();
 
+        // De groepschat en uitnodigingen blijven bestaan (tot niemand meer in de chat zit); de wachtlijst is niet meer nodig
+        _context.AanbodWachtlijsten.RemoveRange(_context.AanbodWachtlijsten.Where(w => w.CoachAanbodId == id));
         _context.CoachAanboden.Remove(aanbod);
         await _context.SaveChangesAsync();
         return NoContent();

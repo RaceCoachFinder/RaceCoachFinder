@@ -26,111 +26,38 @@ public class BoekingController : ControllerBase
         _email = email;
     }
 
+    // Volgende vrije factuurnummer van deze coach (doorlopend per jaar), om in het factuurformulier te zetten
+    [HttpGet("volgend-factuurnummer")]
+    [Authorize(Roles = "Coach")]
+    public async Task<IActionResult> VolgendFactuurnummer([FromServices] FactuurService facturen)
+    {
+        var coachId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        return Ok(new { nummer = await facturen.VolgendNummerAsync(coachId) });
+    }
+
     // Coach stuurt betaalverzoek/factuur naar rijder
     [HttpPost]
     [Authorize(Roles = "Coach")]
-    public async Task<IActionResult> MaakBoeking([FromBody] BoekingVerzoek verzoek)
+    public async Task<IActionResult> MaakBoeking([FromBody] BoekingVerzoek verzoek, [FromServices] FactuurService facturen)
     {
         var coachId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         var coach = await _userManager.FindByIdAsync(coachId!);
+        if (coach == null) return Unauthorized();
         var rijder = await _userManager.FindByIdAsync(verzoek.RijderGebruikerId);
         if (rijder == null) return NotFound("Rijder niet gevonden.");
+        if (rijder.Id == coach.Id) return BadRequest("Je kunt geen factuur naar jezelf sturen.");
         if (string.IsNullOrWhiteSpace(verzoek.Omschrijving)) return BadRequest("Omschrijving is verplicht.");
         if (verzoek.Bedrag <= 0) return BadRequest("Bedrag moet groter zijn dan 0.");
 
-        var boeking = new Boeking
-        {
-            CoachGebruikerId = coachId!,
-            RijderGebruikerId = verzoek.RijderGebruikerId,
-            Omschrijving = verzoek.Omschrijving.Trim(),
-            Bedrag = verzoek.Bedrag,
-            Status = "Openstaand",
-            AangemaaktOp = DateTime.UtcNow,
-            FactuurnummerTekst = verzoek.FactuurnummerTekst,
-            BetalingsTermijn = verzoek.BetalingsTermijn > 0 ? verzoek.BetalingsTermijn : 14,
-            FactuurJson = verzoek.FactuurJson
-        };
+        // Factuurnummer: zelf ingevuld (mag niet al gebruikt zijn) of het volgende doorlopende nummer
+        var nummer = (verzoek.FactuurnummerTekst ?? "").Trim();
+        if (nummer.Length > 40) return BadRequest("Factuurnummer is te lang.");
+        if (nummer == "") nummer = await facturen.VolgendNummerAsync(coach.Id);
+        else if (await facturen.NummerAlGebruiktAsync(coach.Id, nummer))
+            return BadRequest($"Factuurnummer {nummer} heb je al gebruikt. Elke factuur moet een eigen nummer hebben.");
 
-        _context.Boekingen.Add(boeking);
-        await _context.SaveChangesAsync();
-
-        var coachNaam = coach?.Naam ?? "Coach";
-        var rijderNaam = rijder.Naam ?? "Rijder";
-        var factuurnummer = verzoek.FactuurnummerTekst ?? $"F-{DateTime.UtcNow:yyyy}-{boeking.Id:D4}";
-        var berichtenUrl = $"{FrontendUrl}/berichten.html?partner={coachId}";
-
-        // PDF genereren
-        byte[]? pdfBytes = null;
-        var emailFout = "";
-        try
-        {
-            var coachProfiel = await _context.Coaches.FirstOrDefaultAsync(c => c.GebruikerId == coachId);
-            var factuurData = PdfService.ParseFactuurJson(verzoek.FactuurJson);
-            var regels = factuurData?.Regels ?? new List<FactuurRegel>
-            {
-                new() { Omschrijving = verzoek.Omschrijving, Aantal = 1, Prijs = (double)verzoek.Bedrag, Btw = 0 }
-            };
-
-            var (pdf, totaalMetFee) = PdfService.GenereerFactuur(
-                factuurnummer,
-                DateTime.Now,
-                boeking.BetalingsTermijn,
-                coachNaam,
-                coachProfiel?.FactuurAdres,
-                coachProfiel?.FactuurPostcode,
-                coachProfiel?.FactuurStad,
-                coachProfiel?.FactuurLand,
-                coachProfiel?.FactuurTelefoon,
-                coach?.Email ?? coachNaam,
-                coachProfiel?.KvkNummer,
-                coachProfiel?.BtwNummer,
-                rijderNaam,
-                rijder.Email ?? rijderNaam,
-                regels,
-                factuurData?.Notities);
-
-            pdfBytes = pdf;
-            boeking.Bedrag = totaalMetFee;
-            await _context.SaveChangesAsync();
-        }
-        catch (Exception ex)
-        {
-            emailFout = $"PDF mislukt: {ex.Message}";
-        }
-
-        var pdfNaam = $"Factuur-{factuurnummer}.pdf";
-
-        var coachEmail = coach?.Email ?? "";
-        var geldigCoachEmail = coachEmail.Contains('@') && coachEmail.IndexOf('.', coachEmail.IndexOf('@')) > 0;
-        if (geldigCoachEmail)
-        {
-            try
-            {
-                await _email.VerstuurAsync(
-                    coachEmail, coachNaam, $"Factuur {factuurnummer} verstuurd",
-                    EmailTemplates.FactuurCoach(coachNaam, rijderNaam, factuurnummer, verzoek.Omschrijving, boeking.Bedrag),
-                    pdfBytes, pdfNaam);
-            }
-            catch (Exception ex)
-            {
-                emailFout += (emailFout.Length > 0 ? " | " : "") + $"Coach email mislukt: {ex.Message}";
-            }
-        }
-
-        if (!string.IsNullOrEmpty(rijder.Email) && rijder.Email.Contains('@') && rijder.Email.IndexOf('.', rijder.Email.IndexOf('@')) > 0)
-        {
-            try
-            {
-                await _email.VerstuurAsync(
-                    rijder.Email, rijderNaam, $"Factuur {factuurnummer} van {coachNaam}",
-                    EmailTemplates.FactuurRijder(rijderNaam, coachNaam, factuurnummer, verzoek.Omschrijving, boeking.Bedrag, boeking.BetalingsTermijn, berichtenUrl),
-                    pdfBytes, pdfNaam);
-            }
-            catch (Exception ex)
-            {
-                emailFout += (emailFout.Length > 0 ? " | " : "") + $"Rijder email mislukt: {ex.Message}";
-            }
-        }
+        var (boeking, emailFout) = await facturen.MaakEnVerstuurAsync(coach, rijder, verzoek.Omschrijving, verzoek.Bedrag,
+            nummer, verzoek.BetalingsTermijn, verzoek.FactuurJson);
 
         return Ok(new
         {

@@ -21,6 +21,9 @@ builder.Services.AddScoped<PushService>();
 builder.Services.AddHostedService<PushVerzender>();
 builder.Services.AddSingleton<GratisMeldingWachtrij>();
 builder.Services.AddHostedService<GratisMeldingVerzender>();
+builder.Services.AddScoped<AccountVerwijderService>();
+builder.Services.AddScoped<FactuurService>();
+builder.Services.AddScoped<WachtlijstMelder>();
 builder.Services.AddDbContext<AppDbContext>((sp, options) =>
     options.UseSqlite($"Data Source={dbPath}")
            .AddInterceptors(sp.GetRequiredService<PushMeldingInterceptor>())
@@ -66,6 +69,25 @@ builder.Services.AddSingleton<IEmailService, EmailService>();
 builder.Services.AddSingleton<IWachtwoordResetService, WachtwoordResetService>();
 builder.Services.AddSingleton<IEmailVerificatieService, EmailVerificatieService>();
 builder.Services.AddHostedService<AgendaReminderService>();
+// Spambeveiliging: maximaal aantal verzoeken per IP-adres (achter de proxy van Railway via X-Forwarded-For)
+static string ClientIp(HttpContext c) =>
+    (c.Request.Headers["X-Forwarded-For"].FirstOrDefault()?.Split(',')[0].Trim() is { Length: > 0 } ip ? ip : null)
+    ?? c.Connection.RemoteIpAddress?.ToString() ?? "onbekend";
+builder.Services.AddRateLimiter(o =>
+{
+    o.RejectionStatusCode = 429;
+    o.OnRejected = async (ctx, ct) =>
+    {
+        ctx.HttpContext.Response.ContentType = "text/plain; charset=utf-8";
+        await ctx.HttpContext.Response.WriteAsync("Je hebt dit te vaak gedaan. Wacht even en probeer het later opnieuw.", ct);
+    };
+    // Contactformulier en coach rapporteren: 3 per 10 minuten
+    o.AddPolicy("formulier", c => System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(ClientIp(c),
+        _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions { PermitLimit = 3, Window = TimeSpan.FromMinutes(10) }));
+    // Endpoints die mails versturen (registreren, wachtwoord vergeten, code opnieuw): 6 per 15 minuten
+    o.AddPolicy("mail", c => System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(ClientIp(c),
+        _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions { PermitLimit = 6, Window = TimeSpan.FromMinutes(15) }));
+});
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -84,14 +106,39 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();
 }
 
-// Admin-account: het wachtwoord komt uit de omgevingsvariabele ADMIN_WACHTWOORD (in Railway instellen).
-// Het oude standaardwachtwoord staat in deze openbare code en wordt daarom bij inloggen geweigerd (zie AuthController).
+// Admin-account: racecoachfinder@gmail.com (was admin@mail). Het wachtwoord komt uit de omgevingsvariabele
+// ADMIN_WACHTWOORD (in Railway instellen). Het oude standaardwachtwoord stond in deze openbare code en wordt
+// daarom bij inloggen geweigerd (zie AuthController).
 using (var scope = app.Services.CreateScope())
 {
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-    var adminEmail = "admin@mail";
+    const string adminEmail = "racecoachfinder@gmail.com";
+    const string oudAdminEmail = "admin@mail";
     var adminWachtwoord = Environment.GetEnvironmentVariable("ADMIN_WACHTWOORD");
+    static bool IsAdmin(ApplicationUser u) => (u.Rol ?? "").Split(',').Any(r => r.Trim() == "Admin");
+
     var admin = await userManager.FindByEmailAsync(adminEmail);
+    if (admin != null && !IsAdmin(admin))
+    {
+        app.Logger.LogWarning("{Email} hoort bij een gewoon account; het admin-account blijft {Oud}.", adminEmail, oudAdminEmail);
+        admin = await userManager.FindByEmailAsync(oudAdminEmail);
+    }
+    else if (admin == null)
+    {
+        // Bestaand admin-account overzetten naar het nieuwe e-mailadres
+        admin = await userManager.FindByEmailAsync(oudAdminEmail);
+        if (admin != null)
+        {
+            admin.Email = adminEmail;
+            admin.UserName = adminEmail;
+            admin.NormalizedEmail = adminEmail.ToUpperInvariant();
+            admin.NormalizedUserName = adminEmail.ToUpperInvariant();
+            admin.EmailConfirmed = true;
+            var r = await userManager.UpdateAsync(admin);
+            if (!r.Succeeded) app.Logger.LogWarning("Admin-e-mail wijzigen mislukt: {Fout}", string.Join(", ", r.Errors.Select(e => e.Description)));
+        }
+    }
+
     if (admin == null && !string.IsNullOrWhiteSpace(adminWachtwoord))
     {
         admin = new ApplicationUser
@@ -113,9 +160,14 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-app.UseSwagger();
-app.UseSwaggerUI();
+// API-documentatie alleen tijdens het ontwikkelen, niet openbaar online
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 app.UseCors();
+app.UseRateLimiter();
 app.UseStaticFiles();
 
 app.UseAuthentication();

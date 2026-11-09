@@ -229,6 +229,9 @@
             font-size: 0.72rem; font-weight: 600;
             padding: 0.18rem 0.55rem; border-radius: 20px;
         }
+        .vol-label { font-size: 0.78rem; font-weight: 700; color: #c62828; background: #fdecea; border-radius: 8px; padding: 0.35rem 0.6rem; text-align: center; }
+        .btn-wachtlijst { background: #fff; color: var(--kleur-donker); border: 1.5px solid var(--kleur-primair); border-radius: 8px; font-size: 0.8rem; font-weight: 700; padding: 0.42rem 0.75rem; cursor: pointer; white-space: nowrap; font-family: inherit; }
+        .btn-wachtlijst.actief { background: #e8f5e9; border-color: #2e7d32; color: #2e7d32; }
         .btn-reageer {
             background: var(--kleur-primair);
             color: var(--kleur-donker);
@@ -801,6 +804,7 @@ async function laadAanbod() {
         params.set('groep', 'true');
         const resp = await fetch(`${API}/coachaanbod?${params}`);
         let aanbod = await resp.json();
+        await laadMijnTrainingStatus();
         // Oudere backend geeft nog geen 'coaches' mee: profiel-ids dan opzoeken via de coachlijst
         if (!window._coachProfielOpNaam && aanbod.some(a => !a.coaches)) {
             try {
@@ -869,7 +873,9 @@ function aanbodKaartHTML(a) {
             : '';
 
     const maxRijdersTag = a.maxRijders
-        ? `<span>👥 Max ${a.maxRijders} rijder${a.maxRijders !== 1 ? 's' : ''}</span>`
+        ? (a.aantalRijders != null
+            ? `<span>👥 ${a.aantalRijders}/${a.maxRijders} rijders</span>`
+            : `<span>👥 Max ${a.maxRijders} rijder${a.maxRijders !== 1 ? 's' : ''}</span>`)
         : '';
 
     const deelnemersHtml = `<div class="aanbod-deelnemers">
@@ -901,7 +907,7 @@ function aanbodKaartHTML(a) {
             </div>
         </div>
         <div class="aanbod-acties">
-            ${a.groepsgesprekId ? `<button onclick="reageerOpActiviteit(${a.id},${a.groepsgesprekId})" class="btn-reageer">👥 Reageren op activiteit</button>` : ''}
+            ${reageerKnopHtml(a)}
             <button onclick='toonPopup(${JSON.stringify(a).replace(/'/g, "&#39;")})' class="btn btn-secundair btn-sm" style="white-space:nowrap;font-size:0.82rem;color:#555;border-color:#ccc;margin-bottom:0.4rem">Meer info</button>
             <a href="${a.coachProfielId ? 'coach-detail.html?id=' + a.coachProfielId : '#'}" class="btn btn-primair btn-sm" style="white-space:nowrap;font-size:0.82rem">
                 Coach bekijken
@@ -1341,7 +1347,7 @@ function toonPopup(a) {
     const d = new Date(a.datum);
     const datum = d.toLocaleDateString('nl-NL', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
     const prijsStr = a.isGratis ? 'Gratis' : a.prijsPerRijder ? `€${a.prijsPerRijder} p.p.` : '';
-    const maxStr = a.maxRijders ? `Max ${a.maxRijders} rijders` : '';
+    const maxStr = a.maxRijders ? (a.aantalRijders != null ? `${a.aantalRijders}/${a.maxRijders} rijders${a.isVol ? ' (vol)' : ''}` : `Max ${a.maxRijders} rijders`) : '';
 
     document.getElementById('modal-coaches').innerHTML = soortChipHtml(a) + coachChipsHtml(a);
     document.getElementById('modal-titel').textContent = a.titel;
@@ -1515,9 +1521,46 @@ document.addEventListener('click', e => {
 
 // ===================== REAGEREN OP ACTIVITEIT =====================
 
+// Aan welke trainingen doe ik mee / voor welke wil ik een melding als er een plek vrijkomt?
+window._mijnTraining = { deelnemer: new Set(), wachtlijst: new Set() };
+async function laadMijnTrainingStatus() {
+    if (!isIngelogd()) return;
+    try {
+        const d = await authVerzoek('/coachaanbod/mijn-status');
+        if (d) window._mijnTraining = { deelnemer: new Set(d.deelnemer || []), wachtlijst: new Set(d.wachtlijst || []) };
+    } catch {}
+}
+
+// Knop(pen) op een trainingskaart: meedoen, naar de chat, of (bij vol) een melding aanzetten
+function reageerKnopHtml(a) {
+    if (!a.groepsgesprekId) return '';
+    if (window._mijnTraining.deelnemer.has(a.id))
+        return `<a href="berichten.html?groep=${a.groepsgesprekId}" class="btn-reageer" style="text-align:center;text-decoration:none">💬 Naar de groepschat</a>`;
+    if (a.isVol) {
+        const opLijst = window._mijnTraining.wachtlijst.has(a.id);
+        return `<div class="vol-label">Vol — max. aantal rijders bereikt</div>` +
+            (opLijst
+                ? `<button onclick="wachtlijst(${a.id}, false)" class="btn-wachtlijst actief" title="Klik om de melding uit te zetten">✓ Je krijgt een melding</button>`
+                : `<button onclick="wachtlijst(${a.id}, true)" class="btn-wachtlijst">🔔 Meld me als er een plek vrijkomt</button>`);
+    }
+    return `<button onclick="reageerOpActiviteit(${a.id},${a.groepsgesprekId})" class="btn-reageer">👥 Reageren op activiteit</button>`;
+}
+
+async function wachtlijst(aanbodId, aan) {
+    if (!isIngelogd()) { naarInloggen(); return; }
+    try {
+        await authVerzoek(`/coachaanbod/${aanbodId}/wachtlijst`, aan ? 'POST' : 'DELETE');
+        if (aan) window._mijnTraining.wachtlijst.add(aanbodId); else window._mijnTraining.wachtlijst.delete(aanbodId);
+        sorteerEnRender();
+        if (aan) toonToast('Je krijgt een melding zodra er een plek vrijkomt.');
+    } catch (e) {
+        alert(e.message || 'Dat is niet gelukt.');
+    }
+}
+
 async function reageerOpActiviteit(aanbodId, groepsgesprekId) {
     if (!isIngelogd()) {
-        location.href = `inloggen.html`;
+        naarInloggen();
         return;
     }
     try {
@@ -1526,6 +1569,12 @@ async function reageerOpActiviteit(aanbodId, groepsgesprekId) {
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + token }
         });
+        if (resp.status === 409) {
+            // Net vol geraakt: kaart bijwerken zodat de meldknop verschijnt
+            alert(await resp.text());
+            laadAanbod();
+            return;
+        }
         if (!resp.ok) throw new Error(await resp.text());
         const data = await resp.json();
         location.href = `berichten.html?groep=${data.groepsgesprekId}`;

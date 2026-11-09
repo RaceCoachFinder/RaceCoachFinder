@@ -8,6 +8,7 @@ public class GebruikerInstellingen
     public string GebruikerId { get; set; } = string.Empty;
 
     // E-mail notificaties
+    public string EmailTaal { get; set; } = "nl";        // taal van alle e-mails: "nl" of "en"
     public bool EmailAan { get; set; } = true;
     public int BerichtenDrempel { get; set; } = 1;     // Stuur mail na hoeveel gemiste berichten
     public bool AlleenFavorieten { get; set; } = false; // Alleen van favoriete rijders/coaches

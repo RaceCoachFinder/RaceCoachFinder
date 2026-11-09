@@ -51,6 +51,7 @@ public class InstellingenController : ControllerBase
         }
 
         inst.EmailAan                       = update.EmailAan;
+        inst.EmailTaal                      = update.EmailTaal == "en" ? "en" : "nl";
         inst.BerichtenDrempel               = Math.Clamp(update.BerichtenDrempel, 1, 50);
         inst.AlleenFavorieten               = update.AlleenFavorieten;
         inst.EmailBijBetaalUpdate           = update.EmailBijBetaalUpdate;

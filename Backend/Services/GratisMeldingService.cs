@@ -82,13 +82,9 @@ public class GratisMeldingVerzender : BackgroundService
             if (nieuwe <= nu) return;
             var altijd = nieuwe.Year >= 9999;
             var verlengd = !altijd && origineel.HasValue && origineel.Value > nu;
-            var datum = EmailTemplates.NlDatum(nieuwe);
-
-            var titel = altijd ? "🎁 Je account is voor altijd gratis"
-                      : verlengd ? "🎁 Je gratis periode is verlengd"
-                      : "🎁 Je hebt een gratis periode gekregen";
-            var tekst = altijd ? "Je kunt RaceCoachFinder als coach voor altijd gratis gebruiken."
-                      : $"Je kunt RaceCoachFinder als coach gratis gebruiken t/m {datum}.";
+            var taal = await EmailTaal.VoorAsync(context, gebruiker.Id);
+            var titel = "🎁 " + EmailTemplates.GratisPeriodeTitel(nieuwe, verlengd, taal);
+            var tekst = EmailTemplates.GratisPeriodeKort(nieuwe, taal);
 
             var email = gebruiker.Email;
             if (!string.IsNullOrWhiteSpace(email) && email.Contains('@'))
@@ -97,7 +93,7 @@ public class GratisMeldingVerzender : BackgroundService
                 {
                     var mail = scope.ServiceProvider.GetRequiredService<IEmailService>();
                     await mail.VerstuurAsync(email, gebruiker.Naam, titel.Replace("🎁 ", "") + " 🎁",
-                        EmailTemplates.GratisPeriode(gebruiker.Naam, nieuwe, verlengd));
+                        EmailTemplates.GratisPeriode(gebruiker.Naam, nieuwe, verlengd, taal));
                 }
                 catch (Exception ex) { _logger.LogWarning("Mail gratis periode mislukt: {Fout}", ex.Message); }
             }

@@ -69,11 +69,26 @@ public class EmailService : IEmailService
     }
 }
 
+// Taal van de e-mails van een gebruiker (instelling; standaard Nederlands)
+public static class EmailTaal
+{
+    public static async Task<string> VoorAsync(Backend.Data.AppDbContext context, string gebruikerId)
+    {
+        var taal = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(
+            context.GebruikerInstellingen.Where(i => i.GebruikerId == gebruikerId).Select(i => i.EmailTaal));
+        return taal == "en" ? "en" : "nl";
+    }
+}
+
+// Alle e-mails in het Nederlands ('nl') of Engels ('en')
 public static class EmailTemplates
 {
-    private static string Omhulsel(string inhoud)
+    private static bool En(string taal) => taal == "en";
+    private static string T(string taal, string nl, string en) => En(taal) ? en : nl;
+
+    private static string Omhulsel(string inhoud, string taal = "nl")
     {
-        return "<!DOCTYPE html><html lang=\"nl\"><head><meta charset=\"UTF-8\"></head>" +
+        return "<!DOCTYPE html><html lang=\"" + (En(taal) ? "en" : "nl") + "\"><head><meta charset=\"UTF-8\"></head>" +
                "<body style=\"margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif\">" +
                "<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#f5f5f5;padding:30px 0\">" +
                "<tr><td align=\"center\">" +
@@ -83,7 +98,8 @@ public static class EmailTemplates
                "</td></tr>" +
                "<tr><td style=\"padding:32px\">" + inhoud + "</td></tr>" +
                "<tr><td style=\"background:#f9f9f9;padding:16px 32px;text-align:center;color:#999;font-size:0.78rem;border-top:1px solid #eee\">" +
-               "&copy; 2026 RaceCoachFinder &mdash; Dit is een automatisch bericht." +
+               "&copy; 2026 RaceCoachFinder &mdash; " + T(taal, "Dit is een automatisch bericht.", "This is an automated message.") +
+               " <a href=\"https://www.racecoachfinder.nl/instellingen.html\" style=\"color:#999\">" + T(taal, "E-mailinstellingen", "Email settings") + "</a>" +
                "</td></tr></table></td></tr></table></body></html>";
     }
 
@@ -93,93 +109,161 @@ public static class EmailTemplates
                "padding:12px 28px;border-radius:6px;font-weight:700;font-size:0.95rem\">" + tekst + "</a>";
     }
 
-    public static string NieuwBericht(string afzenderNaam, string berichtPreview, string berichtenUrl)
+    private static string Voornaam(string? naam) =>
+        (naam ?? "").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
+
+    private static string Bedrag(decimal bedrag, string taal) =>
+        "€ " + bedrag.ToString("0.00", new System.Globalization.CultureInfo(En(taal) ? "en-GB" : "nl-NL"));
+
+    private static string CodeBlok(string code, string taal) =>
+        "<div style=\"text-align:center;margin:0 0 24px\">" +
+        "<div style=\"display:inline-block;background:#f9f9f9;border:2px dashed #F5C200;border-radius:10px;padding:18px 36px\">" +
+        "<div style=\"font-size:0.72rem;color:#999;margin-bottom:6px;letter-spacing:1px;text-transform:uppercase\">" + T(taal, "Verificatiecode", "Verification code") + "</div>" +
+        "<div style=\"font-size:2.2rem;font-weight:800;letter-spacing:10px;color:#111111\">" + Esc(code) + "</div>" +
+        "</div></div>";
+
+    // Datum zoals in Nederland ("9 maart 2027") of in het Engels ("9 March 2027"), in Nederlandse tijd
+    public static string Datum(DateTime utc, string taal = "nl")
+    {
+        var tijd = DateTime.SpecifyKind(utc, DateTimeKind.Utc);
+        try { tijd = TimeZoneInfo.ConvertTimeFromUtc(tijd, TimeZoneInfo.FindSystemTimeZoneById("Europe/Amsterdam")); }
+        catch { }
+        return tijd.ToString("d MMMM yyyy", new System.Globalization.CultureInfo(En(taal) ? "en-GB" : "nl-NL"));
+    }
+    public static string NlDatum(DateTime utc) => Datum(utc, "nl");
+
+    // ── Berichten ──
+    public static string NieuwBerichtOnderwerp(string afzender, string taal = "nl") =>
+        T(taal, $"Nieuw bericht van {afzender} – RaceCoachFinder", $"New message from {afzender} – RaceCoachFinder");
+
+    public static string NieuwBericht(string afzenderNaam, string berichtPreview, string berichtenUrl, string taal = "nl")
     {
         var inhoud =
-            "<h2 style=\"margin:0 0 8px;color:#111111;font-size:1.2rem\">Je hebt een nieuw bericht!</h2>" +
-            "<p style=\"color:#555;margin:0 0 20px\"><strong>" + Esc(afzenderNaam) + "</strong> heeft je een bericht gestuurd:</p>" +
+            "<h2 style=\"margin:0 0 8px;color:#111111;font-size:1.2rem\">" + T(taal, "Je hebt een nieuw bericht!", "You have a new message!") + "</h2>" +
+            "<p style=\"color:#555;margin:0 0 20px\"><strong>" + Esc(afzenderNaam) + "</strong> " + T(taal, "heeft je een bericht gestuurd:", "sent you a message:") + "</p>" +
             "<div style=\"background:#f5f5f5;border-left:4px solid #F5C200;padding:14px 18px;border-radius:4px;color:#333;font-style:italic;margin-bottom:24px\">" +
             "&#8220;" + Esc(berichtPreview) + "&#8221;" +
             "</div>" +
-            Knop(berichtenUrl, "Bekijk bericht");
-        return Omhulsel(inhoud);
+            Knop(berichtenUrl, T(taal, "Bekijk bericht", "View message"));
+        return Omhulsel(inhoud, taal);
     }
 
-    public static string Welkom(string naam, string rol)
-    {
-        string actieKnop;
-        if (rol == "Coach")
-        {
-            actieKnop =
-                "<p style=\"color:#555;margin:0 0 24px\">Maak je profiel aan en publiceer het zodat rijders je kunnen vinden.</p>" +
-                Knop("https://www.racecoachfinder.nl/dashboard-coach.html", "Profiel aanmaken");
-        }
-        else
-        {
-            actieKnop =
-                "<p style=\"color:#555;margin:0 0 24px\">Zoek een coach die bij jou past en stuur een bericht.</p>" +
-                Knop("https://www.racecoachfinder.nl/coaches.html", "Coaches bekijken");
-        }
+    // ── Account ──
+    public static string WelkomOnderwerp(string taal = "nl") => T(taal, "Welkom bij RaceCoachFinder!", "Welcome to RaceCoachFinder!");
 
+    public static string Welkom(string naam, string rol, string taal = "nl")
+    {
+        var isCoach = (rol ?? "").Split(',').Any(r => r.Trim() == "Coach");
+        var actieKnop = isCoach
+            ? "<p style=\"color:#555;margin:0 0 24px\">" + T(taal, "Maak je profiel aan en publiceer het zodat rijders je kunnen vinden.", "Create your profile and publish it so riders can find you.") + "</p>" +
+              Knop("https://www.racecoachfinder.nl/dashboard-coach.html", T(taal, "Profiel aanmaken", "Create profile"))
+            : "<p style=\"color:#555;margin:0 0 24px\">" + T(taal, "Zoek een coach die bij jou past en stuur een bericht.", "Find a coach that suits you and send a message.") + "</p>" +
+              Knop("https://www.racecoachfinder.nl/coaches.html", T(taal, "Coaches bekijken", "View coaches"));
+        var rolTekst = En(taal) ? (rol ?? "").Replace("Rijder", "Rider").Replace(",", " & ") : (rol ?? "").Replace(",", " & ");
         var inhoud =
-            "<h2 style=\"margin:0 0 8px;color:#111111;font-size:1.2rem\">Welkom bij RaceCoachFinder, " + Esc(naam) + "!</h2>" +
-            "<p style=\"color:#555;margin:0 0 16px\">Je account als <strong>" + Esc(rol) + "</strong> is succesvol aangemaakt.</p>" +
+            "<h2 style=\"margin:0 0 8px;color:#111111;font-size:1.2rem\">" + T(taal, "Welkom bij RaceCoachFinder, ", "Welcome to RaceCoachFinder, ") + Esc(naam) + "!</h2>" +
+            "<p style=\"color:#555;margin:0 0 16px\">" + T(taal, "Je account als <strong>" + Esc(rolTekst) + "</strong> is succesvol aangemaakt.", "Your <strong>" + Esc(rolTekst) + "</strong> account has been created.") + "</p>" +
             actieKnop;
-        return Omhulsel(inhoud);
+        return Omhulsel(inhoud, taal);
     }
 
-    public static string WachtwoordReset(string naam, string code)
+    public static string WachtwoordResetOnderwerp(string taal = "nl") => T(taal, "Wachtwoord resetten – RaceCoachFinder", "Reset your password – RaceCoachFinder");
+
+    public static string WachtwoordReset(string naam, string code, string taal = "nl")
     {
         var inhoud =
-            "<h2 style=\"margin:0 0 8px;color:#111111;font-size:1.2rem\">Wachtwoord resetten</h2>" +
-            "<p style=\"color:#555;margin:0 0 16px\">Hallo " + Esc(naam) + ",</p>" +
-            "<p style=\"color:#555;margin:0 0 24px\">Je hebt een wachtwoord reset aangevraagd. Gebruik de onderstaande code om een nieuw wachtwoord in te stellen. De code is <strong>15 minuten</strong> geldig.</p>" +
-            "<div style=\"text-align:center;margin:0 0 24px\">" +
-            "<div style=\"display:inline-block;background:#f9f9f9;border:2px dashed #F5C200;border-radius:10px;padding:18px 36px\">" +
-            "<div style=\"font-size:0.72rem;color:#999;margin-bottom:6px;letter-spacing:1px;text-transform:uppercase\">Verificatiecode</div>" +
-            "<div style=\"font-size:2.2rem;font-weight:800;letter-spacing:10px;color:#111111\">" + Esc(code) + "</div>" +
-            "</div></div>" +
-            "<p style=\"color:#aaa;font-size:0.82rem;margin:0\">Als je geen wachtwoord reset hebt aangevraagd, kun je deze e-mail negeren.</p>";
-        return Omhulsel(inhoud);
+            "<h2 style=\"margin:0 0 8px;color:#111111;font-size:1.2rem\">" + T(taal, "Wachtwoord resetten", "Reset your password") + "</h2>" +
+            "<p style=\"color:#555;margin:0 0 16px\">" + T(taal, "Hallo ", "Hi ") + Esc(naam) + ",</p>" +
+            "<p style=\"color:#555;margin:0 0 24px\">" + T(taal,
+                "Je hebt een wachtwoord reset aangevraagd. Gebruik de onderstaande code om een nieuw wachtwoord in te stellen. De code is <strong>15 minuten</strong> geldig.",
+                "You requested a password reset. Use the code below to set a new password. The code is valid for <strong>15 minutes</strong>.") + "</p>" +
+            CodeBlok(code, taal) +
+            "<p style=\"color:#aaa;font-size:0.82rem;margin:0\">" + T(taal, "Als je geen wachtwoord reset hebt aangevraagd, kun je deze e-mail negeren.", "If you did not request a password reset, you can ignore this email.") + "</p>";
+        return Omhulsel(inhoud, taal);
     }
 
-    public static string FactuurCoach(string coachNaam, string rijderNaam, string factuurnummer, string omschrijving, decimal bedrag)
+    public static string EmailBevestigingOnderwerp(string taal = "nl") => T(taal, "Bevestig je e-mailadres – RaceCoachFinder", "Confirm your email address – RaceCoachFinder");
+
+    public static string EmailBevestiging(string naam, string code, string taal = "nl")
     {
         var inhoud =
-            "<h2 style=\"margin:0 0 8px;color:#111111;font-size:1.2rem\">Factuur verstuurd</h2>" +
-            "<p style=\"color:#555;margin:0 0 16px\">Hallo " + Esc(coachNaam) + ",</p>" +
-            "<p style=\"color:#555;margin:0 0 24px\">Je factuur <strong>" + Esc(factuurnummer) + "</strong> is verstuurd naar <strong>" + Esc(rijderNaam) + "</strong>.</p>" +
+            "<h2 style=\"margin:0 0 8px;color:#111111;font-size:1.2rem\">" + T(taal, "Bevestig je e-mailadres", "Confirm your email address") + "</h2>" +
+            "<p style=\"color:#555;margin:0 0 16px\">" + T(taal, "Hallo ", "Hi ") + Esc(naam) + ",</p>" +
+            "<p style=\"color:#555;margin:0 0 24px\">" + T(taal,
+                "Voer de onderstaande code in om je account te activeren. De code is <strong>30 minuten</strong> geldig.",
+                "Enter the code below to activate your account. The code is valid for <strong>30 minutes</strong>.") + "</p>" +
+            CodeBlok(code, taal) +
+            "<p style=\"color:#aaa;font-size:0.82rem;margin:0\">" + T(taal, "Als je dit account niet zelf hebt aangemaakt, kun je deze e-mail negeren.", "If you did not create this account, you can ignore this email.") + "</p>";
+        return Omhulsel(inhoud, taal);
+    }
+
+    // ── Facturen ──
+    public static string FactuurCoachOnderwerp(string nr, string taal = "nl") => T(taal, $"Factuur {nr} verstuurd", $"Invoice {nr} sent");
+
+    public static string FactuurCoach(string coachNaam, string rijderNaam, string factuurnummer, string omschrijving, decimal bedrag, string taal = "nl")
+    {
+        var inhoud =
+            "<h2 style=\"margin:0 0 8px;color:#111111;font-size:1.2rem\">" + T(taal, "Factuur verstuurd", "Invoice sent") + "</h2>" +
+            "<p style=\"color:#555;margin:0 0 16px\">" + T(taal, "Hallo ", "Hi ") + Esc(coachNaam) + ",</p>" +
+            "<p style=\"color:#555;margin:0 0 24px\">" + T(taal,
+                "Je factuur <strong>" + Esc(factuurnummer) + "</strong> is verstuurd naar <strong>" + Esc(rijderNaam) + "</strong>.",
+                "Your invoice <strong>" + Esc(factuurnummer) + "</strong> has been sent to <strong>" + Esc(rijderNaam) + "</strong>.") + "</p>" +
             "<table width=\"100%\" cellpadding=\"10\" cellspacing=\"0\" style=\"border:1px solid #eee;border-radius:8px;margin-bottom:24px\">" +
-            "<tr><td style=\"color:#999;font-size:0.82rem\">Omschrijving</td><td style=\"color:#999;font-size:0.82rem;text-align:right\">Bedrag</td></tr>" +
+            "<tr><td style=\"color:#999;font-size:0.82rem\">" + T(taal, "Omschrijving", "Description") + "</td><td style=\"color:#999;font-size:0.82rem;text-align:right\">" + T(taal, "Bedrag", "Amount") + "</td></tr>" +
             "<tr><td style=\"color:#111;font-weight:600\">" + Esc(omschrijving) + "</td>" +
-            "<td style=\"color:#111;font-weight:700;text-align:right\">€ " + bedrag.ToString("F2").Replace(".", ",") + "</td></tr>" +
+            "<td style=\"color:#111;font-weight:700;text-align:right\">" + Bedrag(bedrag, taal) + "</td></tr>" +
             "</table>" +
-            "<p style=\"color:#aaa;font-size:0.82rem;margin:0\">De rijder ontvangt een e-mail met betaalinstructies.</p>";
-        return Omhulsel(inhoud);
+            "<p style=\"color:#aaa;font-size:0.82rem;margin:0\">" + T(taal, "De rijder ontvangt een e-mail met betaalinstructies.", "The rider receives an email with payment instructions.") + "</p>";
+        return Omhulsel(inhoud, taal);
     }
 
-    public static string FactuurRijder(string rijderNaam, string coachNaam, string factuurnummer, string omschrijving, decimal bedrag, int termijn, string berichtenUrl)
+    public static string FactuurRijderOnderwerp(string nr, string coach, string taal = "nl") => T(taal, $"Factuur {nr} van {coach}", $"Invoice {nr} from {coach}");
+
+    public static string FactuurRijder(string rijderNaam, string coachNaam, string factuurnummer, string omschrijving, decimal bedrag, int termijn, string berichtenUrl, string taal = "nl")
     {
-        var vervaldatum = DateTime.Now.AddDays(termijn).ToString("d MMMM yyyy", new System.Globalization.CultureInfo("nl-NL"));
+        var vervaldatum = Datum(DateTime.UtcNow.AddDays(termijn), taal);
         var inhoud =
-            "<h2 style=\"margin:0 0 8px;color:#111111;font-size:1.2rem\">Factuur van " + Esc(coachNaam) + "</h2>" +
-            "<p style=\"color:#555;margin:0 0 16px\">Hallo " + Esc(rijderNaam) + ",</p>" +
-            "<p style=\"color:#555;margin:0 0 20px\">Je hebt een factuur ontvangen van coach <strong>" + Esc(coachNaam) + "</strong>.</p>" +
+            "<h2 style=\"margin:0 0 8px;color:#111111;font-size:1.2rem\">" + T(taal, "Factuur van ", "Invoice from ") + Esc(coachNaam) + "</h2>" +
+            "<p style=\"color:#555;margin:0 0 16px\">" + T(taal, "Hallo ", "Hi ") + Esc(rijderNaam) + ",</p>" +
+            "<p style=\"color:#555;margin:0 0 20px\">" + T(taal, "Je hebt een factuur ontvangen van coach <strong>", "You have received an invoice from coach <strong>") + Esc(coachNaam) + "</strong>.</p>" +
             "<table width=\"100%\" cellpadding=\"10\" cellspacing=\"0\" style=\"border:1px solid #eee;border-radius:8px;margin-bottom:8px\">" +
-            "<tr style=\"background:#f9f9f9\"><td style=\"color:#999;font-size:0.82rem;border-bottom:1px solid #eee\">Factuurnummer</td>" +
+            "<tr style=\"background:#f9f9f9\"><td style=\"color:#999;font-size:0.82rem;border-bottom:1px solid #eee\">" + T(taal, "Factuurnummer", "Invoice number") + "</td>" +
             "<td style=\"color:#999;font-size:0.82rem;border-bottom:1px solid #eee;text-align:right\">" + Esc(factuurnummer) + "</td></tr>" +
             "<tr><td style=\"color:#111;font-weight:600\">" + Esc(omschrijving) + "</td>" +
-            "<td style=\"color:#111;font-weight:700;text-align:right\">€ " + bedrag.ToString("F2").Replace(".", ",") + "</td></tr>" +
+            "<td style=\"color:#111;font-weight:700;text-align:right\">" + Bedrag(bedrag, taal) + "</td></tr>" +
             "</table>" +
-            "<p style=\"color:#e65100;font-size:0.85rem;margin:0 0 24px\">Betalen vóór: <strong>" + vervaldatum + "</strong></p>" +
-            Knop(berichtenUrl, "Betaal nu via RaceCoachFinder") +
-            "<p style=\"color:#aaa;font-size:0.78rem;margin:24px 0 0\">Klik op de knop om veilig te betalen via onze website.</p>";
-        return Omhulsel(inhoud);
+            "<p style=\"color:#e65100;font-size:0.85rem;margin:0 0 24px\">" + T(taal, "Betalen vóór: ", "Pay before: ") + "<strong>" + vervaldatum + "</strong></p>" +
+            Knop(berichtenUrl, T(taal, "Betaal nu via RaceCoachFinder", "Pay now via RaceCoachFinder")) +
+            "<p style=\"color:#aaa;font-size:0.78rem;margin:24px 0 0\">" + T(taal, "Klik op de knop om veilig te betalen via onze website.", "Click the button to pay securely via our website.") + "</p>";
+        return Omhulsel(inhoud, taal);
     }
 
-    public static string AgendaReminder(string naam, DateTime datum, List<Backend.Models.AgendaItem> items)
+    public static string FactuurBetaaldOnderwerp(string nr, string taal = "nl") => T(taal, $"Factuur {nr} is betaald – RaceCoachFinder", $"Invoice {nr} has been paid – RaceCoachFinder");
+
+    public static string FactuurBetaald(string coachNaam, string rijderNaam, string factuurnummer, string omschrijving, decimal bedrag, string berichtenUrl, string taal = "nl")
     {
-        var datumTekst = datum.ToString("dddd d MMMM yyyy", new System.Globalization.CultureInfo("nl-NL"));
+        var inhoud =
+            "<h2 style=\"margin:0 0 8px;color:#111111;font-size:1.2rem\">" + T(taal, "Factuur betaald ✅", "Invoice paid ✅") + "</h2>" +
+            "<p style=\"color:#555;margin:0 0 16px\">" + T(taal, "Hoi ", "Hi ") + Esc(Voornaam(coachNaam)) + ", <strong>" + Esc(rijderNaam) + "</strong> " +
+            T(taal, "heeft factuur <strong>" + Esc(factuurnummer) + "</strong> betaald.", "has paid invoice <strong>" + Esc(factuurnummer) + "</strong>.") + "</p>" +
+            "<table style=\"width:100%;border-collapse:collapse;margin-bottom:20px\">" +
+            "<tr><td style=\"padding:8px 12px;background:#f9f9f9;font-weight:700;width:130px;border:1px solid #eee\">" + T(taal, "Omschrijving", "Description") + "</td>" +
+            "<td style=\"padding:8px 12px;border:1px solid #eee\">" + Esc(omschrijving) + "</td></tr>" +
+            "<tr><td style=\"padding:8px 12px;background:#f9f9f9;font-weight:700;border:1px solid #eee\">" + T(taal, "Bedrag", "Amount") + "</td>" +
+            "<td style=\"padding:8px 12px;border:1px solid #eee\">" + Bedrag(bedrag, taal) + "</td></tr>" +
+            "</table>" +
+            "<p style=\"color:#555;margin:0 0 24px\">" + T(taal, "Na de activiteit bevestigen jullie allebei in het gesprek dat de activiteit gedaan is.", "After the activity you both confirm in the chat that it took place.") + "</p>" +
+            "<div style=\"text-align:center\">" + Knop(berichtenUrl, T(taal, "Naar het gesprek", "Go to the chat")) + "</div>";
+        return Omhulsel(inhoud, taal);
+    }
+
+    // ── Agenda ──
+    public static string AgendaReminderOnderwerp(DateTime datum, string taal = "nl") =>
+        T(taal, "Agenda herinnering – ", "Calendar reminder – ") + datum.ToString("d MMMM", new System.Globalization.CultureInfo(En(taal) ? "en-GB" : "nl-NL"));
+
+    public static string AgendaReminder(string naam, DateTime datum, List<Backend.Models.AgendaItem> items, string taal = "nl")
+    {
+        var datumTekst = datum.ToString("dddd d MMMM yyyy", new System.Globalization.CultureInfo(En(taal) ? "en-GB" : "nl-NL"));
         var itemsHtml = string.Join("", items.Select(i =>
         {
             var tijdTekst = i.Datum.ToString("HH:mm");
@@ -194,33 +278,21 @@ public static class EmailTemplates
         }));
 
         var inhoud =
-            $"<h2 style=\"margin:0 0 8px;color:#111111;font-size:1.2rem\">Agenda herinnering</h2>" +
-            $"<p style=\"color:#555;margin:0 0 16px\">Hallo {Esc(naam)},</p>" +
-            $"<p style=\"color:#555;margin:0 0 20px\">Op <strong>{datumTekst}</strong> staan de volgende items in je agenda:</p>" +
-            $"<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border:1px solid #eee;border-radius:8px;overflow:hidden;margin-bottom:24px\">" +
+            "<h2 style=\"margin:0 0 8px;color:#111111;font-size:1.2rem\">" + T(taal, "Agenda herinnering", "Calendar reminder") + "</h2>" +
+            "<p style=\"color:#555;margin:0 0 16px\">" + T(taal, "Hallo ", "Hi ") + Esc(naam) + ",</p>" +
+            "<p style=\"color:#555;margin:0 0 20px\">" + T(taal, "Op <strong>" + datumTekst + "</strong> staan de volgende items in je agenda:", "On <strong>" + datumTekst + "</strong> you have the following in your calendar:") + "</p>" +
+            "<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border:1px solid #eee;border-radius:8px;overflow:hidden;margin-bottom:24px\">" +
             itemsHtml +
             "</table>" +
-            Knop("https://www.racecoachfinder.nl/dashboard-coach.html", "Naar agenda") +
-            "<p style=\"color:#aaa;font-size:0.78rem;margin:20px 0 0\">Je ontvangt deze herinnering omdat je agenda-reminders hebt ingeschakeld. " +
-            "Pas dit aan via <a href=\"https://www.racecoachfinder.nl/instellingen.html\" style=\"color:#888\">Instellingen</a>.</p>";
-        return Omhulsel(inhoud);
+            Knop("https://www.racecoachfinder.nl/dashboard-coach.html", T(taal, "Naar agenda", "Open calendar")) +
+            "<p style=\"color:#aaa;font-size:0.78rem;margin:20px 0 0\">" + T(taal,
+                "Je ontvangt deze herinnering omdat je agenda-reminders hebt ingeschakeld. Pas dit aan via ",
+                "You receive this reminder because calendar reminders are turned on. Change this in ") +
+            "<a href=\"https://www.racecoachfinder.nl/instellingen.html\" style=\"color:#888\">" + T(taal, "Instellingen", "Settings") + "</a>.</p>";
+        return Omhulsel(inhoud, taal);
     }
 
-    public static string EmailBevestiging(string naam, string code)
-    {
-        var inhoud =
-            "<h2 style=\"margin:0 0 8px;color:#111111;font-size:1.2rem\">Bevestig je e-mailadres</h2>" +
-            "<p style=\"color:#555;margin:0 0 16px\">Hallo " + Esc(naam) + ",</p>" +
-            "<p style=\"color:#555;margin:0 0 24px\">Voer de onderstaande code in om je account te activeren. De code is <strong>30 minuten</strong> geldig.</p>" +
-            "<div style=\"text-align:center;margin:0 0 24px\">" +
-            "<div style=\"display:inline-block;background:#f9f9f9;border:2px dashed #F5C200;border-radius:10px;padding:18px 36px\">" +
-            "<div style=\"font-size:0.72rem;color:#999;margin-bottom:6px;letter-spacing:1px;text-transform:uppercase\">Verificatiecode</div>" +
-            "<div style=\"font-size:2.2rem;font-weight:800;letter-spacing:10px;color:#111111\">" + Esc(code) + "</div>" +
-            "</div></div>" +
-            "<p style=\"color:#aaa;font-size:0.82rem;margin:0\">Als je dit account niet zelf hebt aangemaakt, kun je deze e-mail negeren.</p>";
-        return Omhulsel(inhoud);
-    }
-
+    // ── Voor de beheerder (altijd Nederlands) ──
     public static string CoachRapport(string coachNaam, int coachId, string reden, string melderInfo, string coachUrl)
     {
         var inhoud =
@@ -238,70 +310,71 @@ public static class EmailTemplates
         return Omhulsel(inhoud);
     }
 
-    public static string ReviewOntvangen(string coachNaam, string rijderNaam, int sterren, string tekst, string profielUrl)
+    // ── Reviews ──
+    public static string ReviewOntvangenOnderwerp(string rijder, string taal = "nl") => T(taal, $"Nieuwe review van {rijder} – RaceCoachFinder", $"New review from {rijder} – RaceCoachFinder");
+
+    public static string ReviewOntvangen(string coachNaam, string rijderNaam, int sterren, string tekst, string profielUrl, string taal = "nl")
     {
-        var voornaam = (coachNaam ?? "").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
         var ster = new string('★', Math.Clamp(sterren, 0, 5)) + new string('☆', 5 - Math.Clamp(sterren, 0, 5));
         var inhoud =
-            "<h2 style=\"margin:0 0 8px;color:#111111;font-size:1.2rem\">Je hebt een nieuwe review!</h2>" +
-            "<p style=\"color:#555;margin:0 0 16px\">Hoi " + Esc(voornaam) + ", <strong>" + Esc(rijderNaam) + "</strong> heeft een review op je profiel geplaatst:</p>" +
+            "<h2 style=\"margin:0 0 8px;color:#111111;font-size:1.2rem\">" + T(taal, "Je hebt een nieuwe review!", "You have a new review!") + "</h2>" +
+            "<p style=\"color:#555;margin:0 0 16px\">" + T(taal, "Hoi ", "Hi ") + Esc(Voornaam(coachNaam)) + ", <strong>" + Esc(rijderNaam) + "</strong> " +
+            T(taal, "heeft een review op je profiel geplaatst:", "posted a review on your profile:") + "</p>" +
             "<div style=\"font-size:1.4rem;color:#F5C200;letter-spacing:2px;margin:0 0 8px\">" + ster + "</div>" +
             (string.IsNullOrWhiteSpace(tekst) ? "" :
             "<div style=\"background:#f5f5f5;border-left:4px solid #F5C200;padding:14px 18px;border-radius:4px;color:#333;font-style:italic;margin-bottom:24px\">&#8220;" + Esc(tekst) + "&#8221;</div>") +
-            "<div style=\"text-align:center;margin-top:16px\">" + Knop(profielUrl, "Bekijk je profiel") + "</div>";
-        return Omhulsel(inhoud);
+            "<div style=\"text-align:center;margin-top:16px\">" + Knop(profielUrl, T(taal, "Bekijk je profiel", "View your profile")) + "</div>";
+        return Omhulsel(inhoud, taal);
     }
 
-    public static string FactuurBetaald(string coachNaam, string rijderNaam, string factuurnummer, string omschrijving, decimal bedrag, string berichtenUrl)
-    {
-        var voornaam = (coachNaam ?? "").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
-        var inhoud =
-            "<h2 style=\"margin:0 0 8px;color:#111111;font-size:1.2rem\">Factuur betaald ✅</h2>" +
-            "<p style=\"color:#555;margin:0 0 16px\">Hoi " + Esc(voornaam) + ", <strong>" + Esc(rijderNaam) + "</strong> heeft factuur <strong>" + Esc(factuurnummer) + "</strong> betaald.</p>" +
-            "<table style=\"width:100%;border-collapse:collapse;margin-bottom:20px\">" +
-            "<tr><td style=\"padding:8px 12px;background:#f9f9f9;font-weight:700;width:130px;border:1px solid #eee\">Omschrijving</td>" +
-            "<td style=\"padding:8px 12px;border:1px solid #eee\">" + Esc(omschrijving) + "</td></tr>" +
-            "<tr><td style=\"padding:8px 12px;background:#f9f9f9;font-weight:700;border:1px solid #eee\">Bedrag</td>" +
-            "<td style=\"padding:8px 12px;border:1px solid #eee\">€ " + bedrag.ToString("0.00", new System.Globalization.CultureInfo("nl-NL")) + "</td></tr>" +
-            "</table>" +
-            "<p style=\"color:#555;margin:0 0 24px\">Na de activiteit bevestigen jullie allebei in het gesprek dat de activiteit gedaan is.</p>" +
-            "<div style=\"text-align:center\">" + Knop(berichtenUrl, "Naar het gesprek") + "</div>";
-        return Omhulsel(inhoud);
-    }
+    // ── Gratis periode ──
+    public static string GratisPeriodeTitel(DateTime verlooptOp, bool verlengd, string taal = "nl") =>
+        verlooptOp.Year >= 9999 ? T(taal, "Je account is voor altijd gratis", "Your account is free forever")
+        : verlengd ? T(taal, "Je gratis periode is verlengd", "Your free period has been extended")
+        : T(taal, "Je hebt een gratis periode gekregen", "You have received a free period");
 
-    // Datum zoals in Nederland: "9 maart 2027"
-    public static string NlDatum(DateTime utc)
-    {
-        var tijd = DateTime.SpecifyKind(utc, DateTimeKind.Utc);
-        try { tijd = TimeZoneInfo.ConvertTimeFromUtc(tijd, TimeZoneInfo.FindSystemTimeZoneById("Europe/Amsterdam")); }
-        catch { }
-        return tijd.ToString("d MMMM yyyy", new System.Globalization.CultureInfo("nl-NL"));
-    }
+    public static string GratisPeriodeKort(DateTime verlooptOp, string taal = "nl") =>
+        verlooptOp.Year >= 9999
+            ? T(taal, "Je kunt RaceCoachFinder als coach voor altijd gratis gebruiken.", "You can use RaceCoachFinder as a coach for free, forever.")
+            : T(taal, $"Je kunt RaceCoachFinder als coach gratis gebruiken t/m {Datum(verlooptOp, taal)}.", $"You can use RaceCoachFinder as a coach for free until {Datum(verlooptOp, taal)}.");
 
-    public static string GratisPeriode(string naam, DateTime verlooptOp, bool verlengd)
+    public static string GratisPeriode(string naam, DateTime verlooptOp, bool verlengd, string taal = "nl")
     {
-        var voornaam = (naam ?? "").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
         var altijd = verlooptOp.Year >= 9999;
-        var kop = altijd ? "Je account is voor altijd gratis!"
-                : verlengd ? "Je gratis periode is verlengd!"
-                : "Je hebt een gratis periode gekregen!";
         var uitleg = altijd
-            ? "Goed nieuws: je kunt RaceCoachFinder als coach <strong>voor altijd gratis</strong> gebruiken. Je hebt geen abonnement nodig."
-            : (verlengd ? "Goed nieuws: je gratis periode bij RaceCoachFinder is verlengd. "
-                        : "Goed nieuws: je hebt van RaceCoachFinder een gratis periode gekregen. ") +
-              "Je kunt RaceCoachFinder als coach gratis gebruiken tot en met <strong>" + NlDatum(verlooptOp) + "</strong>.";
-
+            ? T(taal, "Goed nieuws: je kunt RaceCoachFinder als coach <strong>voor altijd gratis</strong> gebruiken. Je hebt geen abonnement nodig.",
+                      "Good news: you can use RaceCoachFinder as a coach <strong>for free, forever</strong>. You do not need a subscription.")
+            : (verlengd ? T(taal, "Goed nieuws: je gratis periode bij RaceCoachFinder is verlengd. ", "Good news: your free period at RaceCoachFinder has been extended. ")
+                        : T(taal, "Goed nieuws: je hebt van RaceCoachFinder een gratis periode gekregen. ", "Good news: RaceCoachFinder has given you a free period. ")) +
+              T(taal, "Je kunt RaceCoachFinder als coach gratis gebruiken tot en met <strong>", "You can use RaceCoachFinder as a coach for free until <strong>") + Datum(verlooptOp, taal) + "</strong>.";
         var inhoud =
             "<div style=\"font-size:2.4rem;text-align:center;margin:0 0 8px\">🎁</div>" +
-            "<h2 style=\"margin:0 0 16px;color:#111111;font-size:1.2rem;text-align:center\">" + kop + "</h2>" +
-            "<p style=\"color:#555;margin:0 0 12px\">Hoi " + Esc(voornaam) + ",</p>" +
+            "<h2 style=\"margin:0 0 16px;color:#111111;font-size:1.2rem;text-align:center\">" + GratisPeriodeTitel(verlooptOp, verlengd, taal) + "!</h2>" +
+            "<p style=\"color:#555;margin:0 0 12px\">" + T(taal, "Hoi ", "Hi ") + Esc(Voornaam(naam)) + ",</p>" +
             "<p style=\"color:#555;margin:0 0 12px\">" + uitleg + "</p>" +
-            "<p style=\"color:#555;margin:0 0 24px\">Je hoeft hiervoor niets te doen: je profiel blijft gewoon zichtbaar voor rijders. " +
-            "In je dashboard zie je altijd hoe lang je gratis periode nog loopt.</p>" +
-            "<div style=\"text-align:center\">" + Knop("https://www.racecoachfinder.nl/dashboard-coach.html", "Naar mijn dashboard") + "</div>";
-        return Omhulsel(inhoud);
+            "<p style=\"color:#555;margin:0 0 24px\">" + T(taal,
+                "Je hoeft hiervoor niets te doen: je profiel blijft gewoon zichtbaar voor rijders. In je dashboard zie je altijd hoe lang je gratis periode nog loopt.",
+                "You do not need to do anything: your profile stays visible to riders. Your dashboard always shows how long your free period lasts.") + "</p>" +
+            "<div style=\"text-align:center\">" + Knop("https://www.racecoachfinder.nl/dashboard-coach.html", T(taal, "Naar mijn dashboard", "Go to my dashboard")) + "</div>";
+        return Omhulsel(inhoud, taal);
+    }
+
+    // ── Wachtlijst: plek vrij bij een volle training ──
+    public static string PlekVrijOnderwerp(string titel, string taal = "nl") => T(taal, $"Er is een plek vrij: {titel}", $"A spot is available: {titel}");
+
+    public static string PlekVrij(string naam, string titel, DateTime datum, string locatie, string url, string taal = "nl")
+    {
+        var inhoud =
+            "<h2 style=\"margin:0 0 8px;color:#111111;font-size:1.2rem\">" + T(taal, "Er is een plek vrijgekomen! 🏁", "A spot has become available! 🏁") + "</h2>" +
+            "<p style=\"color:#555;margin:0 0 16px\">" + T(taal, "Hoi ", "Hi ") + Esc(Voornaam(naam)) + ",</p>" +
+            "<p style=\"color:#555;margin:0 0 16px\">" + T(taal,
+                "Bij <strong>" + Esc(titel) + "</strong> (" + Esc(locatie) + ", " + Datum(datum, taal) + ") is weer een plek vrij. Je stond op de lijst voor een melding.",
+                "A spot has opened up for <strong>" + Esc(titel) + "</strong> (" + Esc(locatie) + ", " + Datum(datum, taal) + "). You asked to be notified.") + "</p>" +
+            "<p style=\"color:#555;margin:0 0 24px\">" + T(taal, "Wie het eerst reageert, is het eerst aan de beurt.", "First come, first served.") + "</p>" +
+            "<div style=\"text-align:center\">" + Knop(url, T(taal, "Bekijk de training", "View the training")) + "</div>";
+        return Omhulsel(inhoud, taal);
     }
 
     private static string Esc(string s) =>
-        s.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\"", "&quot;");
+        (s ?? "").Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\"", "&quot;");
 }

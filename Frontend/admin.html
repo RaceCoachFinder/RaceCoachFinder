@@ -337,7 +337,7 @@ async function laadGebruikers() {
                             </td>
                             <td>
                                 ${g.rol.split(',').map(r => r.trim()).includes('Coach') ? `<button class="btn btn-gratis btn-sm" onclick="openGratisPopup('${esc(g.id)}')">🎁 Gratis</button>` : ''}
-                                ${g.email !== 'admin@mail' ? `<button class="btn btn-gevaar btn-sm" onclick="verwijderGebruiker('${esc(g.id)}', '${esc(g.naam)}')">Verwijderen</button>` : '<span style="color:#aaa;font-size:0.8rem">Beveiligd</span>'}
+                                ${!(g.rol || '').split(',').map(r => r.trim()).includes('Admin') ? `<button class="btn btn-gevaar btn-sm" onclick="verwijderGebruiker('${esc(g.id)}', '${esc(g.naam)}')">Verwijderen</button>` : '<span style="color:#aaa;font-size:0.8rem">Beveiligd</span>'}
                             </td>
                         </tr>
                     `).join('')}

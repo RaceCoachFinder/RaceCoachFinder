@@ -20,9 +20,11 @@ public class AuthController : ControllerBase
     private readonly IWachtwoordResetService _resetService;
     private readonly IEmailVerificatieService _verificatie;
     private readonly ILogger<AuthController> _logger;
+    private readonly Backend.Data.AppDbContext _context;
 
-    public AuthController(UserManager<ApplicationUser> userManager, IConfiguration config, IEmailService email, IWachtwoordResetService resetService, IEmailVerificatieService verificatie, ILogger<AuthController> logger)
+    public AuthController(UserManager<ApplicationUser> userManager, IConfiguration config, IEmailService email, IWachtwoordResetService resetService, IEmailVerificatieService verificatie, ILogger<AuthController> logger, Backend.Data.AppDbContext context)
     {
+        _context = context;
         _userManager = userManager;
         _config = config;
         _email = email;
@@ -39,6 +41,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("registreren")]
+    [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("mail")]
     public async Task<IActionResult> Registreren(RegistrerenVerzoek verzoek)
     {
         if (verzoek.Rol != "Coach" && verzoek.Rol != "Rijder")
@@ -80,10 +83,18 @@ public class AuthController : ControllerBase
             return BadRequest(string.Join(", ", fouten));
         }
 
+        // Taal van de e-mails = de taal waarin de site stond bij het registreren (later te wijzigen in Instellingen)
+        var taal = verzoek.Taal == "en" ? "en" : "nl";
+        if (taal == "en")
+        {
+            _context.GebruikerInstellingen.Add(new GebruikerInstellingen { GebruikerId = gebruiker.Id, EmailTaal = "en" });
+            await _context.SaveChangesAsync();
+        }
+
         var code = _verificatie.MaakCode(verzoek.Email);
         StuurEmailAsync(gebruiker.Email!, gebruiker.Naam,
-            "Bevestig je e-mailadres – RaceCoachFinder",
-            EmailTemplates.EmailBevestiging(gebruiker.Naam, code));
+            EmailTemplates.EmailBevestigingOnderwerp(taal),
+            EmailTemplates.EmailBevestiging(gebruiker.Naam, code, taal));
 
         return Ok(new { bericht = "Account aangemaakt. Controleer je e-mail voor de bevestigingscode.", wachtOpBevestiging = true, email = verzoek.Email });
     }
@@ -113,9 +124,10 @@ public class AuthController : ControllerBase
         if (!gebruiker.EmailConfirmed)
         {
             var code = _verificatie.MaakCode(verzoek.Email);
+            var taal = await EmailTaal.VoorAsync(_context, gebruiker.Id);
             StuurEmailAsync(gebruiker.Email!, gebruiker.Naam,
-                "Bevestig je e-mailadres – RaceCoachFinder",
-                EmailTemplates.EmailBevestiging(gebruiker.Naam, code));
+                EmailTemplates.EmailBevestigingOnderwerp(taal),
+                EmailTemplates.EmailBevestiging(gebruiker.Naam, code, taal));
             return Unauthorized(new { fout = "email_niet_bevestigd", email = verzoek.Email });
         }
 
@@ -156,15 +168,17 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("wachtwoord-vergeten")]
+    [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("mail")]
     public async Task<IActionResult> WachtwoordVergeten([FromBody] WachtwoordVergetenVerzoek verzoek)
     {
         var gebruiker = await _userManager.FindByEmailAsync(verzoek.Email);
         if (gebruiker != null)
         {
             var code = _resetService.MaakCode(verzoek.Email);
-            _ = _email.VerstuurAsync(verzoek.Email, gebruiker.Naam,
-                "Wachtwoord resetten – RaceCoachFinder",
-                EmailTemplates.WachtwoordReset(gebruiker.Naam, code));
+            var taal = await EmailTaal.VoorAsync(_context, gebruiker.Id);
+            StuurEmailAsync(gebruiker.Email ?? verzoek.Email, gebruiker.Naam,
+                EmailTemplates.WachtwoordResetOnderwerp(taal),
+                EmailTemplates.WachtwoordReset(gebruiker.Naam, code, taal));
         }
         return Ok();
     }
@@ -204,25 +218,71 @@ public class AuthController : ControllerBase
         await _userManager.UpdateAsync(gebruiker);
         _verificatie.VerwijderCode(verzoek.Email);
 
+        var welkomTaal = await EmailTaal.VoorAsync(_context, gebruiker.Id);
         StuurEmailAsync(gebruiker.Email!, gebruiker.Naam,
-            "Welkom bij RaceCoachFinder!",
-            EmailTemplates.Welkom(gebruiker.Naam, gebruiker.Rol));
+            EmailTemplates.WelkomOnderwerp(welkomTaal),
+            EmailTemplates.Welkom(gebruiker.Naam, gebruiker.Rol, welkomTaal));
 
         var token = MaakToken(gebruiker);
         return Ok(new InloggenAntwoord(token, gebruiker.Id, gebruiker.Naam, gebruiker.Email!, gebruiker.Rol, gebruiker.HeeftAccountIngericht));
     }
 
     [HttpPost("verificatie-opnieuw")]
+    [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("mail")]
     public async Task<IActionResult> VerificatieOpnieuw([FromBody] WachtwoordVergetenVerzoek verzoek)
     {
         var gebruiker = await _userManager.FindByEmailAsync(verzoek.Email);
         if (gebruiker != null && !gebruiker.EmailConfirmed)
         {
             var code = _verificatie.MaakCode(verzoek.Email);
+            var taal = await EmailTaal.VoorAsync(_context, gebruiker.Id);
             StuurEmailAsync(gebruiker.Email!, gebruiker.Naam,
-                "Bevestig je e-mailadres – RaceCoachFinder",
-                EmailTemplates.EmailBevestiging(gebruiker.Naam, code));
+                EmailTemplates.EmailBevestigingOnderwerp(taal),
+                EmailTemplates.EmailBevestiging(gebruiker.Naam, code, taal));
         }
+        return Ok();
+    }
+
+    // Ingelogd: wachtwoord wijzigen met het huidige wachtwoord
+    [HttpPost("wachtwoord-wijzigen")]
+    [Authorize]
+    public async Task<IActionResult> WachtwoordWijzigen([FromBody] WachtwoordWijzigenVerzoek verzoek)
+    {
+        var gebruiker = await _userManager.FindByIdAsync(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        if (gebruiker == null) return Unauthorized();
+        if (string.IsNullOrEmpty(verzoek.Nieuw) || verzoek.Nieuw.Length < 8)
+            return BadRequest("Je nieuwe wachtwoord moet minimaal 8 tekens zijn.");
+        if (await _userManager.IsLockedOutAsync(gebruiker))
+            return StatusCode(429, "Te veel mislukte pogingen. Probeer het over 15 minuten opnieuw.");
+        if (!await _userManager.CheckPasswordAsync(gebruiker, verzoek.Huidig ?? ""))
+        {
+            await _userManager.AccessFailedAsync(gebruiker);
+            return BadRequest("Je huidige wachtwoord klopt niet.");
+        }
+        var resultaat = await _userManager.ChangePasswordAsync(gebruiker, verzoek.Huidig!, verzoek.Nieuw);
+        if (!resultaat.Succeeded)
+            return BadRequest(string.Join(", ", resultaat.Errors.Select(e => e.Description)));
+        return Ok();
+    }
+
+    // Ingelogd: eigen account met alles erbij verwijderen (wachtwoord ter bevestiging)
+    [HttpPost("account-verwijderen")]
+    [Authorize]
+    public async Task<IActionResult> AccountVerwijderen([FromBody] AccountVerwijderenVerzoek verzoek, [FromServices] AccountVerwijderService verwijderService)
+    {
+        var gebruiker = await _userManager.FindByIdAsync(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        if (gebruiker == null) return Unauthorized();
+        if ((gebruiker.Rol ?? "").Split(',').Any(r => r.Trim() == "Admin"))
+            return BadRequest("Het admin-account kan niet verwijderd worden.");
+        if (await _userManager.IsLockedOutAsync(gebruiker))
+            return StatusCode(429, "Te veel mislukte pogingen. Probeer het over 15 minuten opnieuw.");
+        if (!await _userManager.CheckPasswordAsync(gebruiker, verzoek.Wachtwoord ?? ""))
+        {
+            await _userManager.AccessFailedAsync(gebruiker);
+            return BadRequest("Je wachtwoord klopt niet.");
+        }
+        var fout = await verwijderService.VerwijderAsync(gebruiker.Id);
+        if (fout != null) return BadRequest(fout);
         return Ok();
     }
 
@@ -251,5 +311,7 @@ public class AuthController : ControllerBase
 }
 
 public record WachtwoordVergetenVerzoek(string Email);
+public record WachtwoordWijzigenVerzoek(string? Huidig, string Nieuw);
+public record AccountVerwijderenVerzoek(string? Wachtwoord);
 public record WachtwoordResetVerzoek(string Email, string Code, string NieuwWachtwoord);
 public record EmailBevestigenVerzoek(string Email, string Code);

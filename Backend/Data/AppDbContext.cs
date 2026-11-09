@@ -27,4 +27,5 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<PushAbonnement> PushAbonnementen { get; set; }
     public DbSet<AppInstelling> AppInstellingen { get; set; }
     public DbSet<TrainingVoorstel> TrainingVoorstellen { get; set; }
+    public DbSet<AanbodWachtlijst> AanbodWachtlijsten { get; set; }
 }

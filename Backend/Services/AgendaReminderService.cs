@@ -53,10 +53,15 @@ public class AgendaReminderService : IHostedService, IDisposable
                 var gebruiker = await context.Users.FindAsync(inst.GebruikerId);
                 if (gebruiker == null || string.IsNullOrEmpty(gebruiker.Email)) continue;
 
-                var dag = inst.AgendaReminderDagenVanTevoren == 1 ? "morgen" : $"over {inst.AgendaReminderDagenVanTevoren} dagen";
-                var html = EmailTemplates.AgendaReminder(gebruiker.Naam, doelDatum, items);
-                await email.VerstuurAsync(gebruiker.Email, gebruiker.Naam,
-                    $"Agenda herinnering – {dag}: {items.Count} afspraak{(items.Count == 1 ? "" : "en")}", html);
+                var taal = inst.EmailTaal == "en" ? "en" : "nl";
+                var dag = taal == "en"
+                    ? (inst.AgendaReminderDagenVanTevoren == 1 ? "tomorrow" : $"in {inst.AgendaReminderDagenVanTevoren} days")
+                    : (inst.AgendaReminderDagenVanTevoren == 1 ? "morgen" : $"over {inst.AgendaReminderDagenVanTevoren} dagen");
+                var html = EmailTemplates.AgendaReminder(gebruiker.Naam, doelDatum, items, taal);
+                var onderwerp = taal == "en"
+                    ? $"Calendar reminder – {dag}: {items.Count} appointment{(items.Count == 1 ? "" : "s")}"
+                    : $"Agenda herinnering – {dag}: {items.Count} afspraak{(items.Count == 1 ? "" : "en")}";
+                await email.VerstuurAsync(gebruiker.Email, gebruiker.Naam, onderwerp, html);
 
                 inst.LaatsteReminderDatum = DateTime.UtcNow;
                 _logger.LogInformation("Agenda reminder verstuurd naar {Email} voor {Datum}", gebruiker.Email, doelDatum.ToShortDateString());

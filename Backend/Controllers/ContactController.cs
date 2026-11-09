@@ -15,8 +15,12 @@ public class ContactController : ControllerBase
     }
 
     [HttpPost]
+    [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("formulier")]
     public async Task<IActionResult> VerstuurContactBericht([FromBody] ContactVerzoek verzoek)
     {
+        // Onzichtbaar lokveld: alleen bots vullen dit in. Doe alsof het gelukt is.
+        if (!string.IsNullOrWhiteSpace(verzoek.Website)) return Ok();
+
         if (string.IsNullOrWhiteSpace(verzoek.Naam) ||
             string.IsNullOrWhiteSpace(verzoek.Email) ||
             string.IsNullOrWhiteSpace(verzoek.Bericht))
@@ -47,4 +51,4 @@ public class ContactController : ControllerBase
     }
 }
 
-public record ContactVerzoek(string Naam, string Email, string? Onderwerp, string Bericht);
+public record ContactVerzoek(string Naam, string Email, string? Onderwerp, string Bericht, string? Website = null);

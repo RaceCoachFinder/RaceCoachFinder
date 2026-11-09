@@ -235,8 +235,11 @@ public class CoachController : ControllerBase
     }
 
     [HttpPost("{id}/rapporteren")]
+    [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("formulier")]
     public async Task<IActionResult> RapporteerCoach(int id, [FromBody] CoachRapportVerzoek verzoek)
     {
+        if (!string.IsNullOrWhiteSpace(verzoek.Website)) return Ok(); // lokveld voor bots
+        if ((verzoek.Reden ?? "").Length > 2000) return BadRequest("Je melding is te lang (maximaal 2000 tekens).");
         if (string.IsNullOrWhiteSpace(verzoek.Reden))
             return BadRequest("Geef een reden op.");
 
@@ -265,4 +268,4 @@ public class CoachController : ControllerBase
     }
 }
 
-public record CoachRapportVerzoek(string Reden);
+public record CoachRapportVerzoek(string Reden, string? Website = null);

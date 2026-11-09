@@ -2073,18 +2073,20 @@ async function submitReview() {
     const coachId = pendingCoachGebruikerId;
     sluitReviewPopup();
 
-    try {
-        await authVerzoek('/review', 'POST', { coachGebruikerId: coachId, sterren: gekozenSterren, tekst });
-    } catch {}
-
+    // Eerst de activiteit als gedaan bevestigen, daarna mag de review (review kan pas na betaald + gedaan)
     if (id) {
         try {
             await authVerzoek(`/boeking/${id}/bevestig`, 'PUT');
         } catch (e) {
             alert('Fout: ' + e.message);
         }
-        await laadBerichten(huidigPartnerId);
     }
+    try {
+        await authVerzoek('/review', 'POST', { coachGebruikerId: coachId, sterren: gekozenSterren, tekst });
+    } catch (e) {
+        alert(e.message || 'Je review kon niet worden opgeslagen.');
+    }
+    if (id) await laadBerichten(huidigPartnerId);
 }
 
 let factuurRegels = [];
@@ -2155,9 +2157,17 @@ async function stuurGroepsBetaalverzoek() {
 function initFactuurFormulier() {
     const nu = new Date();
     document.getElementById('factuur-datum').value = nu.toISOString().split('T')[0];
-    const jaar = nu.getFullYear();
-    const volgnr = String(Math.floor(Math.random() * 900) + 100);
-    document.getElementById('factuur-nummer').value = `F-${jaar}-${volgnr}`;
+    // Factuurnummer: doorlopend per coach (door de server bepaald). In een groep krijgt elke rijder automatisch een eigen nummer.
+    const nrVeld = document.getElementById('factuur-nummer');
+    nrVeld.value = '';
+    nrVeld.disabled = !!huidigGroepsId;
+    nrVeld.placeholder = huidigGroepsId ? 'Automatisch, per rijder' : 'Wordt opgehaald…';
+    nrVeld.title = huidigGroepsId ? 'Elke rijder krijgt een eigen factuur met een doorlopend nummer' : '';
+    if (!huidigGroepsId) {
+        authVerzoek('/boeking/volgend-factuurnummer')
+            .then(d => { if (d && !nrVeld.value) { nrVeld.value = d.nummer; updatePreview(); } })
+            .catch(() => { nrVeld.placeholder = 'Automatisch'; });
+    }
     factuurRegels = [];
     voegRegelToe(); // voegRegelToe → renderRegels → berekenTotaal → updatePreview
 }
