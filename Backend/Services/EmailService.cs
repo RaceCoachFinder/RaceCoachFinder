@@ -238,6 +238,39 @@ public static class EmailTemplates
         return Omhulsel(inhoud);
     }
 
+    // Datum zoals in Nederland: "9 maart 2027"
+    public static string NlDatum(DateTime utc)
+    {
+        var tijd = DateTime.SpecifyKind(utc, DateTimeKind.Utc);
+        try { tijd = TimeZoneInfo.ConvertTimeFromUtc(tijd, TimeZoneInfo.FindSystemTimeZoneById("Europe/Amsterdam")); }
+        catch { }
+        return tijd.ToString("d MMMM yyyy", new System.Globalization.CultureInfo("nl-NL"));
+    }
+
+    public static string GratisPeriode(string naam, DateTime verlooptOp, bool verlengd)
+    {
+        var voornaam = (naam ?? "").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
+        var altijd = verlooptOp.Year >= 9999;
+        var kop = altijd ? "Je account is voor altijd gratis!"
+                : verlengd ? "Je gratis periode is verlengd!"
+                : "Je hebt een gratis periode gekregen!";
+        var uitleg = altijd
+            ? "Goed nieuws: je kunt RaceCoachFinder als coach <strong>voor altijd gratis</strong> gebruiken. Je hebt geen abonnement nodig."
+            : (verlengd ? "Goed nieuws: je gratis periode bij RaceCoachFinder is verlengd. "
+                        : "Goed nieuws: je hebt van RaceCoachFinder een gratis periode gekregen. ") +
+              "Je kunt RaceCoachFinder als coach gratis gebruiken tot en met <strong>" + NlDatum(verlooptOp) + "</strong>.";
+
+        var inhoud =
+            "<div style=\"font-size:2.4rem;text-align:center;margin:0 0 8px\">🎁</div>" +
+            "<h2 style=\"margin:0 0 16px;color:#111111;font-size:1.2rem;text-align:center\">" + kop + "</h2>" +
+            "<p style=\"color:#555;margin:0 0 12px\">Hoi " + Esc(voornaam) + ",</p>" +
+            "<p style=\"color:#555;margin:0 0 12px\">" + uitleg + "</p>" +
+            "<p style=\"color:#555;margin:0 0 24px\">Je hoeft hiervoor niets te doen: je profiel blijft gewoon zichtbaar voor rijders. " +
+            "In je dashboard zie je altijd hoe lang je gratis periode nog loopt.</p>" +
+            "<div style=\"text-align:center\">" + Knop("https://www.racecoachfinder.nl/dashboard-coach.html", "Naar mijn dashboard") + "</div>";
+        return Omhulsel(inhoud);
+    }
+
     private static string Esc(string s) =>
         s.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\"", "&quot;");
 }

@@ -19,6 +19,8 @@ builder.Services.AddSingleton<PushWachtrij>();
 builder.Services.AddSingleton<PushMeldingInterceptor>();
 builder.Services.AddScoped<PushService>();
 builder.Services.AddHostedService<PushVerzender>();
+builder.Services.AddSingleton<GratisMeldingWachtrij>();
+builder.Services.AddHostedService<GratisMeldingVerzender>();
 builder.Services.AddDbContext<AppDbContext>((sp, options) =>
     options.UseSqlite($"Data Source={dbPath}")
            .AddInterceptors(sp.GetRequiredService<PushMeldingInterceptor>())

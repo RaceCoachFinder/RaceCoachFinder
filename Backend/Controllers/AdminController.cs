@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Backend.Data;
 using Backend.Models;
+using Backend.Services;
 
 namespace Backend.Controllers;
 
@@ -15,12 +16,14 @@ public class AdminController : ControllerBase
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly AppDbContext _context;
     private readonly IConfiguration _config;
+    private readonly GratisMeldingWachtrij _gratisMeldingen;
 
-    public AdminController(UserManager<ApplicationUser> userManager, AppDbContext context, IConfiguration config)
+    public AdminController(UserManager<ApplicationUser> userManager, AppDbContext context, IConfiguration config, GratisMeldingWachtrij gratisMeldingen)
     {
         _userManager = userManager;
         _context = context;
         _config = config;
+        _gratisMeldingen = gratisMeldingen;
     }
 
     // Diagnose: welke betaalmethoden staat Mollie toe voor een abonnement (eerste betaling)?
@@ -132,7 +135,11 @@ public class AdminController : ControllerBase
         if (!resultaat.Succeeded)
             return BadRequest(string.Join(", ", resultaat.Errors.Select(e => e.Description)));
 
-        return Ok(new { vorige, nieuwe = gebruiker.GratisVerlooptOp });
+        // Coach krijgt (na een korte wachttijd, zodat 'Ongedaan maken' nog kan) een mail en pushmelding
+        if (verzoek.Actie != "herstel" && gebruiker.GratisVerlooptOp.HasValue)
+            _gratisMeldingen.Voeg(new GratisMeldingTaak(gebruiker.Id, vorige, gebruiker.GratisVerlooptOp.Value));
+
+        return Ok(new { vorige, nieuwe = gebruiker.GratisVerlooptOp, meldingNaMinuten = (int)GratisMeldingWachtrij.Wachttijd.TotalMinutes });
     }
 
     [HttpGet("coaches")]

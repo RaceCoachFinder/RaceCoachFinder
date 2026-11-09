@@ -539,6 +539,8 @@ function lidSinds(datumStr) {
 let _gebruikers = [];
 let _gratisCoach = null;
 let _gratisVorige = null;
+let _gratisOpgeslagenOp = 0;
+let _gratisMeldingMin = 2;
 
 function formatGratis(datum) {
     if (!datum) return 'geen gratis periode';
@@ -638,9 +640,13 @@ async function slaGratisOp() {
         });
         _gratisVorige = res.vorige;
         _gratisCoach.gratisVerlooptOp = res.nieuwe;
+        _gratisMeldingMin = res.meldingNaMinuten || 2;
+        _gratisOpgeslagenOp = Date.now();
         toonGratisCoachInfo();
         document.getElementById('gratis-resultaat').innerHTML =
-            `✅ Opgeslagen voor <strong>${esc(_gratisCoach.naam)}</strong>: ${formatGratis(res.nieuwe)}.`;
+            `✅ Opgeslagen voor <strong>${esc(_gratisCoach.naam)}</strong>: ${formatGratis(res.nieuwe)}.` +
+            `<div style="margin-top:0.5rem;font-size:0.84rem;color:#555">📧 De coach krijgt over ${_gratisMeldingMin} minuten een mail en een melding. ` +
+            `Maak je het binnen die tijd ongedaan, dan wordt er niets verstuurd.</div>`;
         document.getElementById('btn-gratis-herstel').disabled = false;
         document.getElementById('gratis-stap-kiezen').style.display = 'none';
         document.getElementById('gratis-stap-klaar').style.display = '';
@@ -661,8 +667,12 @@ async function herstelGratis() {
         });
         _gratisCoach.gratisVerlooptOp = res.nieuwe;
         toonGratisCoachInfo();
+        const opTijd = _gratisOpgeslagenOp && Date.now() - _gratisOpgeslagenOp < _gratisMeldingMin * 60000 - 5000;
         document.getElementById('gratis-resultaat').innerHTML =
-            `↩ Teruggezet voor <strong>${esc(_gratisCoach.naam)}</strong>: ${formatGratis(res.nieuwe)}.`;
+            `↩ Teruggezet voor <strong>${esc(_gratisCoach.naam)}</strong>: ${formatGratis(res.nieuwe)}.` +
+            `<div style="margin-top:0.5rem;font-size:0.84rem;color:#555">${opTijd
+                ? '📭 Er wordt geen mail of melding naar de coach gestuurd.'
+                : '⚠️ De coach had de mail en melding over de gratis periode al ontvangen.'}</div>`;
         laadGebruikers().then(laadCoaches);
     } catch (e) {
         alert('Ongedaan maken mislukt: ' + e.message);
