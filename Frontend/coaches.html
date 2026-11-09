@@ -62,6 +62,8 @@
             border-color: var(--kleur-primair);
         }
 
+        .kaart-open-knop { margin-top: 0.45rem; width: 100%; background: #fff; border: 1.5px solid var(--kleur-primair); color: var(--kleur-tekst); border-radius: 6px; padding: 0.45rem 0.6rem; font-family: inherit; font-size: 0.85rem; font-weight: 700; cursor: pointer; }
+        .kaart-open-knop:hover { background: #fff8e0; }
         .multi-dropdown { position: relative; }
         .multi-dropdown-knop {
             width: 100%;
@@ -255,6 +257,7 @@
             <div class="filter-veld">
                 <label for="f-locatie">Locatie</label>
                 <input type="text" id="f-locatie" placeholder="bijv. Den Haag">
+                <button type="button" class="kaart-open-knop" onclick="openKaart()">🗺️ Kaart openen</button>
             </div>
             <div class="filter-veld">
                 <label>Voertuig</label>
@@ -347,6 +350,7 @@
 <script src="js/auth.js"></script>
 <script src="js/push.js"></script>
 <script src="js/api.js"></script>
+<script src="js/coach-kaart.js" defer></script>
 <script>
 const SPECIALISATIES = ['Huurkart','Rotax Max','OK','KZ / Shifter','Superkart','Simracing','Algemeen'];
 const KWALITEITEN = ['Sprint','Endurance','Regenrijden','Snelheid','Basis','Inhalen','Verdedigen','Kwalificatie','Race brain','Algemeen'];
@@ -439,9 +443,8 @@ async function zoekCoaches() {
     }
 }
 
-function renderCoaches() {
-    const grid = document.getElementById('coach-grid');
-    const sortering   = document.getElementById('f-sortering').value;
+// Alle filters uit de zijbalk toepassen; voor de kaart zonder het locatiefilter
+function filterCoaches(bron, metLocatie) {
     const taalFilter  = document.getElementById('f-taal').value.trim().toLowerCase();
     const minErvaring = parseInt(document.getElementById('f-ervaring').value) || 0;
     const maxPrijs    = parseInt(document.getElementById('f-maxprijs').value) || 0;
@@ -449,11 +452,10 @@ function renderCoaches() {
     const alleenFavorieten = document.getElementById('f-favorieten').checked;
     const gekozenSpecs = specsDropdown.getGekozen();
     const gekozenKwals = kwalsDropdown.getGekozen();
-
     const naamFilter     = document.getElementById('f-naam').value.trim().toLowerCase();
-    const locatieFilter  = document.getElementById('f-locatie').value.trim().toLowerCase();
+    const locatieFilter  = metLocatie ? document.getElementById('f-locatie').value.trim().toLowerCase() : '';
 
-    let lijst = alleCoaches.filter(c => {
+    return bron.filter(c => {
         if (naamFilter     && !c.naam.toLowerCase().includes(naamFilter)) return false;
         if (locatieFilter  && !(c.woonplaats || '').toLowerCase().includes(locatieFilter)) return false;
         if (taalFilter && !(c.talen || '').toLowerCase().includes(taalFilter)) return false;
@@ -471,6 +473,28 @@ function renderCoaches() {
         }
         return true;
     });
+}
+
+// Kaart: alle coaches (los van een eerdere zoekopdracht op locatie), met de overige filters
+let _kaartCoaches = null;
+async function openKaart() {
+    if (!window.openCoachKaart) return;
+    try { _kaartCoaches = _kaartCoaches || await CoachAPI.haalAlleOp({}); }
+    catch { _kaartCoaches = alleCoaches; }
+    openCoachKaart(filterCoaches(_kaartCoaches, false), {
+        prijsTekst: prijsBereik,
+        onStadKies: stad => {
+            document.getElementById('f-locatie').value = stad;
+            zoekCoaches();
+        }
+    });
+}
+
+function renderCoaches() {
+    const grid = document.getElementById('coach-grid');
+    const sortering   = document.getElementById('f-sortering').value;
+
+    let lijst = filterCoaches(alleCoaches, true);
 
     if (sortering === 'recensies') {
         // Bayesiaans gemiddelde: (n*r + m*C) / (n+m), m=5, C=4.0

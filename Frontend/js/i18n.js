@@ -292,6 +292,7 @@
         'Coach biedt groep aan': 'Coach offers group',
         'Competitie': 'Competition',
         'Niveau rijders': 'Rider level',
+        '🗺️ Kaart openen': '🗺️ Open map',
         'Maakt niet uit': 'Any level',
         'Alle niveaus': 'All levels',
         'Eerste keer': 'First time',

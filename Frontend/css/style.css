@@ -736,3 +736,45 @@ footer {
 .ps-baan input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; pointer-events: auto; width: 18px; height: 18px; margin-top: 2px; border-radius: 50%; background: #fff; border: 2px solid var(--kleur-primair); box-shadow: 0 1px 4px rgba(0,0,0,0.2); cursor: grab; }
 .ps-baan input[type="range"]::-moz-range-thumb { pointer-events: auto; width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 2px solid var(--kleur-primair); box-shadow: 0 1px 4px rgba(0,0,0,0.2); cursor: grab; }
 .ps-baan input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px rgba(245,196,0,0.35); }
+
+/* ===== Coachkaart (js/coach-kaart.js) ===== */
+.ck-overlay { display: none; position: fixed; inset: 0; z-index: 9600; background: rgba(0,0,0,0.55); align-items: center; justify-content: center; padding: 1rem; }
+.ck-overlay.open { display: flex; }
+.ck-venster { position: relative; width: 100%; max-width: 980px; height: min(78vh, 720px); background: #fff; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); display: flex; flex-direction: column; overflow: hidden; }
+.ck-kop { display: flex; align-items: center; gap: 0.75rem; padding: 0.8rem 1rem; border-bottom: 1px solid #eee; }
+.ck-kop strong { font-size: 1.02rem; }
+.ck-info { font-size: 0.82rem; color: var(--kleur-subtekst); flex: 1; }
+.ck-sluiten { margin-left: auto; background: none; border: none; font-size: 1.3rem; color: #777; cursor: pointer; line-height: 1; }
+.ck-kaartvak { position: relative; flex: 1; min-height: 0; }
+.ck-kaart { position: absolute; inset: 0; background: #f2f0eb; }
+.ck-voet { font-size: 0.78rem; color: var(--kleur-subtekst); padding: 0.5rem 1rem; border-top: 1px solid #eee; }
+.ck-icoon { background: none; border: none; }
+.ck-pin { position: relative; transform: translate(-50%, calc(-100% - 7px)); display: inline-flex; align-items: center; gap: 0.35rem; background: #fff; border: 2px solid var(--kleur-primair); border-radius: 999px; padding: 3px 10px 3px 3px; box-shadow: 0 2px 8px rgba(0,0,0,0.25); cursor: pointer; white-space: nowrap; font-family: inherit; }
+.ck-pin::after { content: ''; position: absolute; left: 50%; bottom: -8px; transform: translateX(-50%); border: 7px solid transparent; border-bottom: 0; border-top-color: var(--kleur-primair); }
+.ck-pin:hover { border-color: var(--kleur-donker); z-index: 2; }
+.ck-naam { font-size: 0.78rem; font-weight: 700; color: var(--kleur-tekst); }
+.ck-foto { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; }
+.ck-initialen { background: var(--kleur-primair); color: var(--kleur-donker); font-size: 0.7rem; font-weight: 800; }
+.ck-foto-groot { width: 46px; height: 46px; font-size: 0.95rem; }
+.ck-groep { padding-left: 3px; }
+.ck-aantal { width: 28px; height: 28px; border-radius: 50%; background: var(--kleur-primair); color: var(--kleur-donker); font-weight: 900; font-size: 0.9rem; display: inline-flex; align-items: center; justify-content: center; }
+.ck-popup .leaflet-popup-content { margin: 0.6rem 0.7rem; min-width: 190px; }
+.ck-lijst-kop { font-size: 0.76rem; font-weight: 700; color: var(--kleur-subtekst); margin-bottom: 0.35rem; }
+.ck-rij { display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0.35rem; border-radius: 8px; cursor: pointer; font-size: 0.88rem; font-weight: 600; color: var(--kleur-tekst); }
+.ck-rij:hover { background: #fff8e0; }
+.ck-lijst-filter { margin-top: 0.45rem; width: 100%; background: none; border: 1px solid #ddd; border-radius: 8px; padding: 0.3rem; font-size: 0.75rem; font-family: inherit; cursor: pointer; color: #555; }
+.ck-lijst-filter:hover { border-color: var(--kleur-primair); }
+.ck-hoverkaart { display: none; position: absolute; z-index: 1000; width: 260px; background: #fff; border-radius: 12px; box-shadow: 0 8px 28px rgba(0,0,0,0.22); padding: 0.85rem; font-size: 0.85rem; }
+.ck-hk-kop { display: flex; gap: 0.6rem; align-items: center; margin-bottom: 0.45rem; }
+.ck-hk-naam { font-weight: 800; font-size: 0.95rem; }
+.ck-hk-sub { font-size: 0.78rem; color: var(--kleur-subtekst); }
+.ck-hk-badges { display: flex; gap: 0.3rem; flex-wrap: wrap; margin-bottom: 0.3rem; }
+.ck-hk-sterren small { color: var(--kleur-subtekst); }
+.ck-hk-prijs { font-weight: 700; margin: 0.2rem 0; }
+.ck-hk-bio { color: var(--kleur-subtekst); font-size: 0.8rem; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 0.5rem; }
+.ck-hk-knop { display: block; text-align: center; padding: 0.4rem; font-size: 0.82rem; }
+@media (max-width: 700px) {
+    .ck-overlay { padding: 0; }
+    .ck-venster { height: 100%; max-height: none; border-radius: 0; }
+    .ck-info { display: none; }
+}
