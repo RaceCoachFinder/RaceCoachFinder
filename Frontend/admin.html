@@ -164,6 +164,16 @@
     </div>
     </div><!-- /admin-twee-kolommen -->
 
+    <!-- Servicekosten via Mollie Connect -->
+    <div class="admin-sectie">
+        <h3>Servicekosten (2%)</h3>
+        <p style="font-size:0.88rem;color:var(--kleur-subtekst);margin-bottom:1rem">
+            Rijders betalen facturen rechtstreeks aan de coach. De 2% servicekosten komen automatisch op het Mollie-account van RaceCoachFinder.
+            Mollie vraagt dat je coaches hiervoor een factuur stuurt; hieronder staat per maand wat elke coach aan servicekosten heeft afgedragen.
+        </p>
+        <div id="servicekosten-tabel" style="overflow-x:auto"><p style="color:var(--kleur-subtekst)">Laden…</p></div>
+    </div>
+
     <!-- Stats -->
     <div class="stats-strook">
         <div class="stats-strook-label">Totale leden</div>
@@ -289,7 +299,45 @@ if (!vereisAuth('Admin')) { /* redirect */ }
 
 async function laadDashboard() {
     await laadGebruikers();
-    await Promise.all([laadCoaches(), laadRijders()]);
+    await Promise.all([laadCoaches(), laadRijders(), laadServicekosten()]);
+}
+
+// Mollie-koppeling van een coach in de gebruikerslijst
+function mollieLabel(g) {
+    if (!(g.rol || '').includes('Coach')) return '<span style="color:#ddd">—</span>';
+    if (!g.mollie) return '<span style="color:#aaa">Niet gekoppeld</span>';
+    if (g.mollie === 'klaar') return '<span style="color:#2e7d32;font-weight:600">✓ Gekoppeld</span>';
+    if (g.mollie === 'ingetrokken') return '<span style="color:#c62828">Ingetrokken</span>';
+    return '<span style="color:#b26a00">Nog niet actief</span>';
+}
+
+async function laadServicekosten() {
+    const vak = document.getElementById('servicekosten-tabel');
+    try {
+        const d = await authVerzoek('/admin/servicekosten');
+        if (!d) return;
+        const eur = b => '€ ' + Number(b).toFixed(2).replace('.', ',');
+        let kop = '';
+        if (!d.ingesteld) kop = '<div class="melding melding-info" style="margin-bottom:0.75rem">Mollie Connect is nog niet ingesteld: zet MOLLIE_CLIENT_ID en MOLLIE_CLIENT_SECRET in Railway.</div>';
+        else if (d.testmodus) kop = '<div class="melding melding-info" style="margin-bottom:0.75rem">Testmodus staat aan (MOLLIE_CONNECT_TESTMODUS): betalingen zijn niet echt en tellen hier niet mee.</div>';
+        if (!d.regels.length) { vak.innerHTML = kop + '<p style="color:var(--kleur-subtekst)">Nog geen betaalde facturen via Mollie Connect.</p>'; return; }
+        vak.innerHTML = kop + `
+            <table class="admin-tabel">
+                <thead><tr><th>Maand</th><th>Coach</th><th>E-mail</th><th>Facturen</th><th>Factuurbedrag</th><th>Servicekosten</th></tr></thead>
+                <tbody>${d.regels.map(r => `
+                    <tr>
+                        <td style="white-space:nowrap">${esc(r.maand)}</td>
+                        <td>${esc(r.coach)}</td>
+                        <td>${esc(r.email || '')}</td>
+                        <td>${r.aantal}</td>
+                        <td style="white-space:nowrap">${eur(r.omzetCoach)}</td>
+                        <td style="white-space:nowrap;font-weight:700">${eur(r.servicekosten)}</td>
+                    </tr>`).join('')}
+                </tbody>
+            </table>`;
+    } catch (e) {
+        vak.innerHTML = `<div class="melding melding-fout">Fout: ${esc(e.message)}</div>`;
+    }
 }
 
 async function laadGebruikers() {
@@ -317,6 +365,7 @@ async function laadGebruikers() {
                         <th>Lid sinds</th>
                         <th>Volgende betaling</th>
                         <th>📣 Marketing</th>
+                        <th>💳 Mollie</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -335,6 +384,7 @@ async function laadGebruikers() {
                                         : '<span style="color:#aaa">✗ Nee</span>')
                                     : '<span style="color:#ddd">—</span>'}
                             </td>
+                            <td style="font-size:0.82rem;white-space:nowrap">${mollieLabel(g)}</td>
                             <td>
                                 ${g.rol.split(',').map(r => r.trim()).includes('Coach') ? `<button class="btn btn-gratis btn-sm" onclick="openGratisPopup('${esc(g.id)}')">🎁 Gratis</button>` : ''}
                                 ${!(g.rol || '').split(',').map(r => r.trim()).includes('Admin') ? `<button class="btn btn-gevaar btn-sm" onclick="verwijderGebruiker('${esc(g.id)}', '${esc(g.naam)}')">Verwijderen</button>` : '<span style="color:#aaa;font-size:0.8rem">Beveiligd</span>'}

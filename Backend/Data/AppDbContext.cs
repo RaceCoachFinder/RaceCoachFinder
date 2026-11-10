@@ -28,4 +28,11 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<AppInstelling> AppInstellingen { get; set; }
     public DbSet<TrainingVoorstel> TrainingVoorstellen { get; set; }
     public DbSet<AanbodWachtlijst> AanbodWachtlijsten { get; set; }
+    public DbSet<MollieKoppeling> MollieKoppelingen { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder builder)
+    {
+        base.OnModelCreating(builder);
+        builder.Entity<MollieKoppeling>().HasIndex(k => k.GebruikerId).IsUnique();
+    }
 }

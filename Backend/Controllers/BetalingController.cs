@@ -10,6 +10,7 @@ using Mollie.Api.Models;
 using Mollie.Api.Models.Customer;
 using Mollie.Api.Models.Payment;
 using Mollie.Api.Models.Payment.Request;
+using Mollie.Api.Models.Payment.Response;
 using Mollie.Api.Models.Subscription;
 using System.Security.Claims;
 
@@ -273,17 +274,18 @@ public class BetalingController : ControllerBase
     // Voor de bedankpagina: echte status van de betaling van een factuur
     [HttpGet("controle-factuur/{boekingId:int}")]
     [Authorize(Roles = "Rijder")]
-    public async Task<IActionResult> ControleFactuur(int boekingId)
+    public async Task<IActionResult> ControleFactuur(int boekingId, [FromServices] MollieConnectService connect)
     {
         var rijderId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         var boeking = await _context.Boekingen.FindAsync(boekingId);
         if (boeking == null) return NotFound();
         if (boeking.RijderGebruikerId != rijderId) return Forbid();
-        if (boeking.Status == "Betaald") return Ok(new { status = PaymentStatus.Paid });
+        if (boeking.Status == "Betaald" || boeking.Status == "Voldaan") return Ok(new { status = PaymentStatus.Paid });
         if (string.IsNullOrEmpty(boeking.MollieBetalingId)) return Ok(new { status = "onbekend" });
         try
         {
-            var betaling = await new PaymentClient(ApiKey).GetPaymentAsync(boeking.MollieBetalingId);
+            var betaling = await HaalFactuurBetalingAsync(boeking, connect);
+            if (betaling == null) return Ok(new { status = "onbekend" });
             // Zelfde als de webhook: betaald = factuur op betaald (webhook kan later komen)
             if (betaling.Status == PaymentStatus.Paid && boeking.Status == "Openstaand")
             {
@@ -302,7 +304,7 @@ public class BetalingController : ControllerBase
 
     [HttpPost("start-factuur/{boekingId:int}")]
     [Authorize(Roles = "Rijder")]
-    public async Task<IActionResult> StartFactuur(int boekingId)
+    public async Task<IActionResult> StartFactuur(int boekingId, [FromServices] MollieConnectService connect)
     {
         try
         {
@@ -310,22 +312,49 @@ public class BetalingController : ControllerBase
             var boeking = await _context.Boekingen.FindAsync(boekingId);
             if (boeking == null) return NotFound("Boeking niet gevonden.");
             if (boeking.RijderGebruikerId != rijderId) return Forbid();
-            if (boeking.Status != "Openstaand") return BadRequest("Boeking is niet meer openstaand.");
+            if (boeking.Status == "Betaald" || boeking.Status == "Voldaan") return BadRequest("Deze factuur is al betaald.");
+            if (boeking.Status != "Openstaand") return BadRequest("Deze factuur staat niet meer open.");
+            if (boeking.Bedrag < 1) return BadRequest("Dit bedrag is te laag om online te betalen.");
 
-            var fee = Math.Round(boeking.Bedrag * 0.02m, 2);
-            var totaal = boeking.Bedrag + fee;
-            var factuurnummer = boeking.FactuurnummerTekst ?? $"F-{DateTime.UtcNow:yyyy}-{boeking.Id:D4}";
-
-            var betalingClient = new PaymentClient(ApiKey);
-            var betaling = await betalingClient.CreatePaymentAsync(new PaymentRequest
+            // Al een betaling gestart? Dan die gebruiken (voorkomt dubbel betalen)
+            if (!string.IsNullOrEmpty(boeking.MollieBetalingId))
             {
-                Amount = new Amount(Currency.EUR, totaal.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)),
+                try
+                {
+                    var bestaande = await HaalFactuurBetalingAsync(boeking, connect);
+                    if (bestaande?.Status == PaymentStatus.Paid)
+                    {
+                        boeking.Status = "Betaald";
+                        await _context.SaveChangesAsync();
+                        await MeldFactuurBetaald(boeking);
+                        return BadRequest("Deze factuur is al betaald.");
+                    }
+                    // Alleen een nog openstaande betaling bij de coach hergebruiken, geen oude via RaceCoachFinder
+                    if (bestaande?.Status == PaymentStatus.Open && boeking.MollieModus != null && bestaande.Links.Checkout?.Href is { } href)
+                        return Ok(new { checkoutUrl = href });
+                }
+                catch (Exception ex) { Console.Error.WriteLine("Bestaande betaling ophalen mislukt: " + ex.Message); }
+            }
+
+            // Het geld gaat rechtstreeks naar het Mollie-account van de coach; de servicekosten naar RaceCoachFinder
+            var status = await connect.StatusVoorAsync(boeking.CoachGebruikerId);
+            if (status != KoppelStatus.Klaar) return StatusCode(409, MollieConnectService.MeldingVoorRijder(status));
+
+            var servicekosten = MollieConnectService.Servicekosten(boeking.Bedrag);
+            var totaal = boeking.Bedrag + servicekosten;
+            var factuurnummer = boeking.FactuurnummerTekst ?? $"F-{boeking.AangemaaktOp:yyyy}-{boeking.Id:D4}";
+
+            var betaling = await connect.MaakBetalingAsync(boeking.CoachGebruikerId, new PaymentRequest
+            {
+                Amount = new Amount(Currency.EUR, MollieConnectService.Bedrag(totaal)),
                 Description = $"Factuur {factuurnummer} – {boeking.Omschrijving}",
                 RedirectUrl = $"{FrontendUrl}/betaling-succes.html?boekingId={boekingId}",
                 WebhookUrl = $"{BackendUrl}/api/betaling/webhook-factuur",
-            });
+            }, servicekosten, $"Servicekosten RaceCoachFinder – factuur {factuurnummer}");
 
             boeking.MollieBetalingId = betaling.Id;
+            boeking.MollieModus = MollieConnectService.Testmodus ? "koppeling-test" : "koppeling";
+            boeking.Servicekosten = servicekosten;
             await _context.SaveChangesAsync();
 
             return Ok(new { checkoutUrl = betaling.Links.Checkout?.Href });
@@ -337,19 +366,28 @@ public class BetalingController : ControllerBase
         }
     }
 
+    // Betaling van een factuur ophalen: bij de coach (Mollie Connect) of, bij oude facturen, bij RaceCoachFinder
+    private async Task<PaymentResponse?> HaalFactuurBetalingAsync(Boeking boeking, MollieConnectService connect)
+    {
+        if (string.IsNullOrEmpty(boeking.MollieBetalingId)) return null;
+        if (boeking.MollieModus?.StartsWith("koppeling") == true)
+            return await connect.HaalBetalingAsync(boeking.CoachGebruikerId, boeking.MollieBetalingId, boeking.MollieModus == "koppeling-test");
+        return await new PaymentClient(ApiKey).GetPaymentAsync(boeking.MollieBetalingId);
+    }
+
     [HttpPost("webhook-factuur")]
     [AllowAnonymous]
-    public async Task<IActionResult> WebhookFactuur([FromForm] string id)
+    public async Task<IActionResult> WebhookFactuur([FromForm] string id, [FromServices] MollieConnectService connect)
     {
         try
         {
-            var betalingClient = new PaymentClient(ApiKey);
-            var betaling = await betalingClient.GetPaymentAsync(id);
-            if (betaling.Status?.ToString().ToLower() != "paid") return Ok();
-
             var boeking = await _context.Boekingen.FirstOrDefaultAsync(b => b.MollieBetalingId == id);
-            // Al verwerkt (Mollie roept de webhook soms vaker aan): niets doen, ook geen tweede mail
+            // Onbekend, of al verwerkt (Mollie roept de webhook soms vaker aan): niets doen, ook geen tweede mail
             if (boeking == null || boeking.Status == "Betaald" || boeking.Status == "Voldaan") return Ok();
+
+            // Status altijd zelf bij Mollie opvragen; de webhook zelf bevat alleen het id
+            var betaling = await HaalFactuurBetalingAsync(boeking, connect);
+            if (betaling?.Status != PaymentStatus.Paid) return Ok();
 
             boeking.Status = "Betaald";
             await _context.SaveChangesAsync();

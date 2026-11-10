@@ -393,11 +393,15 @@ public class GroepsgesprekController : ControllerBase
 
     [HttpPost("{id}/betaalverzoek")]
     [Authorize(Roles = "Coach")]
-    public async Task<IActionResult> StuurBetaalverzoek(int id, [FromBody] GroepsBetaalverzoekVerzoek verzoek, [FromServices] Backend.Services.FactuurService facturen)
+    public async Task<IActionResult> StuurBetaalverzoek(int id, [FromBody] GroepsBetaalverzoekVerzoek verzoek, [FromServices] Backend.Services.FactuurService facturen, [FromServices] Backend.Services.MollieConnectService connect)
     {
         var coachId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         var coach = await _userManager.FindByIdAsync(coachId!);
         if (coach == null) return Unauthorized();
+
+        // Rijders betalen rechtstreeks aan de coach: zonder gekoppeld Mollie-account kan dat niet
+        var koppeling = await connect.StatusVoorAsync(coach.Id);
+        if (koppeling != Backend.Services.KoppelStatus.Klaar) return BadRequest(Backend.Services.MollieConnectService.MeldingVoorCoach(koppeling));
 
         if (string.IsNullOrWhiteSpace(verzoek.Omschrijving)) return BadRequest("Omschrijving is verplicht.");
         if (verzoek.Bedrag <= 0) return BadRequest("Bedrag moet groter zijn dan 0.");

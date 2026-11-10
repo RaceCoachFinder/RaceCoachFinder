@@ -15,4 +15,9 @@ public class Boeking
     public int BetalingsTermijn { get; set; } = 14;
     public string? FactuurJson { get; set; }
     public string? MollieBetalingId { get; set; }
+    // Waar de betaling staat: null = Mollie-account van RaceCoachFinder (oude facturen),
+    // "koppeling" = Mollie-account van de coach, "koppeling-test" = idem in testmodus
+    public string? MollieModus { get; set; }
+    // Servicekosten (2%) die via Mollie naar RaceCoachFinder gaan
+    public decimal? Servicekosten { get; set; }
 }

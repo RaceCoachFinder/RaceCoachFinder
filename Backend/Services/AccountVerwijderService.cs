@@ -16,9 +16,11 @@ public class AccountVerwijderService
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IConfiguration _config;
     private readonly ILogger<AccountVerwijderService> _logger;
+    private readonly IServiceProvider _services;
 
-    public AccountVerwijderService(AppDbContext context, UserManager<ApplicationUser> userManager, IConfiguration config, ILogger<AccountVerwijderService> logger)
+    public AccountVerwijderService(AppDbContext context, UserManager<ApplicationUser> userManager, IConfiguration config, ILogger<AccountVerwijderService> logger, IServiceProvider services)
     {
+        _services = services;
         _context = context;
         _userManager = userManager;
         _config = config;
@@ -43,12 +45,20 @@ public class AccountVerwijderService
                 foreach (var a in lijst.Items.Where(a => a.Status == SubscriptionStatus.Active || a.Status == SubscriptionStatus.Pending))
                     await client.CancelSubscriptionAsync(gebruiker.MollieKlantId, a.Id);
             }
+            catch (MollieApiException ex) when (ex.Details?.Status is 404 or 410)
+            {
+                // Klant bestaat niet (meer) bij Mollie, bijvoorbeeld uit de testmodus: dan loopt er ook niets
+            }
             catch (Exception ex)
             {
                 _logger.LogWarning("Abonnement opzeggen bij account verwijderen mislukt voor {Id}: {Fout}", id, ex.Message);
                 return "Je abonnement kon niet worden opgezegd, daarom is je account (nog) niet verwijderd. Probeer het later opnieuw of neem contact met ons op.";
             }
         }
+
+        // Koppeling met het eigen Mollie-account van de coach intrekken
+        var connect = _services.GetRequiredService<MollieConnectService>();
+        await connect.OntkoppelAsync(id);
 
         // 2. Profielen en favorieten
         var coachIds = await _context.Coaches.Where(c => c.GebruikerId == id).Select(c => c.Id).ToListAsync();

@@ -416,6 +416,9 @@
             .factuur-links { width: 100%; height: 55%; border-right: none; border-bottom: 1px solid #eee; }
             .factuur-rechts { padding: 1rem; }
         }
+        #btn-factuur-versturen:disabled { opacity: 0.45; cursor: not-allowed; }
+        .factuur-mollie-melding { background: #fff4e5; color: #8a4b00; border-radius: 8px; padding: 0.65rem 0.8rem; font-size: 0.8rem; line-height: 1.5; }
+        .factuur-mollie-melding a { color: inherit; font-weight: 700; }
         .verzoek-formulier-titel { font-size: 0.82rem; font-weight: 700; color: #111; display: flex; align-items: center; gap: 0.4rem; }
         .factuur-meta { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; }
         .factuur-meta label, .factuur-regels-header label { font-size: 0.72rem; font-weight: 700; color: var(--kleur-subtekst); text-transform: uppercase; letter-spacing: 0.3px; display: block; margin-bottom: 0.25rem; }
@@ -614,6 +617,9 @@
                             <button onclick="sluitVerzoekFormulier()" style="background:none;border:none;cursor:pointer;font-size:1.2rem;color:#888;line-height:1;padding:0.2rem">✕</button>
                         </div>
 
+                        <!-- Coach heeft nog geen Mollie gekoppeld: dan kan een rijder niet betalen -->
+                        <div id="factuur-mollie-melding" class="factuur-mollie-melding" style="display:none"></div>
+
                         <!-- Meta: factuurnummer, datum, betalingstermijn -->
                         <div class="factuur-meta">
                             <div>
@@ -668,7 +674,7 @@
                         </div>
 
                         <div style="display:flex;gap:0.5rem">
-                            <button class="btn btn-primair" onclick="stuurVerzoek()" style="font-size:0.85rem;padding:0.4rem 1.1rem">📨 Factuur versturen</button>
+                            <button class="btn btn-primair" id="btn-factuur-versturen" onclick="stuurVerzoek()" style="font-size:0.85rem;padding:0.4rem 1.1rem">📨 Factuur versturen</button>
                             <button class="btn btn-donker" onclick="sluitVerzoekFormulier()" style="font-size:0.85rem;padding:0.4rem 1rem">Annuleren</button>
                         </div>
                     </div>
@@ -2170,6 +2176,23 @@ function initFactuurFormulier() {
     }
     factuurRegels = [];
     voegRegelToe(); // voegRegelToe → renderRegels → berekenTotaal → updatePreview
+    controleerMollieKoppeling();
+}
+
+// Rijders betalen rechtstreeks op het Mollie-account van de coach: zonder koppeling geen factuur
+async function controleerMollieKoppeling() {
+    const vak = document.getElementById('factuur-mollie-melding');
+    const knop = document.getElementById('btn-factuur-versturen');
+    vak.style.display = 'none';
+    knop.disabled = false;
+    try {
+        const s = await authVerzoek('/mollieconnect/status');
+        if (!s || s.klaar) return;
+        vak.innerHTML = '<span></span> <a href="instellingen.html#mollie">Naar Instellingen</a>';
+        vak.querySelector('span').textContent = s.melding || 'Koppel eerst je Mollie-account.';
+        vak.style.display = '';
+        knop.disabled = true;
+    } catch (e) { /* de server controleert het ook bij versturen */ }
 }
 
 document.addEventListener('keydown', e => {

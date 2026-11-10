@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -24,6 +25,22 @@ builder.Services.AddHostedService<GratisMeldingVerzender>();
 builder.Services.AddScoped<AccountVerwijderService>();
 builder.Services.AddScoped<FactuurService>();
 builder.Services.AddScoped<WachtlijstMelder>();
+builder.Services.AddScoped<MollieConnectService>();
+
+// Versleuteling (o.a. Mollie-tokens van coaches). De sleutels staan naast de database, zodat ze een
+// nieuwe deploy overleven.
+builder.Services.AddDataProtection()
+    .SetApplicationName("RaceCoachFinder")
+    .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(string.IsNullOrEmpty(dbDir) ? Directory.GetCurrentDirectory() : dbDir, "sleutels")));
+
+// Mollie Connect. Alleen lokaal (Development) kan al het Mollie-verkeer naar een nep-server.
+var mollieNep = builder.Environment.IsDevelopment() ? Environment.GetEnvironmentVariable("MOLLIE_NEP_URL") : null;
+var mollieHttp = builder.Services.AddHttpClient(MollieConnectService.HttpNaam);
+if (!string.IsNullOrEmpty(mollieNep))
+{
+    MollieConnectService.NepUrl = mollieNep.TrimEnd('/');
+    mollieHttp.ConfigurePrimaryHttpMessageHandler(() => new MollieOmleiding(mollieNep));
+}
 builder.Services.AddDbContext<AppDbContext>((sp, options) =>
     options.UseSqlite($"Data Source={dbPath}")
            .AddInterceptors(sp.GetRequiredService<PushMeldingInterceptor>())

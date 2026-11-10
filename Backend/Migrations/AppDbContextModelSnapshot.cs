@@ -247,6 +247,9 @@ namespace Backend.Migrations
                     b.Property<string>("MollieBetalingId")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("MollieModus")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Omschrijving")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -257,6 +260,9 @@ namespace Backend.Migrations
 
                     b.Property<bool>("RijderHeeftBevestigd")
                         .HasColumnType("INTEGER");
+
+                    b.Property<decimal?>("Servicekosten")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -669,6 +675,52 @@ namespace Backend.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("GroepsgesprekVerwijderingen");
+                });
+
+            modelBuilder.Entity("Backend.Models.MollieKoppeling", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("AccessTokenVerlooptOp")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AccessTokenVersleuteld")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("BijgewerktOp")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("GebruikerId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("GekoppeldOp")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("KanBetalingenOntvangen")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("OnboardingStatus")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OrganisatieNaam")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ProfielId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RefreshTokenVersleuteld")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GebruikerId")
+                        .IsUnique();
+
+                    b.ToTable("MollieKoppelingen");
                 });
 
             modelBuilder.Entity("Backend.Models.PushAbonnement", b =>

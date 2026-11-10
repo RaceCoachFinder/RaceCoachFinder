@@ -18,6 +18,19 @@
 
         .inst-inhoud { max-width: 680px; margin: 0 auto; padding-bottom: 5rem; }
 
+        /* Betalingen ontvangen (Mollie) */
+        .mollie-uitleg { font-size: 0.85rem; color: var(--kleur-subtekst); line-height: 1.6; margin: 0 0 0.6rem; }
+        .mollie-status { display: flex; gap: 0.75rem; align-items: flex-start; background: #f7f7f9; border-radius: 10px; padding: 0.85rem 1rem; margin-top: 0.9rem; }
+        .mollie-status .mollie-icoon { font-size: 1.3rem; line-height: 1.2; }
+        .mollie-status strong { display: block; font-size: 0.95rem; }
+        .mollie-status span { display: block; font-size: 0.82rem; color: var(--kleur-subtekst); line-height: 1.55; margin-top: 0.15rem; }
+        .mollie-status .mollie-org { color: var(--kleur-tekst); font-weight: 600; }
+        .mollie-knoppen { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.9rem; align-items: center; }
+        .mollie-knoppen .btn { font-size: 0.85rem; }
+        .mollie-knoppen .btn-licht { background: transparent; color: #555; border: 2px solid #ccc; }
+        .mollie-knoppen a { font-size: 0.82rem; }
+        .mollie-test { margin-top: 0.6rem; font-size: 0.8rem; color: #8a6d00; background: #fff7d6; border-radius: 8px; padding: 0.45rem 0.7rem; }
+
         .inst-sectie {
             background: var(--kleur-wit);
             border-radius: var(--rand);
@@ -183,6 +196,15 @@
 <div class="container">
     <div id="melding" style="max-width:680px;margin:0 auto 1rem"></div>
     <div class="inst-inhoud">
+
+        <!-- Betalingen ontvangen via Mollie (alleen coaches) -->
+        <div class="inst-sectie" id="mollie" style="display:none">
+            <div class="inst-sectie-titel">Betalingen ontvangen</div>
+            <p class="mollie-uitleg">Rijders betalen jouw facturen online via Mollie. Het geld komt rechtstreeks op je eigen Mollie-account, en Mollie maakt het over naar je bankrekening.</p>
+            <p class="mollie-uitleg">RaceCoachFinder rekent 2% servicekosten. De rijder betaalt die bovenop je factuurbedrag, en ze gaan automatisch naar RaceCoachFinder. De transactiekosten van Mollie zelf (bijvoorbeeld voor iDEAL) betaal je aan Mollie.</p>
+            <div id="mollie-status" class="mollie-status"><span>Laden…</span></div>
+            <div id="mollie-knoppen" class="mollie-knoppen"></div>
+        </div>
 
         <!-- Pushmeldingen op telefoon -->
         <div class="inst-sectie" id="sectie-push">
@@ -529,7 +551,87 @@ if (!heeftRol('Coach')) {
 } else {
     document.getElementById('sectie-reminder').style.display = '';
     document.getElementById('rij-marketing').style.display = '';
+    document.getElementById('mollie').style.display = '';
+    laadMollie();
 }
+
+// ── Betalingen ontvangen: eigen Mollie-account koppelen ──
+function mollieStatusHtml(icoon, titel, uitleg, org) {
+    return `<div class="mollie-icoon">${icoon}</div><div><strong>${titel}</strong>` +
+        (org ? `<span class="mollie-org">${escHtml(org)}</span>` : '') +
+        (uitleg ? `<span>${uitleg}</span>` : '') + '</div>';
+}
+function escHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+
+async function laadMollie(vernieuw) {
+    const vak = document.getElementById('mollie-status');
+    const knoppen = document.getElementById('mollie-knoppen');
+    try {
+        const s = await authVerzoek('/mollieconnect/status' + (vernieuw ? '?vernieuw=true' : ''));
+        if (!s) return;
+        const koppel = '<button type="button" class="btn btn-primair" onclick="startMollie(false)">Koppel je Mollie-account</button>';
+        const nieuw = '<button type="button" class="btn btn-licht" onclick="startMollie(true)">Nog geen Mollie? Maak een account aan</button>';
+        const ververs = '<button type="button" class="btn btn-licht" onclick="laadMollie(true)">Status vernieuwen</button>';
+        const los = '<a href="#" onclick="ontkoppelMollie();return false">Ontkoppelen</a>';
+        if (!s.ingesteld) {
+            vak.innerHTML = mollieStatusHtml('⏳', 'Nog niet beschikbaar', 'Online betalen wordt binnenkort aangezet. Dan kun je hier je Mollie-account koppelen.');
+            knoppen.innerHTML = '';
+        } else if (!s.gekoppeld) {
+            vak.innerHTML = mollieStatusHtml('⚪', 'Niet gekoppeld', 'Koppel je Mollie-account om facturen te kunnen sturen. Heb je nog geen Mollie-account? Dan maak je er tijdens het koppelen gratis een aan.');
+            knoppen.innerHTML = koppel + nieuw;
+        } else if (s.klaar) {
+            vak.innerHTML = mollieStatusHtml('✅', 'Gekoppeld', 'Rijders betalen je facturen rechtstreeks op dit Mollie-account.', s.organisatie);
+            knoppen.innerHTML = ververs + los;
+        } else if (s.status === 'Ingetrokken') {
+            vak.innerHTML = mollieStatusHtml('⚠️', 'Koppeling werkt niet meer', 'Mollie geeft geen toegang meer tot je account. Koppel je Mollie-account opnieuw.', s.organisatie);
+            knoppen.innerHTML = '<button type="button" class="btn btn-primair" onclick="startMollie(false)">Opnieuw koppelen</button>' + los;
+        } else {
+            vak.innerHTML = mollieStatusHtml('⏳', 'Gekoppeld, maar nog niet actief',
+                'Je Mollie-account kan nog geen betalingen ontvangen. Rond je aanmelding af in Mollie (bijvoorbeeld je bedrijfsgegevens en bankrekening). Daarna kun je facturen sturen.', s.organisatie);
+            knoppen.innerHTML = '<a class="btn btn-primair" href="https://my.mollie.com/dashboard" target="_blank" rel="noopener">Naar Mollie</a>' + ververs + los;
+        }
+        if (s.testmodus) vak.insertAdjacentHTML('afterend', document.getElementById('mollie-testmelding') ? '' :
+            '<div class="mollie-test" id="mollie-testmelding">Testmodus: betalingen zijn nog niet echt.</div>');
+    } catch (e) {
+        vak.innerHTML = mollieStatusHtml('⚠️', 'Status niet geladen', 'Kon de status van je Mollie-koppeling niet laden. Probeer het later opnieuw.');
+    }
+}
+
+async function startMollie(nieuwAccount) {
+    try {
+        let taal = 'nl';
+        try { taal = localStorage.getItem('kcf_taal') === 'en' ? 'en' : 'nl'; } catch (e) {}
+        const r = await authVerzoek('/mollieconnect/start', 'POST', { nieuwAccount, taal });
+        if (r && r.url) location.href = r.url;
+    } catch (e) {
+        document.getElementById('melding').innerHTML = `<div class="melding melding-fout">${escHtml(e.message)}</div>`;
+        window.scrollTo(0, 0);
+    }
+}
+
+async function ontkoppelMollie() {
+    const vraag = 'Mollie-account ontkoppelen? Rijders kunnen je facturen dan niet meer online betalen, en je kunt geen nieuwe facturen sturen tot je opnieuw koppelt.';
+    if (!confirm(window.I18N ? I18N.t(vraag) : vraag)) return;
+    try {
+        await authVerzoek('/mollieconnect/ontkoppel', 'POST');
+        laadMollie();
+    } catch (e) {
+        document.getElementById('melding').innerHTML = `<div class="melding melding-fout">${escHtml(e.message)}</div>`;
+    }
+}
+
+// Terug van Mollie: laat zien hoe het koppelen ging
+(function () {
+    const p = new URLSearchParams(location.search);
+    const r = p.get('mollie');
+    if (!r) return;
+    const melding = document.getElementById('melding');
+    if (r === 'gekoppeld') melding.innerHTML = '<div class="melding melding-succes">Je Mollie-account is gekoppeld.</div>';
+    else if (r === 'geannuleerd') melding.innerHTML = '<div class="melding melding-info">Koppelen met Mollie is geannuleerd.</div>';
+    else melding.innerHTML = `<div class="melding melding-fout">${escHtml(p.get('reden') || 'Koppelen met Mollie is niet gelukt.')}</div>`;
+    history.replaceState(null, '', 'instellingen.html#mollie');
+    setTimeout(() => document.getElementById('mollie').scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+})();
 
 function updateEmailAan() {
     const aan = document.getElementById('emailAan').checked;

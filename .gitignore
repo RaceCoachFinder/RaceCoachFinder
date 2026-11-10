@@ -16,3 +16,7 @@ Backend/appsettings.Production.json
 # System
 .DS_Store
 Thumbs.db
+
+# Versleutelingssleutels (lokaal)
+Backend/sleutels/
+sleutels/

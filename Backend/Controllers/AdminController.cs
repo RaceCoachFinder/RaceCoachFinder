@@ -64,10 +64,53 @@ public class AdminController : ControllerBase
     [HttpGet("gebruikers")]
     public async Task<IActionResult> GetGebruikers()
     {
+        var gekoppeld = await _context.MollieKoppelingen
+            .Select(k => new { k.GebruikerId, k.KanBetalingenOntvangen, k.OnboardingStatus })
+            .ToDictionaryAsync(k => k.GebruikerId);
         var gebruikers = await _userManager.Users
             .Select(u => new { u.Id, u.Naam, u.Email, u.Rol, u.MarketingToestemming, u.AangemaaktOp, u.AbonnementActief, u.AbonnementVerlooptOp, u.GratisVerlooptOp })
             .ToListAsync();
-        return Ok(gebruikers);
+        return Ok(gebruikers.Select(u => new
+        {
+            u.Id, u.Naam, u.Email, u.Rol, u.MarketingToestemming, u.AangemaaktOp, u.AbonnementActief, u.AbonnementVerlooptOp, u.GratisVerlooptOp,
+            // null = geen Mollie gekoppeld, "klaar" = kan betaald worden, anders de status bij Mollie
+            Mollie = gekoppeld.TryGetValue(u.Id, out var k)
+                ? (k.KanBetalingenOntvangen ? "klaar" : k.OnboardingStatus ?? "bezig")
+                : null
+        }));
+    }
+
+    // Servicekosten (2%) die via Mollie Connect zijn binnengekomen, per maand en per coach.
+    // Mollie vraagt dat je coaches hiervoor een factuur stuurt.
+    [HttpGet("servicekosten")]
+    public async Task<IActionResult> Servicekosten()
+    {
+        var boekingen = await _context.Boekingen
+            .Where(b => b.MollieModus == "koppeling" && b.Servicekosten != null && (b.Status == "Betaald" || b.Status == "Voldaan"))
+            .Select(b => new { b.CoachGebruikerId, b.AangemaaktOp, b.Bedrag, b.Servicekosten })
+            .ToListAsync();
+        var coachIds = boekingen.Select(b => b.CoachGebruikerId).Distinct().ToList();
+        var coaches = await _userManager.Users.Where(u => coachIds.Contains(u.Id))
+            .Select(u => new { u.Id, u.Naam, u.Email }).ToDictionaryAsync(u => u.Id);
+        var regels = boekingen
+            .GroupBy(b => new { Maand = b.AangemaaktOp.ToString("yyyy-MM"), b.CoachGebruikerId })
+            .Select(g => new
+            {
+                maand = g.Key.Maand,
+                coach = coaches.TryGetValue(g.Key.CoachGebruikerId, out var c) ? c.Naam : "(verwijderd)",
+                email = coaches.TryGetValue(g.Key.CoachGebruikerId, out var c2) ? c2.Email : null,
+                aantal = g.Count(),
+                omzetCoach = g.Sum(b => b.Bedrag),
+                servicekosten = g.Sum(b => b.Servicekosten ?? 0)
+            })
+            .OrderByDescending(r => r.maand).ThenBy(r => r.coach)
+            .ToList();
+        return Ok(new
+        {
+            ingesteld = MollieConnectService.IsIngesteld,
+            testmodus = MollieConnectService.Testmodus,
+            regels
+        });
     }
 
     [HttpDelete("gebruikers/{id}")]

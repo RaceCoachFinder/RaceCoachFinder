@@ -260,7 +260,14 @@
         }
         .tab-knop:hover { border-color: var(--kleur-primair); color: var(--kleur-donker); }
         .tab-knop.actief { background: var(--kleur-primair); border-color: var(--kleur-primair); color: var(--kleur-donker); }
-    </style>
+        .mollie-balk { display: flex; align-items: center; gap: 0.9rem; background: #fff8e1; border: 1px solid #f5d76e; border-radius: var(--rand); padding: 0.9rem 1.1rem; margin-bottom: 1.25rem; }
+    .mollie-balk > span { font-size: 1.4rem; }
+    .mollie-balk > div { flex: 1; min-width: 0; }
+    .mollie-balk strong { display: block; font-size: 0.95rem; }
+    .mollie-balk div span { display: block; font-size: 0.83rem; color: var(--kleur-subtekst); margin-top: 0.15rem; line-height: 1.5; }
+    .mollie-balk .btn { font-size: 0.85rem; white-space: nowrap; }
+    @media (max-width: 600px) { .mollie-balk { flex-wrap: wrap; } .mollie-balk .btn { width: 100%; text-align: center; } }
+</style>
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
     <meta name="theme-color" content="#111111">
@@ -293,6 +300,11 @@
 <div class="container" style="padding-top:2rem;padding-bottom:3rem">
     <div id="melding"></div>
     <div id="abonnement-balk" style="display:none"></div>
+    <div id="mollie-balk" class="mollie-balk" style="display:none">
+        <span>💳</span>
+        <div><strong>Koppel je Mollie-account</strong><span id="mollie-balk-tekst">Rijders betalen je facturen rechtstreeks via Mollie. Koppel je Mollie-account om facturen te kunnen sturen.</span></div>
+        <a href="instellingen.html#mollie" class="btn btn-primair">Koppelen</a>
+    </div>
 
     <!-- Tab navigatie -->
     <div class="tab-balk" id="tab-balk" style="display:none">
@@ -1292,6 +1304,21 @@ async function startAbonnement() {
 updateNav();
 laadDashboard();
 laadAbonnementStatus();
+laadMollieBalk();
+
+// Nog geen (werkend) Mollie-account gekoppeld? Dan kan de coach geen facturen sturen
+async function laadMollieBalk() {
+    try {
+        const s = await authVerzoek('/mollieconnect/status');
+        if (!s || !s.ingesteld || s.klaar) return;
+        if (s.gekoppeld) {
+            document.querySelector('#mollie-balk strong').textContent = 'Je Mollie-account is nog niet klaar';
+            document.getElementById('mollie-balk-tekst').textContent = s.melding || '';
+            document.querySelector('#mollie-balk a').textContent = 'Bekijken';
+        }
+        document.getElementById('mollie-balk').style.display = '';
+    } catch (e) { /* niet belangrijk genoeg om een fout te tonen */ }
+}
 </script>
 </body>
 </html>

@@ -38,7 +38,7 @@ public class BoekingController : ControllerBase
     // Coach stuurt betaalverzoek/factuur naar rijder
     [HttpPost]
     [Authorize(Roles = "Coach")]
-    public async Task<IActionResult> MaakBoeking([FromBody] BoekingVerzoek verzoek, [FromServices] FactuurService facturen)
+    public async Task<IActionResult> MaakBoeking([FromBody] BoekingVerzoek verzoek, [FromServices] FactuurService facturen, [FromServices] MollieConnectService connect)
     {
         var coachId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         var coach = await _userManager.FindByIdAsync(coachId!);
@@ -48,6 +48,10 @@ public class BoekingController : ControllerBase
         if (rijder.Id == coach.Id) return BadRequest("Je kunt geen factuur naar jezelf sturen.");
         if (string.IsNullOrWhiteSpace(verzoek.Omschrijving)) return BadRequest("Omschrijving is verplicht.");
         if (verzoek.Bedrag <= 0) return BadRequest("Bedrag moet groter zijn dan 0.");
+
+        // Rijders betalen rechtstreeks aan de coach: zonder gekoppeld Mollie-account kan dat niet
+        var koppeling = await connect.StatusVoorAsync(coach.Id);
+        if (koppeling != KoppelStatus.Klaar) return BadRequest(MollieConnectService.MeldingVoorCoach(koppeling));
 
         // Factuurnummer: zelf ingevuld (mag niet al gebruikt zijn) of het volgende doorlopende nummer
         var nummer = (verzoek.FactuurnummerTekst ?? "").Trim();
@@ -76,7 +80,7 @@ public class BoekingController : ControllerBase
 
     // Haal één boeking op (voor betaalscherm)
     [HttpGet("{id:int}")]
-    public async Task<IActionResult> GetBoeking(int id)
+    public async Task<IActionResult> GetBoeking(int id, [FromServices] MollieConnectService connect)
     {
         var mijnId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         var boeking = await _context.Boekingen.FindAsync(id);
@@ -94,7 +98,9 @@ public class BoekingController : ControllerBase
             boeking.BetalingsTermijn,
             boeking.AangemaaktOp,
             CoachNaam = coach?.Naam ?? "Coach",
-            CoachId = boeking.CoachGebruikerId
+            CoachId = boeking.CoachGebruikerId,
+            Servicekosten = MollieConnectService.Servicekosten(boeking.Bedrag),
+            KanOnlineBetalen = boeking.Status != "Openstaand" || await connect.StatusVoorAsync(boeking.CoachGebruikerId) == KoppelStatus.Klaar
         });
     }
 

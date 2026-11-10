@@ -162,7 +162,7 @@
                     </div>
                 </div>
 
-                <p class="fee-uitleg">De servicekosten dekken de platformkosten van RaceCoachFinder.</p>
+                <p class="fee-uitleg">Je betaalt rechtstreeks aan de coach, via Mollie. De servicekosten van 2% gaan naar RaceCoachFinder.</p>
 
                 <div class="fout-msg" id="fout-msg"></div>
 
@@ -202,7 +202,7 @@
                 if (!data) return;
 
                 huidigBedrag = data.bedrag;
-                const fee = Math.round(huidigBedrag * 0.02 * 100) / 100;
+                const fee = typeof data.servicekosten === 'number' ? data.servicekosten : Math.round(huidigBedrag * 0.02 * 100) / 100;
                 const totaal = Math.round((huidigBedrag + fee) * 100) / 100;
                 const vervaldatum = new Date(new Date(data.aangemaaktOp).getTime() + data.betalingsTermijn * 86400000);
 
@@ -220,6 +220,12 @@
                 if (data.status !== 'Openstaand') {
                     document.getElementById('btn-betalen').disabled = true;
                     document.getElementById('btn-betalen').textContent = `Factuur is al ${data.status.toLowerCase()}`;
+                } else if (data.kanOnlineBetalen === false) {
+                    // De coach heeft (nog) geen Mollie-account gekoppeld: online betalen kan dan niet
+                    document.getElementById('btn-betalen').disabled = true;
+                    const fout = document.getElementById('fout-msg');
+                    fout.textContent = 'Deze coach kan op dit moment nog geen online betalingen ontvangen. Neem contact op met je coach.';
+                    fout.style.display = 'block';
                 }
             } catch (e) {
                 document.getElementById('laden').textContent = 'Kon factuurgegevens niet laden: ' + e.message;
