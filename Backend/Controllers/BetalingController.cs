@@ -85,6 +85,21 @@ public class BetalingController : ControllerBase
             var klantClient = new CustomerClient(ApiKey);
             var betalingClient = new PaymentClient(ApiKey);
 
+            // Een klant uit de testmodus bestaat niet bij een live-sleutel (en andersom): dan een nieuwe aanmaken
+            if (!string.IsNullOrEmpty(gebruiker.MollieKlantId))
+            {
+                try
+                {
+                    var bestaand = await klantClient.GetCustomerAsync(gebruiker.MollieKlantId);
+                    if (bestaand.Mode != (ApiKey.StartsWith("live_") ? Mode.Live : Mode.Test))
+                        gebruiker.MollieKlantId = null;
+                }
+                catch (MollieApiException ex) when (ex.Details?.Status is 404 or 410 or 422)
+                {
+                    gebruiker.MollieKlantId = null;
+                }
+            }
+
             if (string.IsNullOrEmpty(gebruiker.MollieKlantId))
             {
                 var email = gebruiker.Email;
