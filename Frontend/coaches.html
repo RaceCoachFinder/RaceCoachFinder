@@ -299,6 +299,10 @@
                 <input type="checkbox" id="f-online" style="width:auto;accent-color:var(--kleur-primair)">
                 <label for="f-online" style="text-transform:none;font-size:0.88rem;font-weight:500;color:var(--kleur-tekst);margin:0;cursor:pointer">Alleen online coaching</label>
             </div>
+            <div class="filter-veld filter-vinkje" style="display:flex;align-items:center;gap:0.5rem;margin-top:0.25rem">
+                <input type="checkbox" id="f-geverifieerd" style="width:auto;accent-color:var(--kleur-primair)">
+                <label for="f-geverifieerd" style="text-transform:none;font-size:0.88rem;font-weight:500;color:var(--kleur-tekst);margin:0;cursor:pointer">✓ Alleen zakelijk geverifieerd</label>
+            </div>
             <div class="filter-veld filter-vinkje" id="f-favorieten-veld" style="display:none;align-items:center;gap:0.5rem;margin-top:0.25rem">
                 <input type="checkbox" id="f-favorieten" style="width:auto;accent-color:var(--kleur-primair)">
                 <label for="f-favorieten" style="text-transform:none;font-size:0.88rem;font-weight:500;color:var(--kleur-tekst);margin:0;cursor:pointer">★ Alleen favorieten</label>
@@ -416,6 +420,7 @@ function updateFilterBadge() {
         document.getElementById('f-ervaring').value !== '0' ? '1' : '',
         document.getElementById('f-maxprijs').value !== '0' ? '1' : '',
         document.getElementById('f-online').checked ? '1' : '',
+        document.getElementById('f-geverifieerd').checked ? '1' : '',
         document.getElementById('f-favorieten').checked ? '1' : '',
     ].filter(Boolean).length + (specsDropdown?.getGekozen().length || 0) + (kwalsDropdown?.getGekozen().length || 0);
 
@@ -452,6 +457,7 @@ function filterCoaches(bron, metLocatie) {
     const minErvaring = parseInt(document.getElementById('f-ervaring').value) || 0;
     const maxPrijs    = parseInt(document.getElementById('f-maxprijs').value) || 0;
     const alleenOnline     = document.getElementById('f-online').checked;
+    const alleenGeverifieerd = document.getElementById('f-geverifieerd').checked;
     const alleenFavorieten = document.getElementById('f-favorieten').checked;
     const gekozenSpecs = specsDropdown.getGekozen();
     const gekozenKwals = kwalsDropdown.getGekozen();
@@ -465,6 +471,7 @@ function filterCoaches(bron, metLocatie) {
         if (minErvaring > 0 && (c.jarenErvaring || 0) < minErvaring) return false;
         if (maxPrijs > 0 && minPrijs(c) > maxPrijs) return false;
         if (alleenOnline && !c.onlineCoaching) return false;
+        if (alleenGeverifieerd && !c.zakelijkGeverifieerd) return false;
         if (alleenFavorieten && !favorieten.has(c.id)) return false;
         if (gekozenSpecs.length > 0) {
             const coachSpecs = (c.discipline || '').split(',').map(s => s.trim());
@@ -540,6 +547,7 @@ function resetFilters() {
     document.getElementById('f-ervaring').value = '0';
     document.getElementById('f-maxprijs').value = '0';
     document.getElementById('f-online').checked = false;
+    document.getElementById('f-geverifieerd').checked = false;
     document.getElementById('f-favorieten').checked = false;
     document.getElementById('f-sortering').value = '';
     zoekCoaches();
@@ -608,6 +616,7 @@ function coachKaartHTML(c) {
         </div>
         <div class="coach-kaart-body">
             <div class="coach-badges">
+                ${c.zakelijkGeverifieerd ? `<span class="badge badge-geverifieerd" title="${escapeHtml(window.I18N ? I18N.t('Dit bedrijf is gecontroleerd door onze betaalpartner Mollie (KvK-inschrijving en identiteit). Je betaalt veilig via het platform.') : 'Dit bedrijf is gecontroleerd door onze betaalpartner Mollie (KvK-inschrijving en identiteit). Je betaalt veilig via het platform.')}">✓ Zakelijk geverifieerd</span>` : ''}
                 ${c.onlineCoaching ? `<span class="badge badge-groen">Online</span>` : ''}
                 ${c.jarenErvaring > 0 ? `<span class="badge badge-grijs">${c.jarenErvaring} jr. ervaring</span>` : ''}
             </div>
@@ -661,6 +670,7 @@ laadFavorieten().then(() => zoekCoaches());
     document.getElementById(id).addEventListener('change', renderCoaches);
 });
 document.getElementById('f-online').addEventListener('change', renderCoaches);
+document.getElementById('f-geverifieerd').addEventListener('change', renderCoaches);
 document.getElementById('f-favorieten').addEventListener('change', renderCoaches);
 </script>
 </body>

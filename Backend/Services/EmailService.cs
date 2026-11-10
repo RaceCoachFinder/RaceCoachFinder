@@ -219,7 +219,8 @@ public static class EmailTemplates
 
     public static string FactuurRijderOnderwerp(string nr, string coach, string taal = "nl") => T(taal, $"Factuur {nr} van {coach}", $"Invoice {nr} from {coach}");
 
-    public static string FactuurRijder(string rijderNaam, string coachNaam, string factuurnummer, string omschrijving, decimal bedrag, int termijn, string berichtenUrl, string taal = "nl")
+    public static string FactuurRijder(string rijderNaam, string coachNaam, string factuurnummer, string omschrijving, decimal bedrag, int termijn, string berichtenUrl, string taal = "nl",
+        string? iban = null, string? tenaamstelling = null, string? betaalLink = null)
     {
         var vervaldatum = Datum(DateTime.UtcNow.AddDays(termijn), taal);
         var inhoud =
@@ -232,9 +233,60 @@ public static class EmailTemplates
             "<tr><td style=\"color:#111;font-weight:600\">" + Esc(omschrijving) + "</td>" +
             "<td style=\"color:#111;font-weight:700;text-align:right\">" + Bedrag(bedrag, taal) + "</td></tr>" +
             "</table>" +
-            "<p style=\"color:#e65100;font-size:0.85rem;margin:0 0 24px\">" + T(taal, "Betalen vóór: ", "Pay before: ") + "<strong>" + vervaldatum + "</strong></p>" +
-            Knop(berichtenUrl, T(taal, "Betaal nu via RaceCoachFinder", "Pay now via RaceCoachFinder")) +
-            "<p style=\"color:#aaa;font-size:0.78rem;margin:24px 0 0\">" + T(taal, "Klik op de knop om veilig te betalen via onze website.", "Click the button to pay securely via our website.") + "</p>";
+            "<p style=\"color:#e65100;font-size:0.85rem;margin:0 0 24px\">" + T(taal, "Betalen vóór: ", "Pay before: ") + "<strong>" + vervaldatum + "</strong></p>";
+        if (!string.IsNullOrEmpty(iban))
+        {
+            // Coach zonder Mollie: de rijder maakt het bedrag zelf over
+            inhoud +=
+                "<div style=\"background:#f7f7f9;border-radius:8px;padding:14px 16px;margin:0 0 20px;color:#333;font-size:0.9rem;line-height:1.6\">" +
+                T(taal, "Maak het bedrag over naar:", "Please transfer the amount to:") + "<br>" +
+                "<strong>" + Esc(iban) + "</strong>" + (string.IsNullOrEmpty(tenaamstelling) ? "" : T(taal, " t.n.v. ", " in the name of ") + "<strong>" + Esc(tenaamstelling) + "</strong>") + "<br>" +
+                T(taal, "Onder vermelding van ", "Reference: ") + "<strong>" + Esc(factuurnummer) + "</strong></div>" +
+                (string.IsNullOrEmpty(betaalLink) ? "" : Knop(betaalLink, T(taal, "Betaal via betaalverzoek", "Pay via payment request")) + "<br>") +
+                "<p style=\"color:#555;font-size:0.85rem;margin:16px 0 0\">" + T(taal,
+                    "Heb je betaald? Klik dan in de chat bij de factuur op <strong>Ik heb betaald</strong>, dan krijgt je coach een seintje.",
+                    "Paid? Click <strong>I have paid</strong> next to the invoice in the chat, so your coach gets a notification.") + "</p>" +
+                "<p style=\"margin:16px 0 0\"><a href=\"" + berichtenUrl + "\" style=\"color:#1565c0\">" + T(taal, "Bekijk de factuur in je berichten", "View the invoice in your messages") + "</a></p>";
+        }
+        else
+        {
+            inhoud +=
+                Knop(berichtenUrl, T(taal, "Betaal nu via RaceCoachFinder", "Pay now via RaceCoachFinder")) +
+                "<p style=\"color:#aaa;font-size:0.78rem;margin:24px 0 0\">" + T(taal, "Klik op de knop om veilig te betalen via onze website.", "Click the button to pay securely via our website.") + "</p>";
+        }
+        return Omhulsel(inhoud, taal);
+    }
+
+    // Overmaken: rijder meldt dat hij betaald heeft (naar de coach)
+    public static string BetalingGemeldOnderwerp(string nr, string rijder, string taal = "nl") =>
+        T(taal, $"{rijder} heeft factuur {nr} betaald", $"{rijder} has paid invoice {nr}");
+
+    public static string BetalingGemeld(string coachNaam, string rijderNaam, string factuurnummer, decimal bedrag, string berichtenUrl, string taal = "nl")
+    {
+        var inhoud =
+            "<h2 style=\"margin:0 0 8px;color:#111111;font-size:1.2rem\">" + T(taal, "Betaling gemeld 💶", "Payment reported 💶") + "</h2>" +
+            "<p style=\"color:#555;margin:0 0 16px\">" + T(taal, "Hoi ", "Hi ") + Esc(Voornaam(coachNaam)) + ", <strong>" + Esc(rijderNaam) + "</strong> " +
+            T(taal, "geeft aan dat het bedrag voor factuur <strong>" + Esc(factuurnummer) + "</strong> (" + Bedrag(bedrag, taal) + ") is overgemaakt.",
+                    "says they have transferred the amount for invoice <strong>" + Esc(factuurnummer) + "</strong> (" + Bedrag(bedrag, taal) + ").") + "</p>" +
+            "<p style=\"color:#555;margin:0 0 20px\">" + T(taal,
+                "Controleer of het geld op je rekening staat en klik dan in de chat op <strong>Ontvangen</strong>.",
+                "Check that the money is in your account, then click <strong>Received</strong> in the chat.") + "</p>" +
+            Knop(berichtenUrl, T(taal, "Naar de factuur", "Go to the invoice"));
+        return Omhulsel(inhoud, taal);
+    }
+
+    // Overmaken: coach bevestigt dat het geld binnen is (naar de rijder)
+    public static string BetalingOntvangenOnderwerp(string nr, string coach, string taal = "nl") =>
+        T(taal, $"{coach} heeft je betaling ontvangen ({nr})", $"{coach} has received your payment ({nr})");
+
+    public static string BetalingOntvangen(string rijderNaam, string coachNaam, string factuurnummer, decimal bedrag, string berichtenUrl, string taal = "nl")
+    {
+        var inhoud =
+            "<h2 style=\"margin:0 0 8px;color:#111111;font-size:1.2rem\">" + T(taal, "Betaling ontvangen ✅", "Payment received ✅") + "</h2>" +
+            "<p style=\"color:#555;margin:0 0 16px\">" + T(taal, "Hoi ", "Hi ") + Esc(Voornaam(rijderNaam)) + ", <strong>" + Esc(coachNaam) + "</strong> " +
+            T(taal, "heeft je betaling voor factuur <strong>" + Esc(factuurnummer) + "</strong> (" + Bedrag(bedrag, taal) + ") ontvangen. Bedankt!",
+                    "has received your payment for invoice <strong>" + Esc(factuurnummer) + "</strong> (" + Bedrag(bedrag, taal) + "). Thank you!") + "</p>" +
+            Knop(berichtenUrl, T(taal, "Naar je berichten", "Go to your messages"));
         return Omhulsel(inhoud, taal);
     }
 

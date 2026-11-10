@@ -49,9 +49,11 @@ public class BoekingController : ControllerBase
         if (string.IsNullOrWhiteSpace(verzoek.Omschrijving)) return BadRequest("Omschrijving is verplicht.");
         if (verzoek.Bedrag <= 0) return BadRequest("Bedrag moet groter zijn dan 0.");
 
-        // Rijders betalen rechtstreeks aan de coach: zonder gekoppeld Mollie-account kan dat niet
-        var koppeling = await connect.StatusVoorAsync(coach.Id);
-        if (koppeling != KoppelStatus.Klaar) return BadRequest(MollieConnectService.MeldingVoorCoach(koppeling));
+        // Hoe betaalt de rijder? Online via het eigen Mollie-account van de coach, of (zonder Mollie) via overmaken
+        var (betaalKeuze, geenBetaalWijze) = await connect.BetaalKeuzeAsync(coach.Id);
+        if (betaalKeuze == null) return BadRequest(geenBetaalWijze);
+        var betaalLink = FactuurService.ControleerBetaalLink(verzoek.BetaalLink);
+        if (betaalLink == "") return BadRequest("De betaalverzoek-link klopt niet. Plak de volledige link (die begint met https://).");
 
         // Factuurnummer: zelf ingevuld (mag niet al gebruikt zijn) of het volgende doorlopende nummer
         var nummer = (verzoek.FactuurnummerTekst ?? "").Trim();
@@ -61,7 +63,7 @@ public class BoekingController : ControllerBase
             return BadRequest($"Factuurnummer {nummer} heb je al gebruikt. Elke factuur moet een eigen nummer hebben.");
 
         var (boeking, emailFout) = await facturen.MaakEnVerstuurAsync(coach, rijder, verzoek.Omschrijving, verzoek.Bedrag,
-            nummer, verzoek.BetalingsTermijn, verzoek.FactuurJson);
+            nummer, verzoek.BetalingsTermijn, verzoek.FactuurJson, betaalKeuze, betaalLink);
 
         return Ok(new
         {
@@ -74,6 +76,7 @@ public class BoekingController : ControllerBase
             boeking.AangemaaktOp,
             boeking.FactuurnummerTekst,
             boeking.BetalingsTermijn,
+            boeking.BetaalWijze,
             emailFout
         });
     }
@@ -88,6 +91,7 @@ public class BoekingController : ControllerBase
         if (boeking.CoachGebruikerId != mijnId && boeking.RijderGebruikerId != mijnId) return Forbid();
 
         var coach = await _userManager.FindByIdAsync(boeking.CoachGebruikerId);
+        var overmaken = boeking.BetaalWijze == BetaalKeuze.Overmaken;
         return Ok(new
         {
             boeking.Id,
@@ -99,8 +103,14 @@ public class BoekingController : ControllerBase
             boeking.AangemaaktOp,
             CoachNaam = coach?.Naam ?? "Coach",
             CoachId = boeking.CoachGebruikerId,
-            Servicekosten = MollieConnectService.Servicekosten(boeking.Bedrag),
-            KanOnlineBetalen = boeking.Status != "Openstaand" || await connect.StatusVoorAsync(boeking.CoachGebruikerId) == KoppelStatus.Klaar
+            BetaalWijze = overmaken ? BetaalKeuze.Overmaken : BetaalKeuze.Online,
+            Servicekosten = overmaken ? 0 : MollieConnectService.Servicekosten(boeking.Bedrag),
+            KanOnlineBetalen = !overmaken && (boeking.Status != "Openstaand" || await connect.StatusVoorAsync(boeking.CoachGebruikerId) == KoppelStatus.Klaar),
+            Iban = overmaken ? IbanHelper.Opmaak(boeking.Iban) : null,
+            boeking.IbanTenaamstelling,
+            boeking.BetaalLink,
+            boeking.RijderMeldtBetaaldOp,
+            ZakelijkGeverifieerd = (await connect.ZakelijkGeverifieerdAsync(new[] { boeking.CoachGebruikerId })).Count > 0
         });
     }
 
@@ -224,6 +234,94 @@ public class BoekingController : ControllerBase
         return Ok(resultaat);
     }
 
+    // Overmaken: rijder geeft aan dat hij betaald heeft. De factuur blijft open tot de coach "Ontvangen" klikt.
+    [HttpPost("{id:int}/betaald-gemeld")]
+    public async Task<IActionResult> BetaaldGemeld(int id)
+    {
+        var mijnId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var boeking = await _context.Boekingen.FindAsync(id);
+        if (boeking == null) return NotFound();
+        if (boeking.RijderGebruikerId != mijnId) return Forbid();
+        if (boeking.BetaalWijze != BetaalKeuze.Overmaken) return BadRequest("Deze factuur betaal je online.");
+        if (boeking.Status != "Openstaand") return BadRequest("Deze factuur staat niet meer open.");
+        if (boeking.RijderMeldtBetaaldOp != null) return Ok(new { boeking.RijderMeldtBetaaldOp });
+
+        boeking.RijderMeldtBetaaldOp = DateTime.UtcNow;
+        var nummer = Factuurnummer(boeking);
+        _context.Berichten.Add(new Bericht
+        {
+            VanGebruikerId = boeking.RijderGebruikerId,
+            NaarGebruikerId = boeking.CoachGebruikerId,
+            Tekst = $"💶 Ik heb factuur {nummer} ({EuroNl(boeking.Bedrag)}) overgemaakt.",
+            AangemaaktOp = DateTime.UtcNow
+        });
+        await _context.SaveChangesAsync();
+
+        // Mail naar de coach (instelling 'Betaalverzoek updates')
+        try
+        {
+            var coach = await _userManager.FindByIdAsync(boeking.CoachGebruikerId);
+            var rijder = await _userManager.FindByIdAsync(boeking.RijderGebruikerId);
+            var inst = await _context.GebruikerInstellingen.FirstOrDefaultAsync(i => i.GebruikerId == boeking.CoachGebruikerId);
+            if (coach?.Email?.Contains('@') == true && (inst?.EmailAan ?? true) && (inst?.EmailBijBetaalUpdate ?? true))
+            {
+                var taal = inst?.EmailTaal == "en" ? "en" : "nl";
+                await _email.VerstuurAsync(coach.Email, coach.Naam, EmailTemplates.BetalingGemeldOnderwerp(nummer, rijder?.Naam ?? "Rijder", taal),
+                    EmailTemplates.BetalingGemeld(coach.Naam, rijder?.Naam ?? "Rijder", nummer, boeking.Bedrag,
+                        $"{FrontendUrl}/berichten.html?partner={Uri.EscapeDataString(boeking.RijderGebruikerId)}", taal));
+            }
+        }
+        catch (Exception ex) { Console.Error.WriteLine("Mail betaling gemeld mislukt: " + ex.Message); }
+
+        return Ok(new { boeking.RijderMeldtBetaaldOp });
+    }
+
+    // Overmaken: coach bevestigt dat het geld op zijn rekening staat → factuur betaald
+    [HttpPost("{id:int}/ontvangen")]
+    [Authorize(Roles = "Coach")]
+    public async Task<IActionResult> Ontvangen(int id)
+    {
+        var mijnId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var boeking = await _context.Boekingen.FindAsync(id);
+        if (boeking == null) return NotFound();
+        if (boeking.CoachGebruikerId != mijnId) return Forbid();
+        if (boeking.BetaalWijze != BetaalKeuze.Overmaken) return BadRequest("Deze factuur wordt online betaald; dat wordt automatisch bijgewerkt.");
+        if (boeking.Status == "Betaald" || boeking.Status == "Voldaan") return Ok(boeking);
+        if (boeking.Status != "Openstaand") return BadRequest("Deze factuur staat niet meer open.");
+
+        boeking.Status = "Betaald";
+        var nummer = Factuurnummer(boeking);
+        _context.Berichten.Add(new Bericht
+        {
+            VanGebruikerId = boeking.CoachGebruikerId,
+            NaarGebruikerId = boeking.RijderGebruikerId,
+            Tekst = $"✅ Betaling voor factuur {nummer} ontvangen. Bedankt!",
+            AangemaaktOp = DateTime.UtcNow
+        });
+        await _context.SaveChangesAsync();
+
+        // Mail naar de rijder
+        try
+        {
+            var coach = await _userManager.FindByIdAsync(boeking.CoachGebruikerId);
+            var rijder = await _userManager.FindByIdAsync(boeking.RijderGebruikerId);
+            var inst = await _context.GebruikerInstellingen.FirstOrDefaultAsync(i => i.GebruikerId == boeking.RijderGebruikerId);
+            if (rijder?.Email?.Contains('@') == true && (inst?.EmailAan ?? true))
+            {
+                var taal = inst?.EmailTaal == "en" ? "en" : "nl";
+                await _email.VerstuurAsync(rijder.Email, rijder.Naam, EmailTemplates.BetalingOntvangenOnderwerp(nummer, coach?.Naam ?? "Coach", taal),
+                    EmailTemplates.BetalingOntvangen(rijder.Naam, coach?.Naam ?? "Coach", nummer, boeking.Bedrag,
+                        $"{FrontendUrl}/berichten.html?partner={Uri.EscapeDataString(boeking.CoachGebruikerId)}", taal));
+            }
+        }
+        catch (Exception ex) { Console.Error.WriteLine("Mail betaling ontvangen mislukt: " + ex.Message); }
+
+        return Ok(boeking);
+    }
+
+    private static string Factuurnummer(Boeking b) => b.FactuurnummerTekst ?? $"F-{b.AangemaaktOp:yyyy}-{b.Id:D4}";
+    private static string EuroNl(decimal bedrag) => "€ " + bedrag.ToString("N2", new System.Globalization.CultureInfo("nl-NL"));
+
     // Annuleer boeking (coach of rijder)
     [HttpPut("{id}/annuleer")]
     public async Task<IActionResult> Annuleer(int id)
@@ -247,5 +345,6 @@ public record BoekingVerzoek(
     decimal Bedrag,
     string? FactuurnummerTekst,
     int BetalingsTermijn,
-    string? FactuurJson
+    string? FactuurJson,
+    string? BetaalLink = null
 );

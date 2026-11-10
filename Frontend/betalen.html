@@ -67,6 +67,13 @@
             margin-top: 0.5rem;
             padding-top: 0.75rem;
         }
+        .overmaak-blok { background: #f7f7f9; border-radius: 12px; padding: 1rem 1.1rem; margin: 0.5rem 0 1rem; }
+        .overmaak-titel { font-weight: 700; margin-bottom: 0.6rem; }
+        .overmaak-rij { display: flex; justify-content: space-between; gap: 1rem; font-size: 0.9rem; padding: 0.25rem 0; flex-wrap: wrap; }
+        .overmaak-rij span { color: var(--kleur-subtekst); }
+        .overmaak-rij strong { text-align: right; word-break: break-word; }
+        .btn-gemeld { color: #333 !important; border-color: #ccc !important; margin-top: 0.6rem; }
+        .zakelijk-badge { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.75rem; font-weight: 700; color: #1b5e20; background: #e8f5e9; border-radius: 20px; padding: 0.15rem 0.6rem; margin-left: 0.4rem; vertical-align: middle; cursor: help; }
         .bedrag-rij.fee {
             color: var(--kleur-tekst);
             font-size: 0.85rem;
@@ -164,6 +171,17 @@
 
                 <p class="fee-uitleg">Je betaalt rechtstreeks aan de coach, via Mollie. De servicekosten van 2% gaan naar RaceCoachFinder.</p>
 
+                <!-- Coach zonder Mollie: zelf overmaken -->
+                <div id="overmaak-blok" class="overmaak-blok" style="display:none">
+                    <div class="overmaak-titel">Maak het bedrag over naar</div>
+                    <div class="overmaak-rij"><span>IBAN</span><strong id="om-iban"></strong></div>
+                    <div class="overmaak-rij"><span>Ten name van</span><strong id="om-naam"></strong></div>
+                    <div class="overmaak-rij"><span>Omschrijving</span><strong id="om-nummer"></strong></div>
+                    <a id="om-link" class="btn btn-primair btn-betaal" href="#" target="_blank" rel="noopener noreferrer" style="display:none;text-decoration:none;text-align:center;margin-top:1rem">Betaal via betaalverzoek</a>
+                    <button class="btn btn-secundair btn-betaal btn-gemeld" id="btn-gemeld" onclick="meldBetaald()">Ik heb betaald</button>
+                    <p class="fee-uitleg" id="om-uitleg">Klik op "Ik heb betaald" als je het bedrag hebt overgemaakt. De coach controleert het en zet de factuur op betaald.</p>
+                </div>
+
                 <div class="fout-msg" id="fout-msg"></div>
 
                 <button class="btn btn-primair btn-betaal" id="btn-betalen" onclick="startBetaling()">
@@ -207,6 +225,13 @@
                 const vervaldatum = new Date(new Date(data.aangemaaktOp).getTime() + data.betalingsTermijn * 86400000);
 
                 document.getElementById('subtitel').textContent = `Factuur van ${data.coachNaam}`;
+                if (data.zakelijkGeverifieerd) {
+                    const badge = document.createElement('span');
+                    badge.className = 'zakelijk-badge';
+                    badge.title = vertaal('Dit bedrijf is gecontroleerd door onze betaalpartner Mollie (KvK-inschrijving en identiteit). Je betaalt veilig via het platform.');
+                    badge.textContent = '✓ Zakelijk geverifieerd';
+                    document.getElementById('subtitel').appendChild(badge);
+                }
                 document.getElementById('factuurnummer').textContent = data.factuurnummerTekst || `F-${data.id}`;
                 document.getElementById('omschrijving').textContent = data.omschrijving;
                 document.getElementById('vervaldatum').textContent = vervaldatum.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -217,7 +242,29 @@
                 document.getElementById('laden').style.display = 'none';
                 document.getElementById('inhoud').style.display = 'block';
 
-                if (data.status !== 'Openstaand') {
+                if (data.betaalWijze === 'overmaken') {
+                    // Geen servicekosten en geen Mollie: de rijder maakt zelf over
+                    document.querySelector('.bedrag-rij.fee').style.display = 'none';
+                    document.getElementById('bedrag-totaal').textContent = fmt(huidigBedrag);
+                    document.querySelector('.fee-uitleg').style.display = 'none';
+                    document.querySelector('.mollie-info').style.display = 'none';
+                    if (data.status === 'Openstaand') {
+                        document.getElementById('btn-betalen').style.display = 'none';
+                        document.getElementById('overmaak-blok').style.display = '';
+                        document.getElementById('om-iban').textContent = data.iban || '';
+                        document.getElementById('om-naam').textContent = data.ibanTenaamstelling || '';
+                        document.getElementById('om-nummer').textContent = data.factuurnummerTekst || `F-${data.id}`;
+                        if (data.betaalLink) {
+                            const link = document.getElementById('om-link');
+                            link.href = data.betaalLink;
+                            link.style.display = 'block';
+                        }
+                        if (data.rijderMeldtBetaaldOp) toonGemeld();
+                    } else {
+                        document.getElementById('btn-betalen').disabled = true;
+                        document.getElementById('btn-betalen').textContent = `Factuur is al ${data.status.toLowerCase()}`;
+                    }
+                } else if (data.status !== 'Openstaand') {
                     document.getElementById('btn-betalen').disabled = true;
                     document.getElementById('btn-betalen').textContent = `Factuur is al ${data.status.toLowerCase()}`;
                 } else if (data.kanOnlineBetalen === false) {
@@ -229,6 +276,27 @@
                 }
             } catch (e) {
                 document.getElementById('laden').textContent = 'Kon factuurgegevens niet laden: ' + e.message;
+            }
+        }
+
+        function vertaal(t) { return window.I18N ? I18N.t(t) : t; }
+
+        function toonGemeld() {
+            const knop = document.getElementById('btn-gemeld');
+            knop.disabled = true;
+            knop.textContent = 'Gemeld als betaald, wacht op de coach';
+            document.getElementById('om-uitleg').textContent = 'Je coach heeft een seintje gekregen en zet de factuur op betaald zodra het geld binnen is.';
+        }
+
+        async function meldBetaald() {
+            if (!confirm(vertaal('Heb je het bedrag overgemaakt? Je coach krijgt dan een seintje om het te controleren.'))) return;
+            try {
+                await authVerzoek(`/boeking/${boekingId}/betaald-gemeld`, 'POST');
+                toonGemeld();
+            } catch (e) {
+                const fout = document.getElementById('fout-msg');
+                fout.textContent = e.message;
+                fout.style.display = 'block';
             }
         }
 

@@ -55,7 +55,10 @@ public static class PdfService
         string rijderNaam,
         string rijderEmail,
         List<FactuurRegel> regels,
-        string? notities)
+        string? notities,
+        string? iban = null,
+        string? ibanTenaamstelling = null,
+        string? betaalLink = null)
     {
         QuestPDF.Settings.License = LicenseType.Community;
 
@@ -237,13 +240,44 @@ public static class PdfService
                         TotaalRij("BTW", Eur(btwBedrag));
                         TotaalRij("TOTAALBEDRAG", Eur(totaal), highlight: true);
                     });
+
+                    // ── Betaalinformatie ─────────────────────────────────
+                    col.Item().PaddingTop(20).Background(LichtGrijs).Padding(10).Column(b =>
+                    {
+                        b.Item().Text("Betaalinformatie").Bold().FontSize(10);
+                        if (!string.IsNullOrEmpty(iban))
+                        {
+                            b.Item().PaddingTop(4).Text($"Graag het totaalbedrag vóór {vervaldatum:dd-MM-yyyy} overmaken naar:").FontColor(Grijs);
+                            b.Item().PaddingTop(2).Text(t =>
+                            {
+                                t.Span("IBAN: ").FontColor(Grijs);
+                                t.Span(iban).Bold();
+                                if (!string.IsNullOrEmpty(ibanTenaamstelling))
+                                {
+                                    t.Span("   t.n.v. ").FontColor(Grijs);
+                                    t.Span(ibanTenaamstelling).Bold();
+                                }
+                            });
+                            b.Item().Text($"Onder vermelding van factuurnummer {factuurnummer}.").FontColor(Grijs);
+                            if (!string.IsNullOrEmpty(betaalLink))
+                                b.Item().PaddingTop(4).Text(t =>
+                                {
+                                    t.Span("Of betaal via dit betaalverzoek: ").FontColor(Grijs);
+                                    t.Hyperlink(betaalLink, betaalLink).FontColor("#1565c0").Underline();
+                                });
+                        }
+                        else
+                        {
+                            b.Item().PaddingTop(4).Text("Betaal deze factuur online via RaceCoachFinder (iDEAL, creditcard en meer). Je vindt de factuur in je berichten op racecoachfinder.nl.").FontColor(Grijs);
+                        }
+                    });
                 });
 
                 // Footer
                 page.Footer().AlignCenter().PaddingTop(8)
                     .Text(t =>
                     {
-                        t.Span("Betaling verloopt via ").FontColor(Grijs).FontSize(8);
+                        t.Span(string.IsNullOrEmpty(iban) ? "Betaling verloopt via " : "Factuur verstuurd via ").FontColor(Grijs).FontSize(8);
                         t.Span("RaceCoachFinder").Bold().FontColor(Geel).FontSize(8);
                         t.Span(" — racecoachfinder.nl").FontColor(Grijs).FontSize(8);
                     });

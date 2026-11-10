@@ -35,7 +35,13 @@ public class Coach
     public string? KvkNummer { get; set; }
     public string? BtwNummer { get; set; }
 
+    // Betalen via overmaken (voor coaches zonder Mollie): rekeningnummer op facturen
+    public string? Iban { get; set; }
+    public string? IbanTenaamstelling { get; set; }
+
     [NotMapped] public double GemiddeldeScore { get; set; }
     [NotMapped] public int AantalReviews { get; set; }
     [NotMapped] public double GemiddeldeReactietijdUren { get; set; } = -1;
+    // Gekoppeld Mollie-account dat betalingen kan ontvangen (KvK en identiteit gecontroleerd door Mollie)
+    [NotMapped] public bool ZakelijkGeverifieerd { get; set; }
 }

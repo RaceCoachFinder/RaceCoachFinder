@@ -31,7 +31,8 @@ public class CoachController : ControllerBase
     // Publiek: alleen gepubliceerde coaches (met gemiddelde score)
     [HttpGet]
     public async Task<IActionResult> GetCoaches(
-        string? naam, string? locatie, string? discipline, string? specialisatie, bool? onlineCoaching)
+        string? naam, string? locatie, string? discipline, string? specialisatie, bool? onlineCoaching,
+        bool? geverifieerd, [FromServices] MollieConnectService connect)
     {
         var query = _context.Coaches.Where(c => c.IsGepubliceerd
             && !_context.GebruikerInstellingen.Any(i => i.GebruikerId == c.GebruikerId && !i.ProfielOpenbaar)).AsQueryable();
@@ -48,6 +49,10 @@ public class CoachController : ControllerBase
             query = query.Where(c => c.OnlineCoaching == onlineCoaching.Value);
 
         var coaches = await query.AsNoTracking().OrderBy(c => c.Naam).ToListAsync();
+        // "Zakelijk geverifieerd": werkend Mollie-account (geen voorrang in de volgorde, wel een filter)
+        var geverifieerdeIds = await connect.ZakelijkGeverifieerdAsync(coaches.Select(c => c.GebruikerId));
+        coaches.ForEach(c => c.ZakelijkGeverifieerd = c.GebruikerId != null && geverifieerdeIds.Contains(c.GebruikerId));
+        if (geverifieerd == true) coaches = coaches.Where(c => c.ZakelijkGeverifieerd).ToList();
         await VoegRatingsToe(coaches);
         coaches.ForEach(VerbergPriveGegevens);
         return Ok(coaches);
@@ -55,7 +60,7 @@ public class CoachController : ControllerBase
 
     // Publiek: één coach bekijken + weergave tellen
     [HttpGet("{id:int}")]
-    public async Task<IActionResult> GetCoach(int id)
+    public async Task<IActionResult> GetCoach(int id, [FromServices] MollieConnectService connect)
     {
         var coach = await _context.Coaches.FindAsync(id);
         if (coach == null) return NotFound();
@@ -72,6 +77,7 @@ public class CoachController : ControllerBase
         }
         await VoegRatingsToe([coach]);
         coach.GemiddeldeReactietijdUren = await BerekenReactietijd(coach.GebruikerId);
+        coach.ZakelijkGeverifieerd = (await connect.ZakelijkGeverifieerdAsync(new[] { coach.GebruikerId })).Count > 0;
         // Factuurgegevens en e-mail alleen voor de coach zelf (en de admin)
         if (coach.GebruikerId != User.FindFirstValue(ClaimTypes.NameIdentifier) && !User.IsInRole("Admin"))
         {
@@ -92,6 +98,8 @@ public class CoachController : ControllerBase
         c.FactuurTelefoon = null;
         c.KvkNummer = null;
         c.BtwNummer = null;
+        c.Iban = null;
+        c.IbanTenaamstelling = null;
     }
 
     private async Task<double> BerekenReactietijd(string? coachId)
@@ -205,6 +213,37 @@ public class CoachController : ControllerBase
 
         await _context.SaveChangesAsync();
         return Ok(bestaand);
+    }
+
+    // Coach: rekeningnummer voor betalen via overmaken (zolang er geen werkend Mollie-account is)
+    public record OvermakenVerzoek(string? Iban, string? Tenaamstelling);
+
+    [HttpPut("mijn/overmaken")]
+    [Authorize(Roles = "Coach")]
+    public async Task<IActionResult> PutOvermaken([FromBody] OvermakenVerzoek verzoek)
+    {
+        var gebruikerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var coach = await _context.Coaches.FirstOrDefaultAsync(c => c.GebruikerId == gebruikerId);
+        if (coach == null) return NotFound("Maak eerst je coachprofiel aan.");
+
+        var leeg = string.IsNullOrWhiteSpace(verzoek.Iban) && string.IsNullOrWhiteSpace(verzoek.Tenaamstelling);
+        if (leeg)
+        {
+            coach.Iban = null;
+            coach.IbanTenaamstelling = null;
+        }
+        else
+        {
+            var iban = IbanHelper.Normaliseer(verzoek.Iban);
+            if (iban == null) return BadRequest("Dit rekeningnummer (IBAN) klopt niet. Controleer het even.");
+            var naam = (verzoek.Tenaamstelling ?? "").Trim();
+            if (naam.Length < 2) return BadRequest("Vul de naam in waarop de rekening staat.");
+            if (naam.Length > 100) return BadRequest("De tenaamstelling is te lang.");
+            coach.Iban = iban;
+            coach.IbanTenaamstelling = naam;
+        }
+        await _context.SaveChangesAsync();
+        return Ok(new { iban = IbanHelper.Opmaak(coach.Iban), tenaamstelling = coach.IbanTenaamstelling });
     }
 
     // Coach: publiceren / depubliceren

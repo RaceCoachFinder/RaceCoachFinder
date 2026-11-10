@@ -67,6 +67,8 @@ public class AdminController : ControllerBase
         var gekoppeld = await _context.MollieKoppelingen
             .Select(k => new { k.GebruikerId, k.KanBetalingenOntvangen, k.OnboardingStatus })
             .ToDictionaryAsync(k => k.GebruikerId);
+        var metIban = (await _context.Coaches.Where(c => c.Iban != null && c.GebruikerId != null)
+            .Select(c => c.GebruikerId!).ToListAsync()).ToHashSet();
         var gebruikers = await _userManager.Users
             .Select(u => new { u.Id, u.Naam, u.Email, u.Rol, u.MarketingToestemming, u.AangemaaktOp, u.AbonnementActief, u.AbonnementVerlooptOp, u.GratisVerlooptOp })
             .ToListAsync();
@@ -76,7 +78,9 @@ public class AdminController : ControllerBase
             // null = geen Mollie gekoppeld, "klaar" = kan betaald worden, anders de status bij Mollie
             Mollie = gekoppeld.TryGetValue(u.Id, out var k)
                 ? (k.KanBetalingenOntvangen ? "klaar" : k.OnboardingStatus ?? "bezig")
-                : null
+                : null,
+            // Rekeningnummer ingevuld voor betalen via overmaken
+            Overmaken = metIban.Contains(u.Id)
         }));
     }
 

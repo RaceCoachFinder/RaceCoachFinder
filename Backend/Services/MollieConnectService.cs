@@ -194,6 +194,37 @@ public class MollieConnectService
         _ => ""
     };
 
+    // Hoe wordt deze coach betaald? Werkend Mollie-account → online; anders via overmaken, als er een rekeningnummer is.
+    // Overmaken kan dus alleen zolang een coach (nog) geen werkend Mollie-account heeft.
+    public async Task<(BetaalKeuze? keuze, string? fout)> BetaalKeuzeAsync(string coachId)
+    {
+        var status = await StatusVoorAsync(coachId);
+        if (status == KoppelStatus.Klaar) return (new BetaalKeuze(BetaalKeuze.Online, null, null), null);
+        var coach = await _context.Coaches.AsNoTracking().FirstOrDefaultAsync(c => c.GebruikerId == coachId);
+        if (!string.IsNullOrEmpty(coach?.Iban) && !string.IsNullOrWhiteSpace(coach.IbanTenaamstelling))
+            return (new BetaalKeuze(BetaalKeuze.Overmaken, coach.Iban, coach.IbanTenaamstelling), null);
+        return (null, MeldingGeenBetaalWijze(status));
+    }
+
+    public static string MeldingGeenBetaalWijze(KoppelStatus s) => s switch
+    {
+        KoppelStatus.NietIngesteld => "Vul eerst je rekeningnummer in (Instellingen → Betalingen ontvangen), zodat rijders je kunnen betalen.",
+        KoppelStatus.Ingetrokken => "De koppeling met je Mollie-account werkt niet meer. Koppel Mollie opnieuw of vul je rekeningnummer in (Instellingen → Betalingen ontvangen).",
+        KoppelStatus.NietGeactiveerd => "Je Mollie-account kan nog geen betalingen ontvangen. Rond je aanmelding bij Mollie af, of vul voorlopig je rekeningnummer in (Instellingen → Betalingen ontvangen).",
+        _ => "Kies eerst hoe rijders je betalen (Instellingen → Betalingen ontvangen): koppel je Mollie-account of vul je rekeningnummer in."
+    };
+
+    // Coaches met een Mollie-account dat betalingen kan ontvangen: "Zakelijk geverifieerd"
+    public async Task<HashSet<string>> ZakelijkGeverifieerdAsync(IEnumerable<string?> coachIds)
+    {
+        if (!IsIngesteld) return new HashSet<string>();
+        var ids = coachIds.Where(i => !string.IsNullOrEmpty(i)).Distinct().ToList();
+        var lijst = await _context.MollieKoppelingen
+            .Where(k => ids.Contains(k.GebruikerId) && k.KanBetalingenOntvangen && k.ProfielId != null)
+            .Select(k => k.GebruikerId).ToListAsync();
+        return lijst.ToHashSet();
+    }
+
     public static string MeldingVoorRijder(KoppelStatus s) => s == KoppelStatus.NietIngesteld
         ? "Online betalen is op dit moment niet beschikbaar. Probeer het later opnieuw."
         : "Deze coach kan op dit moment nog geen online betalingen ontvangen. Neem contact op met je coach.";

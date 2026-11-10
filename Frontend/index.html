@@ -385,6 +385,7 @@ function coachKaartHTML(c) {
         </div>
         <div class="coach-kaart-body">
             <div class="coach-badges">
+                ${c.zakelijkGeverifieerd ? `<span class="badge badge-geverifieerd" title="${escapeHtml(window.I18N ? I18N.t('Dit bedrijf is gecontroleerd door onze betaalpartner Mollie (KvK-inschrijving en identiteit). Je betaalt veilig via het platform.') : 'Dit bedrijf is gecontroleerd door onze betaalpartner Mollie (KvK-inschrijving en identiteit). Je betaalt veilig via het platform.')}">✓ Zakelijk geverifieerd</span>` : ''}
                 ${c.onlineCoaching ? `<span class="badge badge-groen" title="Online coaching mogelijk">Online</span>` : ''}
             </div>
             <div class="coach-prijs">${prijsBereik(c)}</div>

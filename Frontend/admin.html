@@ -302,13 +302,14 @@ async function laadDashboard() {
     await Promise.all([laadCoaches(), laadRijders(), laadServicekosten()]);
 }
 
-// Mollie-koppeling van een coach in de gebruikerslijst
+// Hoe een coach betaald wordt: online via Mollie, via overmaken, of nog niets ingesteld
 function mollieLabel(g) {
     if (!(g.rol || '').includes('Coach')) return '<span style="color:#ddd">—</span>';
-    if (!g.mollie) return '<span style="color:#aaa">Niet gekoppeld</span>';
-    if (g.mollie === 'klaar') return '<span style="color:#2e7d32;font-weight:600">✓ Gekoppeld</span>';
-    if (g.mollie === 'ingetrokken') return '<span style="color:#c62828">Ingetrokken</span>';
-    return '<span style="color:#b26a00">Nog niet actief</span>';
+    if (g.mollie === 'klaar') return '<span style="color:#2e7d32;font-weight:600">✓ Mollie</span>';
+    const mollieTekst = g.mollie === 'ingetrokken' ? 'Mollie ingetrokken' : g.mollie ? 'Mollie nog niet actief' : '';
+    if (g.overmaken) return '<span style="color:#1565c0;font-weight:600">Overmaken</span>' + (mollieTekst ? `<br><span style="color:#b26a00;font-size:0.75rem">${mollieTekst}</span>` : '');
+    if (mollieTekst) return `<span style="color:#b26a00">${mollieTekst}</span>`;
+    return '<span style="color:#aaa">Nog niets ingesteld</span>';
 }
 
 async function laadServicekosten() {
@@ -365,7 +366,7 @@ async function laadGebruikers() {
                         <th>Lid sinds</th>
                         <th>Volgende betaling</th>
                         <th>📣 Marketing</th>
-                        <th>💳 Mollie</th>
+                        <th>💳 Betalen</th>
                         <th></th>
                     </tr>
                 </thead>

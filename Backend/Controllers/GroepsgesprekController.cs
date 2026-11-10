@@ -399,9 +399,11 @@ public class GroepsgesprekController : ControllerBase
         var coach = await _userManager.FindByIdAsync(coachId!);
         if (coach == null) return Unauthorized();
 
-        // Rijders betalen rechtstreeks aan de coach: zonder gekoppeld Mollie-account kan dat niet
-        var koppeling = await connect.StatusVoorAsync(coach.Id);
-        if (koppeling != Backend.Services.KoppelStatus.Klaar) return BadRequest(Backend.Services.MollieConnectService.MeldingVoorCoach(koppeling));
+        // Online via het eigen Mollie-account van de coach, of (zonder Mollie) via overmaken
+        var (betaalKeuze, geenBetaalWijze) = await connect.BetaalKeuzeAsync(coach.Id);
+        if (betaalKeuze == null) return BadRequest(geenBetaalWijze);
+        var betaalLink = Backend.Services.FactuurService.ControleerBetaalLink(verzoek.BetaalLink);
+        if (betaalLink == "") return BadRequest("De betaalverzoek-link klopt niet. Plak de volledige link (die begint met https://).");
 
         if (string.IsNullOrWhiteSpace(verzoek.Omschrijving)) return BadRequest("Omschrijving is verplicht.");
         if (verzoek.Bedrag <= 0) return BadRequest("Bedrag moet groter zijn dan 0.");
@@ -430,7 +432,7 @@ public class GroepsgesprekController : ControllerBase
             if (rijder == null) continue;
             var nummer = await facturen.VolgendNummerAsync(coach.Id);
             var (_, fout) = await facturen.MaakEnVerstuurAsync(coach, rijder, verzoek.Omschrijving, verzoek.Bedrag,
-                nummer, verzoek.BetalingsTermijn, verzoek.FactuurJson);
+                nummer, verzoek.BetalingsTermijn, verzoek.FactuurJson, betaalKeuze, betaalLink);
             if (!string.IsNullOrEmpty(fout)) fouten.Add($"{rijder.Naam}: {fout}");
             aantalVerstuurd++;
         }
@@ -541,5 +543,6 @@ public record GroepsBetaalverzoekVerzoek(
     decimal Bedrag,
     string? FactuurnummerTekst = null,
     int BetalingsTermijn = 14,
-    string? FactuurJson = null
+    string? FactuurJson = null,
+    string? BetaalLink = null
 );

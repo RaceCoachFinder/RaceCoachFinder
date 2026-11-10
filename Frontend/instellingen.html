@@ -29,6 +29,14 @@
         .mollie-knoppen .btn { font-size: 0.85rem; }
         .mollie-knoppen .btn-licht { background: transparent; color: #555; border: 2px solid #ccc; }
         .mollie-knoppen a { font-size: 0.82rem; }
+        .betaal-nu { background: #eef5ff; color: #1b4f8a; border-radius: 10px; padding: 0.7rem 0.9rem; font-size: 0.85rem; margin: 0.4rem 0 0.2rem; line-height: 1.5; }
+        .betaal-optie { border: 1px solid #ececf0; border-radius: 12px; padding: 1rem 1.1rem; margin-top: 0.9rem; }
+        .betaal-optie-kop { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+        .betaal-optie-kop strong { font-size: 0.98rem; }
+        .betaal-label { font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.55rem; border-radius: 20px; background: #f0f0f3; color: #555; }
+        .betaal-label.aanbevolen { background: #fff3c4; color: #7a5b00; }
+        .betaal-lijst { margin: 0.6rem 0 0; padding-left: 1.1rem; font-size: 0.83rem; color: var(--kleur-subtekst); line-height: 1.6; }
+        .overmaken-form { margin-top: 0.9rem; padding-top: 0.9rem; }
         .mollie-test { margin-top: 0.6rem; font-size: 0.8rem; color: #8a6d00; background: #fff7d6; border-radius: 8px; padding: 0.45rem 0.7rem; }
 
         .inst-sectie {
@@ -197,13 +205,46 @@
     <div id="melding" style="max-width:680px;margin:0 auto 1rem"></div>
     <div class="inst-inhoud">
 
-        <!-- Betalingen ontvangen via Mollie (alleen coaches) -->
+        <!-- Betalingen ontvangen (alleen coaches): online via Mollie of via overmaken -->
         <div class="inst-sectie" id="mollie" style="display:none">
             <div class="inst-sectie-titel">Betalingen ontvangen</div>
-            <p class="mollie-uitleg">Rijders betalen jouw facturen online via Mollie. Het geld komt rechtstreeks op je eigen Mollie-account, en Mollie maakt het over naar je bankrekening.</p>
-            <p class="mollie-uitleg">RaceCoachFinder rekent 2% servicekosten. De rijder betaalt die bovenop je factuurbedrag, en ze gaan automatisch naar RaceCoachFinder. De transactiekosten van Mollie zelf (bijvoorbeeld voor iDEAL) betaal je aan Mollie.</p>
-            <div id="mollie-status" class="mollie-status"><span>Laden…</span></div>
-            <div id="mollie-knoppen" class="mollie-knoppen"></div>
+            <p class="mollie-uitleg">Kies hoe rijders je facturen betalen.</p>
+            <div id="betaal-nu" class="betaal-nu" style="display:none"></div>
+
+            <div class="betaal-optie">
+                <div class="betaal-optie-kop"><strong>Online via Mollie</strong><span class="betaal-label aanbevolen">Aanbevolen</span></div>
+                <ul class="betaal-lijst">
+                    <li>Rijders betalen online (iDEAL, creditcard en meer). Het geld komt rechtstreeks op je eigen Mollie-account.</li>
+                    <li>De factuur gaat vanzelf op betaald; je hoeft niets bij te houden.</li>
+                    <li>Je krijgt de badge "Zakelijk geverifieerd" op je profiel.</li>
+                    <li>De rijder betaalt 2% servicekosten extra aan RaceCoachFinder. Mollie rekent jou per betaling een klein bedrag (bijvoorbeeld €0,32 bij iDEAL).</li>
+                    <li>Je hebt een KvK-inschrijving nodig. Een Mollie-account is gratis.</li>
+                </ul>
+                <div id="mollie-status" class="mollie-status"><span>Laden…</span></div>
+                <div id="mollie-knoppen" class="mollie-knoppen"></div>
+            </div>
+
+            <div class="betaal-optie" id="optie-overmaken">
+                <div class="betaal-optie-kop"><strong>Via overmaken</strong><span class="betaal-label">Geen KvK nodig</span></div>
+                <ul class="betaal-lijst">
+                    <li>Je rekeningnummer staat op je facturen. De rijder maakt het bedrag zelf over, of betaalt via een Tikkie of betaalverzoek dat je bij de factuur plakt.</li>
+                    <li>Je controleert zelf je rekening en klikt in de chat op "Ontvangen".</li>
+                    <li>Geen servicekosten voor de rijder.</li>
+                    <li>Alleen mogelijk zolang je geen werkend Mollie-account hebt gekoppeld.</li>
+                </ul>
+                <div id="overmaken-uit" class="mollie-test" style="display:none">Je Mollie-account is gekoppeld, dus rijders betalen online. Overmaken wordt niet gebruikt.</div>
+                <form id="overmaken-form" class="ww-blok overmaken-form" onsubmit="slaOvermakenOp(event)" autocomplete="off">
+                    <label for="iban">IBAN</label>
+                    <input id="iban" placeholder="NL00 BANK 0123 4567 89" maxlength="42" spellcheck="false">
+                    <label for="iban-naam">Ten name van</label>
+                    <input id="iban-naam" maxlength="100" placeholder="Naam zoals bij je bank">
+                    <div id="overmaken-melding" style="font-size:0.85rem;margin:0.5rem 0 0"></div>
+                    <div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;margin-top:0.75rem">
+                        <button type="submit" class="btn btn-donker" style="font-size:0.85rem">Rekeningnummer opslaan</button>
+                        <a href="#" id="iban-wis" style="font-size:0.82rem;display:none" onclick="wisIban();return false">Verwijderen</a>
+                    </div>
+                </form>
+            </div>
         </div>
 
         <!-- Pushmeldingen op telefoon -->
@@ -577,7 +618,7 @@ async function laadMollie(vernieuw) {
             vak.innerHTML = mollieStatusHtml('⏳', 'Nog niet beschikbaar', 'Online betalen wordt binnenkort aangezet. Dan kun je hier je Mollie-account koppelen.');
             knoppen.innerHTML = '';
         } else if (!s.gekoppeld) {
-            vak.innerHTML = mollieStatusHtml('⚪', 'Niet gekoppeld', 'Koppel je Mollie-account om facturen te kunnen sturen. Heb je nog geen Mollie-account? Dan maak je er tijdens het koppelen gratis een aan.');
+            vak.innerHTML = mollieStatusHtml('⚪', 'Niet gekoppeld', 'Heb je nog geen Mollie-account? Dan maak je er tijdens het koppelen gratis een aan.');
             knoppen.innerHTML = koppel + nieuw;
         } else if (s.klaar) {
             vak.innerHTML = mollieStatusHtml('✅', 'Gekoppeld', 'Rijders betalen je facturen rechtstreeks op dit Mollie-account.', s.organisatie);
@@ -587,15 +628,76 @@ async function laadMollie(vernieuw) {
             knoppen.innerHTML = '<button type="button" class="btn btn-primair" onclick="startMollie(false)">Opnieuw koppelen</button>' + los;
         } else {
             vak.innerHTML = mollieStatusHtml('⏳', 'Gekoppeld, maar nog niet actief',
-                'Je Mollie-account kan nog geen betalingen ontvangen. Rond je aanmelding af in Mollie (bijvoorbeeld je bedrijfsgegevens en bankrekening). Daarna kun je facturen sturen.', s.organisatie);
+                'Je Mollie-account kan nog geen betalingen ontvangen. Rond je aanmelding af in Mollie (bijvoorbeeld je bedrijfsgegevens en bankrekening). Tot die tijd kunnen rijders je via overmaken betalen.', s.organisatie);
             knoppen.innerHTML = '<a class="btn btn-primair" href="https://my.mollie.com/dashboard" target="_blank" rel="noopener">Naar Mollie</a>' + ververs + los;
         }
         if (s.testmodus) vak.insertAdjacentHTML('afterend', document.getElementById('mollie-testmelding') ? '' :
             '<div class="mollie-test" id="mollie-testmelding">Testmodus: betalingen zijn nog niet echt.</div>');
+
+        // Via overmaken: alleen zolang er geen werkend Mollie-account is
+        const online = s.betaalWijze === 'online';
+        document.getElementById('iban').value = s.iban || '';
+        document.getElementById('iban-naam').value = s.ibanTenaamstelling || '';
+        ibanGeladen = { iban: (s.iban || '').replace(/\s/g, '').toUpperCase(), naam: s.ibanTenaamstelling || '' };
+        document.getElementById('iban-wis').style.display = s.iban ? '' : 'none';
+        document.getElementById('overmaken-uit').style.display = online ? '' : 'none';
+        document.getElementById('overmaken-form').style.display = online ? 'none' : '';
+
+        // Samenvatting bovenaan
+        const nu = document.getElementById('betaal-nu');
+        nu.style.display = '';
+        if (online) nu.innerHTML = '<strong>Rijders betalen je nu:</strong> <span>online via Mollie</span>';
+        else if (s.betaalWijze === 'overmaken') nu.innerHTML = '<strong>Rijders betalen je nu:</strong> <span>via overmaken naar</span> ' + escHtml(s.iban);
+        else nu.innerHTML = '<strong>Nog niet ingesteld.</strong> <span>Koppel Mollie of vul je rekeningnummer in om facturen te kunnen sturen.</span>';
     } catch (e) {
         vak.innerHTML = mollieStatusHtml('⚠️', 'Status niet geladen', 'Kon de status van je Mollie-koppeling niet laden. Probeer het later opnieuw.');
     }
 }
+
+let ibanGeladen = { iban: '', naam: '' };
+
+// Is het rekeningnummer gewijzigd t.o.v. wat er opgeslagen is?
+function ibanGewijzigd() {
+    if (document.getElementById('overmaken-form').style.display === 'none') return false;
+    const iban = document.getElementById('iban').value.replace(/\s/g, '').toUpperCase();
+    const naam = document.getElementById('iban-naam').value.trim();
+    return (iban || naam) && (iban !== ibanGeladen.iban || naam !== ibanGeladen.naam);
+}
+
+// true = opgeslagen
+async function slaOvermakenOp(e) {
+    if (e) e.preventDefault();
+    const melding = document.getElementById('overmaken-melding');
+    melding.style.color = '#c62828';
+    const iban = document.getElementById('iban').value.trim();
+    const tenaamstelling = document.getElementById('iban-naam').value.trim();
+    if (!iban || !tenaamstelling) { melding.textContent = vertaalTekst('Vul je IBAN en de naam op de rekening in.'); return false; }
+    try {
+        await authVerzoek('/coach/mijn/overmaken', 'PUT', { iban, tenaamstelling });
+        await laadMollie();
+        melding.style.color = '#2e7d32';
+        melding.textContent = vertaalTekst('Rekeningnummer opgeslagen.');
+        return true;
+    } catch (err) {
+        melding.textContent = err.message;
+        return false;
+    }
+}
+
+async function wisIban() {
+    if (!confirm(vertaalTekst('Rekeningnummer verwijderen? Zonder Mollie of rekeningnummer kun je geen facturen sturen.'))) return;
+    const melding = document.getElementById('overmaken-melding');
+    try {
+        await authVerzoek('/coach/mijn/overmaken', 'PUT', { iban: null, tenaamstelling: null });
+        melding.textContent = '';
+        await laadMollie();
+    } catch (err) {
+        melding.style.color = '#c62828';
+        melding.textContent = err.message;
+    }
+}
+
+function vertaalTekst(t) { return window.I18N ? I18N.t(t) : t; }
 
 async function startMollie(nieuwAccount) {
     try {
@@ -696,6 +798,11 @@ async function slaOp() {
     };
     try {
         await authVerzoek('/instellingen', 'PUT', body);
+        // Rekeningnummer ingevuld maar niet apart opgeslagen? Dan nu meenemen
+        if (heeftRol('Coach') && ibanGewijzigd() && !(await slaOvermakenOp())) {
+            document.getElementById('mollie').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
         const s = document.getElementById('opslaan-status');
         s.textContent = '✓ Opgeslagen';
         s.style.color = '#2e7d32';

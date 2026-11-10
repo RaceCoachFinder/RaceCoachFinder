@@ -262,6 +262,8 @@
         .tab-knop.actief { background: var(--kleur-primair); border-color: var(--kleur-primair); color: var(--kleur-donker); }
         .mollie-balk { display: flex; align-items: center; gap: 0.9rem; background: #fff8e1; border: 1px solid #f5d76e; border-radius: var(--rand); padding: 0.9rem 1.1rem; margin-bottom: 1.25rem; }
     .mollie-balk > span { font-size: 1.4rem; }
+    .mollie-balk.tip { background: #f4f8ff; border-color: #cfe0fb; }
+    .mollie-balk.tip .btn { background: transparent; color: #1b4f8a; border: 2px solid #b8cff3; }
     .mollie-balk > div { flex: 1; min-width: 0; }
     .mollie-balk strong { display: block; font-size: 0.95rem; }
     .mollie-balk div span { display: block; font-size: 0.83rem; color: var(--kleur-subtekst); margin-top: 0.15rem; line-height: 1.5; }
@@ -1306,15 +1308,24 @@ laadDashboard();
 laadAbonnementStatus();
 laadMollieBalk();
 
-// Nog geen (werkend) Mollie-account gekoppeld? Dan kan de coach geen facturen sturen
+// Betalingen ontvangen: nog niets ingesteld → melding; via overmaken → tip om Mollie te koppelen
 async function laadMollieBalk() {
     try {
         const s = await authVerzoek('/mollieconnect/status');
-        if (!s || !s.ingesteld || s.klaar) return;
-        if (s.gekoppeld) {
-            document.querySelector('#mollie-balk strong').textContent = 'Je Mollie-account is nog niet klaar';
-            document.getElementById('mollie-balk-tekst').textContent = s.melding || '';
-            document.querySelector('#mollie-balk a').textContent = 'Bekijken';
+        if (!s || s.betaalWijze === 'online') return;
+        const titel = document.querySelector('#mollie-balk strong');
+        const tekst = document.getElementById('mollie-balk-tekst');
+        const knop = document.querySelector('#mollie-balk a');
+        if (!s.betaalWijze) {
+            titel.textContent = 'Stel in hoe rijders je betalen';
+            tekst.textContent = s.betaalMelding || 'Koppel Mollie of vul je rekeningnummer in om facturen te kunnen sturen.';
+            knop.textContent = 'Instellen';
+        } else {
+            if (!s.ingesteld) return; // Mollie nog niet beschikbaar: geen tip
+            document.getElementById('mollie-balk').classList.add('tip');
+            titel.textContent = 'Tip: koppel Mollie';
+            tekst.textContent = 'Rijders betalen dan online, de factuur gaat vanzelf op betaald en je krijgt de badge "Zakelijk geverifieerd".';
+            knop.textContent = 'Bekijken';
         }
         document.getElementById('mollie-balk').style.display = '';
     } catch (e) { /* niet belangrijk genoeg om een fout te tonen */ }

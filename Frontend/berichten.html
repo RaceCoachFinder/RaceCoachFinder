@@ -362,6 +362,12 @@
         .boeking-status.betaald { background: #d4edda; color: #155724; }
         .boeking-status.geannuleerd { background: #f8d7da; color: #721c24; }
         .boeking-acties { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+        .boeking-overmaken { background: #f7f7f9; border-radius: 8px; padding: 0.55rem 0.7rem; margin: 0.1rem 0 0.4rem; font-size: 0.8rem; line-height: 1.55; word-break: break-word; }
+        .boeking-overmaken span { color: var(--kleur-subtekst); }
+        .boeking-gemeld { font-size: 0.78rem; font-weight: 600; color: #1565c0; }
+        .boeking-kaart a.btn { text-decoration: none; }
+        .boeking-kaart .btn-secundair { color: #555; border-color: #ccc; background: #fff; }
+        .boeking-kaart .btn-secundair:hover { border-color: #888; color: #222; }
 
         /* Factuur modal */
         .verzoek-formulier {
@@ -417,6 +423,8 @@
             .factuur-rechts { padding: 1rem; }
         }
         #btn-factuur-versturen:disabled { opacity: 0.45; cursor: not-allowed; }
+        .factuur-betaalinfo { background: #eef5ff; color: #1b4f8a; border-radius: 8px; padding: 0.6rem 0.8rem; font-size: 0.8rem; line-height: 1.5; }
+        .factuur-betaalinfo strong { color: #0d3a6b; }
         .factuur-mollie-melding { background: #fff4e5; color: #8a4b00; border-radius: 8px; padding: 0.65rem 0.8rem; font-size: 0.8rem; line-height: 1.5; }
         .factuur-mollie-melding a { color: inherit; font-weight: 700; }
         .verzoek-formulier-titel { font-size: 0.82rem; font-weight: 700; color: #111; display: flex; align-items: center; gap: 0.4rem; }
@@ -617,8 +625,9 @@
                             <button onclick="sluitVerzoekFormulier()" style="background:none;border:none;cursor:pointer;font-size:1.2rem;color:#888;line-height:1;padding:0.2rem">✕</button>
                         </div>
 
-                        <!-- Coach heeft nog geen Mollie gekoppeld: dan kan een rijder niet betalen -->
+                        <!-- Hoe betaalt de rijder: online via Mollie, via overmaken, of nog niets ingesteld -->
                         <div id="factuur-mollie-melding" class="factuur-mollie-melding" style="display:none"></div>
+                        <div id="factuur-betaalinfo" class="factuur-betaalinfo" style="display:none"></div>
 
                         <!-- Meta: factuurnummer, datum, betalingstermijn -->
                         <div class="factuur-meta">
@@ -658,6 +667,13 @@
 
                         <!-- Totalen -->
                         <div class="factuur-totaal" id="factuur-totaal"></div>
+
+                        <!-- Betaalverzoek-link (alleen bij overmaken) -->
+                        <div id="factuur-betaallink-blok" style="display:none">
+                            <label style="font-size:0.72rem;font-weight:700;color:var(--kleur-subtekst);text-transform:uppercase;letter-spacing:0.3px;display:block;margin-bottom:0.25rem">Betaalverzoek-link <span style="font-weight:400;opacity:0.6">(optioneel)</span></label>
+                            <input class="factuur-input" id="factuur-betaallink" type="url" placeholder="https://tikkie.me/pay/..." maxlength="500">
+                            <div style="font-size:0.72rem;color:var(--kleur-subtekst);margin-top:0.25rem">Plak hier een Tikkie of betaalverzoek uit je bank-app voor dit bedrag. De rijder krijgt dan een knop om meteen te betalen.</div>
+                        </div>
 
                         <!-- Notities -->
                         <div>
@@ -1713,8 +1729,30 @@ function renderBoeking(b) {
     const ikBenCoach = b.coachGebruikerId !== huidigPartnerId;
     const heeftBevestigd = ikBenCoach ? b.coachHeeftBevestigd : b.rijderHeeftBevestigd;
 
+    const overmaken = b.betaalWijze === 'overmaken';
     let acties = '';
-    if (b.status === 'Openstaand') {
+    let overmaakInfo = '';
+    if (b.status === 'Openstaand' && overmaken) {
+        // Coach zonder Mollie: de rijder maakt zelf over, de coach bevestigt met "Ontvangen"
+        const nummer = b.factuurnummerTekst || ('F-' + b.id);
+        overmaakInfo = `
+        <div class="boeking-overmaken">
+            <div><span>Overmaken naar</span> <strong>${esc(ibanOpmaak(b.iban))}</strong></div>
+            ${b.ibanTenaamstelling ? `<div><span>t.n.v.</span> <strong>${esc(b.ibanTenaamstelling)}</strong></div>` : ''}
+            <div><span>o.v.v.</span> <strong>${esc(nummer)}</strong></div>
+        </div>`;
+        if (!ikBenCoach) {
+            if (b.betaalLink)
+                acties += `<a class="btn btn-primair" href="${esc(b.betaalLink)}" target="_blank" rel="noopener noreferrer" style="font-size:0.8rem;padding:0.3rem 0.85rem">Betaal via betaalverzoek</a>`;
+            acties += b.rijderMeldtBetaaldOp
+                ? `<span class="boeking-wacht">Gemeld als betaald, wacht op de coach</span>`
+                : `<button class="btn btn-secundair btn-overmaak" onclick="meldBetaald(${b.id})" style="font-size:0.8rem;padding:0.3rem 0.85rem">Ik heb betaald</button>`;
+        } else {
+            if (b.rijderMeldtBetaaldOp) acties += `<span class="boeking-gemeld">💶 Rijder meldt: betaald</span>`;
+            acties += `<button class="btn btn-primair" onclick="bevestigOntvangen(${b.id})" style="font-size:0.8rem;padding:0.3rem 0.85rem">Ontvangen</button>`;
+        }
+        acties += `<button class="btn btn-secundair" onclick="annuleer(${b.id})" style="font-size:0.8rem;padding:0.3rem 0.85rem">Annuleren</button>`;
+    } else if (b.status === 'Openstaand') {
         if (!ikBenCoach)
             acties += `<button class="btn btn-primair" onclick="betaal(${b.id})" style="font-size:0.8rem;padding:0.3rem 0.85rem">Betalen</button>`;
         acties += `<button class="btn btn-secundair" onclick="annuleer(${b.id})" style="font-size:0.8rem;padding:0.3rem 0.85rem">Annuleren</button>`;
@@ -1737,6 +1775,7 @@ function renderBoeking(b) {
         <div class="boeking-kaart-omschrijving">${esc(b.omschrijving)}</div>
         <div class="boeking-kaart-bedrag">${bedragStr}</div>
         <div><span class="boeking-status ${statusKlasse}">${esc(b.status)}</span></div>
+        ${overmaakInfo}
         ${acties ? `<div class="boeking-acties" style="margin-top:0.5rem;display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center">${acties}</div>` : ''}
     </div>`;
 }
@@ -2002,6 +2041,26 @@ function renderUitnodigingDetails() {
         <div class="uitnodiging-acties" data-id="${id}" style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;margin-top:1rem">${uitnodigingActiesHtml(id)}</div>`;
 }
 
+// ── Betalen via overmaken (coach zonder Mollie) ────────────────
+function ibanOpmaak(iban) { return (iban || '').replace(/\s+/g, '').replace(/(.{4})(?=.)/g, '$1 '); }
+function vertaal(t) { return window.I18N ? I18N.t(t) : t; }
+
+async function meldBetaald(id) {
+    if (!confirm(vertaal('Heb je het bedrag overgemaakt? Je coach krijgt dan een seintje om het te controleren.'))) return;
+    try {
+        await authVerzoek(`/boeking/${id}/betaald-gemeld`, 'POST');
+        await laadBerichten(huidigPartnerId);
+    } catch (e) { alert('Fout: ' + e.message); }
+}
+
+async function bevestigOntvangen(id) {
+    if (!confirm(vertaal('Staat het geld op je rekening? De factuur gaat dan op betaald.'))) return;
+    try {
+        await authVerzoek(`/boeking/${id}/ontvangen`, 'POST');
+        await laadBerichten(huidigPartnerId);
+    } catch (e) { alert('Fout: ' + e.message); }
+}
+
 // ── Activiteit bevestigen ──────────────────────────────────────
 async function bevestigActiviteit(id) {
     const boeking = huidigeBoekingen.find(b => b.id === id);
@@ -2150,7 +2209,8 @@ async function stuurGroepsBetaalverzoek() {
             bedrag: Math.round(totaal * 100) / 100,
             factuurnummerTekst: nummer,
             betalingsTermijn: termijn,
-            factuurJson
+            factuurJson,
+            betaalLink: document.getElementById('factuur-betaallink').value.trim() || null
         });
         sluitVerzoekFormulier();
         await laadGroepsBerichten(huidigGroepsId);
@@ -2179,19 +2239,36 @@ function initFactuurFormulier() {
     controleerMollieKoppeling();
 }
 
-// Rijders betalen rechtstreeks op het Mollie-account van de coach: zonder koppeling geen factuur
+// Hoe betaalt de rijder? Online via het eigen Mollie-account van de coach, of via overmaken (coach zonder Mollie)
 async function controleerMollieKoppeling() {
     const vak = document.getElementById('factuur-mollie-melding');
+    const info = document.getElementById('factuur-betaalinfo');
+    const linkBlok = document.getElementById('factuur-betaallink-blok');
     const knop = document.getElementById('btn-factuur-versturen');
     vak.style.display = 'none';
+    info.style.display = 'none';
+    linkBlok.style.display = 'none';
+    document.getElementById('factuur-betaallink').value = '';
     knop.disabled = false;
     try {
         const s = await authVerzoek('/mollieconnect/status');
-        if (!s || s.klaar) return;
-        vak.innerHTML = '<span></span> <a href="instellingen.html#mollie">Naar Instellingen</a>';
-        vak.querySelector('span').textContent = s.melding || 'Koppel eerst je Mollie-account.';
-        vak.style.display = '';
-        knop.disabled = true;
+        if (!s) return;
+        if (s.betaalWijze === 'online') {
+            info.innerHTML = '<span></span>';
+            info.querySelector('span').textContent = 'De rijder betaalt online via Mollie, rechtstreeks op je Mollie-account (de rijder betaalt 2% servicekosten extra).';
+            info.style.display = '';
+        } else if (s.betaalWijze === 'overmaken') {
+            info.innerHTML = '<span>De rijder maakt het bedrag over naar</span> <strong class="iban"></strong> <span>t.n.v.</span> <strong class="naam"></strong><span>. Klik in de chat op "Ontvangen" als het binnen is.</span>';
+            info.querySelector('.iban').textContent = s.iban;
+            info.querySelector('.naam').textContent = s.ibanTenaamstelling || '';
+            info.style.display = '';
+            linkBlok.style.display = '';
+        } else {
+            vak.innerHTML = '<span></span> <a href="instellingen.html#mollie">Naar Instellingen</a>';
+            vak.querySelector('span').textContent = s.betaalMelding || s.melding || 'Kies eerst hoe rijders je betalen.';
+            vak.style.display = '';
+            knop.disabled = true;
+        }
     } catch (e) { /* de server controleert het ook bij versturen */ }
 }
 
@@ -2379,7 +2456,8 @@ async function stuurBetaalverzoek() {
             bedrag: Math.round(totaal * 100) / 100,
             factuurnummerTekst: nummer,
             betalingsTermijn: termijn,
-            factuurJson
+            factuurJson,
+            betaalLink: document.getElementById('factuur-betaallink').value.trim() || null
         });
         const agendaCb = document.getElementById('agenda-aanvinken');
         const agendaDatum = document.getElementById('agenda-datum-input');

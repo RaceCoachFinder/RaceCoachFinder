@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Backend.Services;
 
 namespace Backend.Controllers;
@@ -12,11 +13,13 @@ public class MollieConnectController : ControllerBase
 {
     private readonly MollieConnectService _connect;
     private readonly ILogger<MollieConnectController> _logger;
+    private readonly Backend.Data.AppDbContext _context;
 
-    public MollieConnectController(MollieConnectService connect, ILogger<MollieConnectController> logger)
+    public MollieConnectController(MollieConnectService connect, ILogger<MollieConnectController> logger, Backend.Data.AppDbContext context)
     {
         _connect = connect;
         _logger = logger;
+        _context = context;
     }
 
     private static string FrontendUrl =>
@@ -30,6 +33,8 @@ public class MollieConnectController : ControllerBase
     {
         var status = await _connect.StatusVoorAsync(MijnId, vernieuw);
         var k = await _connect.KoppelingAsync(MijnId);
+        var (keuze, geenBetaalWijze) = await _connect.BetaalKeuzeAsync(MijnId);
+        var coach = await _context.Coaches.AsNoTracking().FirstOrDefaultAsync(c => c.GebruikerId == MijnId);
         return Ok(new
         {
             ingesteld = MollieConnectService.IsIngesteld,
@@ -40,7 +45,12 @@ public class MollieConnectController : ControllerBase
             onboardingStatus = k?.OnboardingStatus,
             gekoppeldOp = k?.GekoppeldOp,
             testmodus = MollieConnectService.Testmodus,
-            melding = status == KoppelStatus.Klaar ? null : MollieConnectService.MeldingVoorCoach(status)
+            melding = status == KoppelStatus.Klaar ? null : MollieConnectService.MeldingVoorCoach(status),
+            // Hoe rijders deze coach nu betalen: "online", "overmaken" of null (nog niets ingesteld)
+            betaalWijze = keuze?.Wijze,
+            betaalMelding = geenBetaalWijze,
+            iban = IbanHelper.Opmaak(coach?.Iban),
+            ibanTenaamstelling = coach?.IbanTenaamstelling
         });
     }
 

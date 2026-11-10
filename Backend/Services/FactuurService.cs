@@ -36,14 +36,26 @@ public class FactuurService
         return $"F-{jaar}-{hoogste + 1:D4}";
     }
 
+    // Betaalverzoek-link van de coach (Tikkie of bank-app): alleen een gewone https-link. null = geen link, "" = ongeldig
+    public static string? ControleerBetaalLink(string? link)
+    {
+        if (string.IsNullOrWhiteSpace(link)) return null;
+        link = link.Trim();
+        if (link.Length > 500) return "";
+        if (!Uri.TryCreate(link, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps || string.IsNullOrEmpty(uri.Host) || !uri.Host.Contains('.'))
+            return "";
+        return uri.AbsoluteUri;
+    }
+
     public Task<bool> NummerAlGebruiktAsync(string coachId, string nummer) =>
         _context.Boekingen.AnyAsync(b => b.CoachGebruikerId == coachId && b.FactuurnummerTekst == nummer);
 
     // Maakt de boeking, de PDF en verstuurt de mails. Geeft de boeking en eventuele mailfouten terug.
     public async Task<(Boeking boeking, string fouten)> MaakEnVerstuurAsync(
         ApplicationUser coach, ApplicationUser rijder, string omschrijving, decimal bedrag,
-        string factuurnummer, int termijn, string? factuurJson)
+        string factuurnummer, int termijn, string? factuurJson, BetaalKeuze betaalKeuze, string? betaalLink = null)
     {
+        var overmaken = betaalKeuze.IsOvermaken;
         var boeking = new Boeking
         {
             CoachGebruikerId = coach.Id,
@@ -54,7 +66,11 @@ public class FactuurService
             AangemaaktOp = DateTime.UtcNow,
             FactuurnummerTekst = factuurnummer,
             BetalingsTermijn = termijn > 0 ? termijn : 14,
-            FactuurJson = factuurJson
+            FactuurJson = factuurJson,
+            BetaalWijze = betaalKeuze.Wijze,
+            Iban = overmaken ? betaalKeuze.Iban : null,
+            IbanTenaamstelling = overmaken ? betaalKeuze.Tenaamstelling : null,
+            BetaalLink = overmaken ? betaalLink : null
         };
         _context.Boekingen.Add(boeking);
         await _context.SaveChangesAsync();
@@ -77,7 +93,8 @@ public class FactuurService
                 factuurnummer, DateTime.Now, boeking.BetalingsTermijn, coachNaam,
                 coachProfiel?.FactuurAdres, coachProfiel?.FactuurPostcode, coachProfiel?.FactuurStad, coachProfiel?.FactuurLand,
                 coachProfiel?.FactuurTelefoon, coach.Email ?? coachNaam, coachProfiel?.KvkNummer, coachProfiel?.BtwNummer,
-                rijderNaam, rijder.Email ?? rijderNaam, regels, factuurData?.Notities);
+                rijderNaam, rijder.Email ?? rijderNaam, regels, factuurData?.Notities,
+                overmaken ? IbanHelper.Opmaak(boeking.Iban) : null, boeking.IbanTenaamstelling, boeking.BetaalLink);
             pdfBytes = pdf;
             boeking.Bedrag = totaal;
             await _context.SaveChangesAsync();
@@ -105,7 +122,8 @@ public class FactuurService
                 var taal = await EmailTaal.VoorAsync(_context, rijder.Id);
                 var berichtenUrl = $"{FrontendUrl}/berichten.html?partner={Uri.EscapeDataString(coach.Id)}";
                 await _email.VerstuurAsync(rijder.Email!, rijderNaam, EmailTemplates.FactuurRijderOnderwerp(factuurnummer, coachNaam, taal),
-                    EmailTemplates.FactuurRijder(rijderNaam, coachNaam, factuurnummer, boeking.Omschrijving, boeking.Bedrag, boeking.BetalingsTermijn, berichtenUrl, taal),
+                    EmailTemplates.FactuurRijder(rijderNaam, coachNaam, factuurnummer, boeking.Omschrijving, boeking.Bedrag, boeking.BetalingsTermijn, berichtenUrl, taal,
+                        overmaken ? IbanHelper.Opmaak(boeking.Iban) : null, boeking.IbanTenaamstelling, boeking.BetaalLink),
                     pdfBytes, pdfNaam);
             }
             catch (Exception ex) { fouten += (fouten.Length > 0 ? " | " : "") + $"Mail aan rijder mislukt: {ex.Message}"; }

@@ -314,6 +314,7 @@ public class BetalingController : ControllerBase
             if (boeking.RijderGebruikerId != rijderId) return Forbid();
             if (boeking.Status == "Betaald" || boeking.Status == "Voldaan") return BadRequest("Deze factuur is al betaald.");
             if (boeking.Status != "Openstaand") return BadRequest("Deze factuur staat niet meer open.");
+            if (boeking.BetaalWijze == BetaalKeuze.Overmaken) return BadRequest("Deze factuur betaal je via overmaken naar de coach.");
             if (boeking.Bedrag < 1) return BadRequest("Dit bedrag is te laag om online te betalen.");
 
             // Al een betaling gestart? Dan die gebruiken (voorkomt dubbel betalen)

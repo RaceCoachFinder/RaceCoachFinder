@@ -24,7 +24,8 @@
         .review-auteur { font-weight: 600; font-size: 0.9rem; }
         .review-datum { color: var(--kleur-subtekst); font-size: 0.78rem; margin-left: auto; }
         .review-tekst-body { color: var(--kleur-subtekst); margin: 0; font-size: 0.88rem; line-height: 1.55; }
-    </style>
+        .geverifieerd-uitleg { font-size: 0.8rem; color: var(--kleur-subtekst); margin: 0.35rem 0 0.2rem; line-height: 1.5; }
+</style>
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
     <meta name="theme-color" content="#111111">
@@ -277,6 +278,13 @@ function vulProfiel(c) {
         });
     }
     if (c.onlineCoaching) badges.innerHTML += `<span class="badge badge-groen">Online coaching</span>`;
+    if (c.zakelijkGeverifieerd) {
+        badges.innerHTML += `<span class="badge badge-geverifieerd">✓ Zakelijk geverifieerd</span>`;
+        const uitleg = document.createElement('div');
+        uitleg.className = 'geverifieerd-uitleg';
+        uitleg.textContent = 'Dit bedrijf is gecontroleerd door onze betaalpartner Mollie (KvK-inschrijving en identiteit). Je betaalt veilig via het platform.';
+        badges.insertAdjacentElement('afterend', uitleg);
+    }
 
     if (c.instagram) {
         document.getElementById('d-instagram-naam').textContent = '@' + c.instagram;

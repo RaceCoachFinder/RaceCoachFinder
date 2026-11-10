@@ -486,6 +486,7 @@ input:focus, select:focus, textarea:focus {
 .badge-blauw { background: #e3f0ff; color: #1565c0; }
 .badge-groen { background: #e8f5e9; color: #2e7d32; }
 .badge-grijs { background: #f0f0f0; color: #555; }
+.badge-geverifieerd { background: #e6f4ea; color: #1b5e20; border: 1px solid #c3e6cb; cursor: help; }
 
 .coach-prijs {
     font-size: 1.3rem;

@@ -228,6 +228,12 @@ namespace Backend.Migrations
                     b.Property<decimal>("Bedrag")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("BetaalLink")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("BetaalWijze")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("BetalingsTermijn")
                         .HasColumnType("INTEGER");
 
@@ -242,6 +248,12 @@ namespace Backend.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("FactuurnummerTekst")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Iban")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("IbanTenaamstelling")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("MollieBetalingId")
@@ -260,6 +272,9 @@ namespace Backend.Migrations
 
                     b.Property<bool>("RijderHeeftBevestigd")
                         .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("RijderMeldtBetaaldOp")
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal?>("Servicekosten")
                         .HasColumnType("TEXT");
@@ -325,6 +340,12 @@ namespace Backend.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("GebruikerId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Iban")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("IbanTenaamstelling")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Instagram")

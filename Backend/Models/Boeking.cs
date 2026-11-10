@@ -20,4 +20,13 @@ public class Boeking
     public string? MollieModus { get; set; }
     // Servicekosten (2%) die via Mollie naar RaceCoachFinder gaan
     public decimal? Servicekosten { get; set; }
+
+    // "online" (via Mollie; ook als leeg bij oude facturen) of "overmaken" (coach zonder Mollie)
+    public string? BetaalWijze { get; set; }
+    // Bij overmaken: rekeningnummer van de coach op het moment van de factuur, en eventueel een betaalverzoek-link
+    public string? Iban { get; set; }
+    public string? IbanTenaamstelling { get; set; }
+    public string? BetaalLink { get; set; }
+    // Rijder heeft aangegeven dat hij heeft overgemaakt (de coach bevestigt met "Ontvangen")
+    public DateTime? RijderMeldtBetaaldOp { get; set; }
 }
