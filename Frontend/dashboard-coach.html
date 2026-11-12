@@ -263,6 +263,7 @@
         .mollie-balk { display: flex; align-items: center; gap: 0.9rem; background: #fff8e1; border: 1px solid #f5d76e; border-radius: var(--rand); padding: 0.9rem 1.1rem; margin-bottom: 1.25rem; }
     .mollie-balk > span { font-size: 1.4rem; }
     .mollie-balk.tip { background: #f4f8ff; border-color: #cfe0fb; }
+    .mollie-balk-wettelijk { display: block; font-size: 0.72rem; color: #8a8f99; margin-top: 0.35rem; line-height: 1.45; }
     .mollie-balk.tip .btn { background: transparent; color: #1b4f8a; border: 2px solid #b8cff3; }
     .mollie-balk > div { flex: 1; min-width: 0; }
     .mollie-balk strong { display: block; font-size: 0.95rem; }
@@ -1326,6 +1327,11 @@ async function laadMollieBalk() {
             titel.textContent = 'Tip: koppel Mollie';
             tekst.textContent = 'Rijders betalen dan online, de factuur gaat vanzelf op betaald en je krijgt de badge "Zakelijk geverifieerd".';
             knop.textContent = 'Bekijken';
+            // Verplichte vermelding van Mollie (Mollie Connect-voorwaarden)
+            const wettelijk = document.createElement('small');
+            wettelijk.className = 'mollie-balk-wettelijk';
+            wettelijk.textContent = 'Betaaldiensten op RaceCoachFinder worden geleverd door Mollie B.V., Keizersgracht 126, 1015 CW Amsterdam (KvK 30204462). Mollie B.V. heeft een vergunning van en staat onder toezicht van De Nederlandsche Bank als elektronischgeldinstelling en betaalinstelling (relatienummer F0038).';
+            tekst.insertAdjacentElement('afterend', wettelijk);
         }
         document.getElementById('mollie-balk').style.display = '';
     } catch (e) { /* niet belangrijk genoeg om een fout te tonen */ }
