@@ -58,6 +58,35 @@ public class MollieConnectService
     public static string? NepUrl { get; set; }
     // Laatste fout bij het ophalen van de status bij Mollie (per verzoek), om de coach de echte reden te tonen
     public string? LaatsteFout { get; private set; }
+    // Wat Mollie bij de laatste opvraging over de websiteprofielen teruggaf (aantal en status)
+    public string? ProfielInfo { get; private set; }
+
+    private record ProfielRegel(string Id, string? Status);
+
+    private static async Task<(List<ProfielRegel> profielen, string info)> HaalProfielenAsync(string token, HttpClient http, bool test)
+    {
+        using var verzoek = new HttpRequestMessage(HttpMethod.Get, "https://api.mollie.com/v2/profiles?limit=250" + (test ? "&testmode=true" : ""));
+        verzoek.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        using var antwoord = await http.SendAsync(verzoek);
+        var tekst = await antwoord.Content.ReadAsStringAsync();
+        if ((int)antwoord.StatusCode == 401) throw new HttpRequestException("Mollie weigert de toegang (401)", null, System.Net.HttpStatusCode.Unauthorized);
+        if (!antwoord.IsSuccessStatusCode)
+            return (new List<ProfielRegel>(), $"fout {(int)antwoord.StatusCode}");
+        var lijst = new List<ProfielRegel>();
+        using var doc = JsonDocument.Parse(tekst);
+        if (doc.RootElement.TryGetProperty("_embedded", out var emb) && emb.TryGetProperty("profiles", out var arr) && arr.ValueKind == JsonValueKind.Array)
+            foreach (var pr in arr.EnumerateArray())
+                if (pr.TryGetProperty("id", out var id) && id.GetString() is { Length: > 0 } pid)
+                    lijst.Add(new ProfielRegel(pid, pr.TryGetProperty("status", out var st) ? st.GetString() : null));
+        var info = lijst.Count == 0 ? "geen profielen" : $"{lijst.Count} ({string.Join(", ", lijst.Select(p => p.Status ?? "?"))})";
+        return (lijst, info);
+    }
+
+    private static string? KiesProfiel(List<ProfielRegel> lijst) => lijst
+        .Where(p => p.Status != "blocked")
+        .OrderBy(p => p.Status == "verified" ? 0 : 1)
+        .Select(p => p.Id)
+        .FirstOrDefault();
 
     // Servicekosten: 2% van het factuurbedrag (afgerond op centen), minimaal 1 cent
     public static decimal Servicekosten(decimal bedrag) =>
@@ -157,13 +186,20 @@ public class MollieConnectService
             k.KanBetalingenOntvangen = onboarding.CanReceivePayments;
             if (string.IsNullOrEmpty(k.ProfielId))
             {
-                using var profielClient = new ProfileClient(token, http);
-                var profielen = await profielClient.GetProfileListAsync();
-                k.ProfielId = profielen.Items
-                    .Where(p => p.Status != "blocked")
-                    .OrderBy(p => p.Status == "verified" ? 0 : 1)
-                    .Select(p => p.Id)
-                    .FirstOrDefault();
+                // Rechtstreeks bij Mollie opvragen (zonder de bibliotheek), eerst live en anders ook de
+                // testprofielen. Wat Mollie teruggeeft wordt gelogd en aan de coach getoond als er niets bruikbaars is.
+                var (live, liveInfo) = await HaalProfielenAsync(token, http, test: false);
+                var gekozen = KiesProfiel(live);
+                var info = "live: " + liveInfo;
+                if (gekozen == null)
+                {
+                    var (test, testInfo) = await HaalProfielenAsync(token, http, test: true);
+                    gekozen = KiesProfiel(test);
+                    info += "; test: " + testInfo;
+                }
+                k.ProfielId = gekozen;
+                ProfielInfo = info;
+                _logger.LogInformation("Mollie-profielen voor {Gebruiker}: {Info} -> {Profiel}", k.GebruikerId, info, gekozen ?? "geen");
             }
             return true;
         });
@@ -280,7 +316,9 @@ public class MollieConnectService
             var token = await AccessTokenAsync(k) ?? throw new InvalidOperationException("Geen toegang tot het Mollie-account van de coach.");
             using var http = _http.CreateClient(HttpNaam);
             try { return await actie(token, http); }
-            catch (MollieApiException ex) when (ex.Details?.Status == 401 && poging == 0)
+            catch (Exception ex) when (poging == 0 && (
+                (ex is MollieApiException m && m.Details?.Status == 401) ||
+                (ex is HttpRequestException h && h.StatusCode == System.Net.HttpStatusCode.Unauthorized)))
             {
                 k.AccessTokenVersleuteld = null;
                 k.AccessTokenVerlooptOp = null;

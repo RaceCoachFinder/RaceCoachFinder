@@ -46,6 +46,7 @@ public class MollieConnectController : ControllerBase
             kanBetalingenOntvangen = k?.KanBetalingenOntvangen ?? false,
             heeftProfiel = !string.IsNullOrEmpty(k?.ProfielId),
             ophaalFout = _connect.LaatsteFout,
+            profielInfo = _connect.ProfielInfo,
             gekoppeldOp = k?.GekoppeldOp,
             testmodus = MollieConnectService.Testmodus,
             melding = status == KoppelStatus.Klaar ? null : MollieConnectService.MeldingVoorCoach(status),

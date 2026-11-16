@@ -641,7 +641,8 @@ async function laadMollie(vernieuw) {
                         : 'Mollie heeft nog gegevens van je nodig. Rond je aanmelding af in Mollie (bijvoorbeeld je bedrijfsgegevens en bankrekening).';
             vak.innerHTML = mollieStatusHtml('⏳', 'Gekoppeld, maar nog niet actief',
                 escHtml(vertaalTekst(reden)) + ' ' + escHtml(vertaalTekst('Tot die tijd kunnen rijders je via overmaken betalen.')) +
-                (s.ophaalFout ? '<br><small style="color:#999">' + escHtml(vertaalTekst('Melding van Mollie:')) + ' ' + escHtml(s.ophaalFout) + '</small>' : ''), s.organisatie);
+                (s.ophaalFout ? '<br><small style="color:#999">' + escHtml(vertaalTekst('Melding van Mollie:')) + ' ' + escHtml(s.ophaalFout) + '</small>' : '') +
+                (!s.ophaalFout && !s.heeftProfiel && s.profielInfo ? '<br><small style="color:#999">' + escHtml(vertaalTekst('Websiteprofielen bij Mollie:')) + ' ' + escHtml(s.profielInfo) + '</small>' : ''), s.organisatie);
             knoppen.innerHTML = '<a class="btn btn-primair" href="https://my.mollie.com/dashboard" target="_blank" rel="noopener">Naar Mollie</a>' + ververs + los;
         }
         if (s.testmodus) vak.insertAdjacentHTML('afterend', document.getElementById('mollie-testmelding') ? '' :
