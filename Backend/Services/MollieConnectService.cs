@@ -56,6 +56,8 @@ public class MollieConnectService
         Env("MOLLIE_REDIRECT_URI") ?? "https://racecoachfinder-production.up.railway.app/api/mollieconnect/terug";
     // Alleen voor lokaal testen (Development): alle Mollie-verkeer naar een nep-server
     public static string? NepUrl { get; set; }
+    // Laatste fout bij het ophalen van de status bij Mollie (per verzoek), om de coach de echte reden te tonen
+    public string? LaatsteFout { get; private set; }
 
     // Servicekosten: 2% van het factuurbedrag (afgerond op centen), minimaal 1 cent
     public static decimal Servicekosten(decimal bedrag) =>
@@ -178,7 +180,11 @@ public class MollieConnectService
         if (vernieuw || !k.KanBetalingenOntvangen || string.IsNullOrEmpty(k.ProfielId))
         {
             try { await VernieuwStatusAsync(k); }
-            catch (Exception ex) { _logger.LogWarning("Mollie-status vernieuwen mislukt: {Fout}", ex.Message); }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Mollie-status vernieuwen mislukt: {Fout}", ex.ToString());
+                LaatsteFout = ex.Message;
+            }
         }
         if (k.OnboardingStatus == "ingetrokken") return KoppelStatus.Ingetrokken;
         // Testmodus: ook een (nog) niet goedgekeurd Mollie-account mag testbetalingen doen, zolang het een
