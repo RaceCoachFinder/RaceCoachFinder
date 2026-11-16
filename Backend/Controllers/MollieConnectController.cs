@@ -43,6 +43,8 @@ public class MollieConnectController : ControllerBase
             status = status.ToString(),
             organisatie = k?.OrganisatieNaam,
             onboardingStatus = k?.OnboardingStatus,
+            kanBetalingenOntvangen = k?.KanBetalingenOntvangen ?? false,
+            heeftProfiel = !string.IsNullOrEmpty(k?.ProfielId),
             gekoppeldOp = k?.GekoppeldOp,
             testmodus = MollieConnectService.Testmodus,
             melding = status == KoppelStatus.Klaar ? null : MollieConnectService.MeldingVoorCoach(status),

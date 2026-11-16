@@ -629,8 +629,16 @@ async function laadMollie(vernieuw) {
             vak.innerHTML = mollieStatusHtml('⚠️', 'Koppeling werkt niet meer', 'Mollie geeft geen toegang meer tot je account. Koppel je Mollie-account opnieuw.', s.organisatie);
             knoppen.innerHTML = '<button type="button" class="btn btn-primair" onclick="startMollie(false)">Opnieuw koppelen</button>' + los;
         } else {
+            // Waarom nog niet actief? Zo concreet mogelijk, op basis van wat Mollie teruggeeft
+            const reden = !s.heeftProfiel
+                ? 'In je Mollie-account staat nog geen website. Voeg bij Mollie een website toe (Instellingen → Profielen); je kunt de link naar je profiel op RaceCoachFinder gebruiken.'
+                : s.onboardingStatus === 'in-review'
+                    ? 'Mollie controleert je gegevens nog. Dat duurt meestal een paar werkdagen.'
+                    : s.onboardingStatus === 'completed'
+                        ? 'Je aanmelding bij Mollie is afgerond, maar Mollie staat nog geen betalingen toe. Neem zo nodig contact op met Mollie.'
+                        : 'Mollie heeft nog gegevens van je nodig. Rond je aanmelding af in Mollie (bijvoorbeeld je bedrijfsgegevens en bankrekening).';
             vak.innerHTML = mollieStatusHtml('⏳', 'Gekoppeld, maar nog niet actief',
-                'Je Mollie-account kan nog geen betalingen ontvangen. Rond je aanmelding af in Mollie (bijvoorbeeld je bedrijfsgegevens en bankrekening). Tot die tijd kunnen rijders je via overmaken betalen.', s.organisatie);
+                escHtml(vertaalTekst(reden)) + ' ' + escHtml(vertaalTekst('Tot die tijd kunnen rijders je via overmaken betalen.')), s.organisatie);
             knoppen.innerHTML = '<a class="btn btn-primair" href="https://my.mollie.com/dashboard" target="_blank" rel="noopener">Naar Mollie</a>' + ververs + los;
         }
         if (s.testmodus) vak.insertAdjacentHTML('afterend', document.getElementById('mollie-testmelding') ? '' :

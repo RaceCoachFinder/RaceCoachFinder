@@ -181,6 +181,9 @@ public class MollieConnectService
             catch (Exception ex) { _logger.LogWarning("Mollie-status vernieuwen mislukt: {Fout}", ex.Message); }
         }
         if (k.OnboardingStatus == "ingetrokken") return KoppelStatus.Ingetrokken;
+        // Testmodus: ook een (nog) niet goedgekeurd Mollie-account mag testbetalingen doen, zolang het een
+        // websiteprofiel heeft. Er gaat dan geen echt geld rond. Live geldt de controle van Mollie wel.
+        if (Testmodus && !string.IsNullOrEmpty(k.ProfielId)) return KoppelStatus.Klaar;
         if (!k.KanBetalingenOntvangen || string.IsNullOrEmpty(k.ProfielId)) return KoppelStatus.NietGeactiveerd;
         return KoppelStatus.Klaar;
     }

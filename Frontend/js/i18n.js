@@ -707,6 +707,11 @@
         "Beschikbare coaches": "Available coaches",
         // Mollie Connect (betalingen rechtstreeks aan de coach)
         // Betalen via overmaken + badge
+        "In je Mollie-account staat nog geen website. Voeg bij Mollie een website toe (Instellingen → Profielen); je kunt de link naar je profiel op RaceCoachFinder gebruiken.": "Your Mollie account has no website yet. Add a website in Mollie (Settings → Profiles); you can use the link to your RaceCoachFinder profile.",
+        "Mollie controleert je gegevens nog. Dat duurt meestal een paar werkdagen.": "Mollie is still checking your details. This usually takes a few working days.",
+        "Je aanmelding bij Mollie is afgerond, maar Mollie staat nog geen betalingen toe. Neem zo nodig contact op met Mollie.": "Your Mollie sign-up is complete, but Mollie does not allow payments yet. Contact Mollie if needed.",
+        "Mollie heeft nog gegevens van je nodig. Rond je aanmelding af in Mollie (bijvoorbeeld je bedrijfsgegevens en bankrekening).": "Mollie still needs some details from you. Complete your sign-up in Mollie (for example your business details and bank account).",
+        "Tot die tijd kunnen rijders je via overmaken betalen.": "Until then riders can pay you by bank transfer.",
         "Bedrijfsgegevens": "Company details",
         "KvK-nummer 99281465": "Chamber of Commerce (KvK) number 99281465",
         "© 2026 RaceCoachFinder · KvK 99281465": "© 2026 RaceCoachFinder · Chamber of Commerce (KvK) 99281465",
