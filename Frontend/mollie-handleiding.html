@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Handleiding: Mollie koppelen – RaceCoachFinder</title>
+    <meta name="description" content="Stap voor stap: maak een gratis Mollie-account en koppel het aan RaceCoachFinder, zodat rijders je facturen online betalen.">
+    <link rel="icon" href="favicon.png">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body { background: #f4f5f7; }
+        .hl-kop { position: sticky; top: 0; z-index: 10; background: #000; color: #fff; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.6rem 1rem; }
+        .hl-kop img { height: 44px; width: auto; display: block; }
+        .hl-kop button { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.35); border-radius: 8px; padding: 0.35rem 0.8rem; font: inherit; font-size: 0.85rem; cursor: pointer; }
+        .hl-kop button:hover { border-color: #fff; }
+        .hl-inhoud { max-width: 680px; margin: 0 auto; padding: 1.25rem 1rem 4rem; }
+        h1 { font-size: 1.6rem; line-height: 1.25; margin: 0.5rem 0 0.6rem; }
+        .hl-intro { color: var(--kleur-subtekst); line-height: 1.6; margin-bottom: 1rem; }
+        .hl-kaart { background: #fff; border-radius: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); padding: 1.1rem 1.2rem; margin: 1rem 0; }
+        .hl-kaart h2 { font-size: 1.05rem; margin-bottom: 0.6rem; }
+        .hl-nodig { list-style: none; display: grid; gap: 0.45rem; }
+        .hl-nodig li { display: flex; gap: 0.6rem; align-items: flex-start; line-height: 1.45; }
+        .hl-nodig li span:first-child { width: 1.6rem; flex-shrink: 0; text-align: center; }
+        .hl-voorbeeldcoach { display: flex; gap: 0.9rem; align-items: center; }
+        .hl-avatar { width: 52px; height: 52px; border-radius: 50%; background: var(--kleur-primair); color: #000; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.1rem; }
+        .hl-inhoudsopgave { counter-reset: stap; list-style: none; display: grid; gap: 0.35rem; }
+        .hl-inhoudsopgave a { color: var(--kleur-tekst); text-decoration: none; display: flex; gap: 0.6rem; align-items: center; padding: 0.35rem 0.5rem; border-radius: 8px; }
+        .hl-inhoudsopgave a:hover { background: #f4f5f7; }
+        .hl-inhoudsopgave .nr { width: 1.6rem; height: 1.6rem; border-radius: 50%; background: #111; color: #fff; font-size: 0.8rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .hl-deel { font-size: 0.78rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--kleur-subtekst); margin: 2rem 0 0.2rem; }
+        .stap { background: #fff; border-radius: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); padding: 1.2rem; margin: 1rem 0; scroll-margin-top: 80px; }
+        .stap-kop { display: flex; gap: 0.8rem; align-items: center; margin-bottom: 0.75rem; }
+        .stap-nr { width: 2.4rem; height: 2.4rem; border-radius: 50%; background: var(--kleur-primair); color: #000; font-weight: 800; font-size: 1.15rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .stap h2 { font-size: 1.15rem; line-height: 1.3; }
+        .stap ol, .stap ul { padding-left: 1.3rem; display: grid; gap: 0.45rem; line-height: 1.55; margin: 0.4rem 0; }
+        .stap p { line-height: 1.6; margin: 0.4rem 0; }
+        .knop-in-tekst { display: inline-block; background: #f1f1f4; border: 1px solid #ddd; border-radius: 6px; padding: 0 0.4rem; font-weight: 600; font-size: 0.92em; white-space: nowrap; }
+        .voorbeeld { background: #fff8e1; border-left: 4px solid var(--kleur-primair); border-radius: 8px; padding: 0.7rem 0.9rem; margin: 0.8rem 0; line-height: 1.55; font-size: 0.93rem; }
+        .voorbeeld strong:first-child { display: block; font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: #8a6d00; margin-bottom: 0.15rem; }
+        .let-op { background: #eef5ff; border-left: 4px solid #1565c0; border-radius: 8px; padding: 0.7rem 0.9rem; margin: 0.8rem 0; line-height: 1.55; font-size: 0.93rem; color: #17375e; }
+        figure { margin: 0.9rem 0 0.3rem; }
+        figure img { width: 100%; max-width: 440px; height: auto; display: block; margin: 0 auto; border-radius: 12px; border: 1px solid #e5e5ea; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+        figcaption { text-align: center; font-size: 0.82rem; color: var(--kleur-subtekst); margin-top: 0.45rem; line-height: 1.45; }
+        .actie-knop { display: inline-flex; align-items: center; gap: 0.4rem; background: var(--kleur-primair); color: #000; font-weight: 700; text-decoration: none; border-radius: 10px; padding: 0.6rem 1rem; margin: 0.4rem 0; border: none; font: inherit; font-weight: 700; cursor: pointer; }
+        .actie-knop.licht { background: #fff; border: 2px solid #ddd; color: #333; }
+        .kopieer-vak { display: flex; gap: 0.5rem; align-items: stretch; margin: 0.6rem 0; flex-wrap: wrap; }
+        .kopieer-vak code { flex: 1 1 260px; background: #f4f5f7; border: 1px solid #e0e0e5; border-radius: 8px; padding: 0.55rem 0.7rem; font-size: 0.85rem; word-break: break-all; font-family: ui-monospace, Menlo, Consolas, monospace; }
+        .kopieer-vak button { background: #111; color: #fff; border: none; border-radius: 8px; padding: 0 1rem; font: inherit; font-weight: 600; cursor: pointer; min-height: 2.4rem; }
+        .stap-volgende { display: inline-block; margin-top: 0.6rem; font-weight: 600; font-size: 0.9rem; }
+        details { background: #fff; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin: 0.6rem 0; }
+        summary { cursor: pointer; padding: 0.85rem 1rem; font-weight: 600; list-style: none; display: flex; justify-content: space-between; gap: 1rem; }
+        summary::after { content: '+'; font-size: 1.2rem; line-height: 1; color: var(--kleur-subtekst); }
+        details[open] summary::after { content: '–'; }
+        details > div { padding: 0 1rem 1rem; line-height: 1.6; color: #333; }
+        .klaar { text-align: center; }
+        .klaar .stap-nr { margin: 0 auto 0.5rem; background: #2e7d32; color: #fff; }
+        .hl-voet { text-align: center; color: var(--kleur-subtekst); font-size: 0.85rem; margin-top: 2rem; line-height: 1.6; }
+        @media (max-width: 480px) { h1 { font-size: 1.35rem; } .stap { padding: 1rem; } }
+    </style>
+</head>
+<body>
+
+<div class="hl-kop">
+    <img src="Logo's/RaceCoachFinder%20logo%20-%20rechthoek%20(zwart%20url).png" alt="RaceCoachFinder">
+    <button type="button" id="sluit-knop" style="display:none" onclick="window.close()">Venster sluiten</button>
+</div>
+
+<main class="hl-inhoud">
+    <h1>Mollie koppelen: stap voor stap</h1>
+    <p class="hl-intro">Met Mollie betalen rijders je facturen online, met iDEAL of creditcard. Het geld komt rechtstreeks op jouw eigen rekening. Je doet dit één keer en bent in ongeveer een kwartier klaar (daarna controleert Mollie je gegevens nog).</p>
+
+    <div class="let-op">💡 <strong>Tip:</strong> laat dit venster open staan. Je kunt dan steeds wisselen tussen deze uitleg en Mollie.</div>
+
+    <section class="hl-kaart">
+        <h2>Wat heb je nodig?</h2>
+        <ul class="hl-nodig">
+            <li><span>🏢</span><span>Je <strong>KvK-nummer</strong> (8 cijfers). Geen KvK? Lees dan <a href="#geen-kvk">dit</a>.</span></li>
+            <li><span>🪪</span><span>Je <strong>paspoort of ID-kaart</strong></span></li>
+            <li><span>🏦</span><span>Je <strong>bankrekening</strong> (IBAN) waar het geld op moet komen</span></li>
+            <li><span>⏱️</span><span>Ongeveer <strong>15 minuten</strong></span></li>
+        </ul>
+    </section>
+
+    <section class="hl-kaart">
+        <h2>We doen het samen met een voorbeeld</h2>
+        <div class="hl-voorbeeldcoach">
+            <div class="hl-avatar">DJ</div>
+            <div><strong>Daan Jansen</strong> geeft kart- en racetrainingen en heeft een eenmanszaak: <strong>Jansen Racing</strong>. Bij elke stap zie je wat Daan invult. Jij vult natuurlijk je eigen gegevens in.</div>
+        </div>
+    </section>
+
+    <section class="hl-kaart">
+        <h2>De stappen</h2>
+        <ol class="hl-inhoudsopgave">
+            <li><a href="#stap-1"><span class="nr">1</span> Maak een gratis Mollie-account</a></li>
+            <li><a href="#stap-2"><span class="nr">2</span> Vertel Mollie wat je doet</a></li>
+            <li><a href="#stap-3"><span class="nr">3</span> Vul je bedrijfsgegevens in</a></li>
+            <li><a href="#stap-4"><span class="nr">4</span> Voeg je website toe</a></li>
+            <li><a href="#stap-5"><span class="nr">5</span> Zet iDEAL aan</a></li>
+            <li><a href="#stap-6"><span class="nr">6</span> Koppel Mollie aan RaceCoachFinder</a></li>
+            <li><a href="#stap-7"><span class="nr">7</span> Wacht op de controle van Mollie</a></li>
+        </ol>
+    </section>
+
+    <div class="hl-deel">Deel 1 · Bij Mollie</div>
+
+    <!-- Stap 1 -->
+    <section class="stap" id="stap-1">
+        <div class="stap-kop"><div class="stap-nr">1</div><h2>Maak een gratis Mollie-account</h2></div>
+        <p>Heb je al een Mollie-account? Ga dan meteen naar <a href="#stap-4">stap 4</a> en kijk of je website en iDEAL goed staan.</p>
+        <ol>
+            <li>Klik op de knop hieronder. Mollie opent in een nieuw tabblad.</li>
+            <li>Vul je <strong>e-mailadres</strong> en een <strong>wachtwoord</strong> in.</li>
+            <li>Mollie stuurt je een mail. Klik op de link in die mail om je e-mailadres te bevestigen.</li>
+        </ol>
+        <a class="actie-knop" href="https://my.mollie.com/dashboard/signup" target="_blank" rel="noopener">Open Mollie ↗</a>
+        <div class="voorbeeld"><strong>Voorbeeld</strong>Daan vult <em>daan@jansenracing.nl</em> in, kiest een wachtwoord en klikt op de link in de mail van Mollie.</div>
+        <p>Een Mollie-account is <strong>gratis</strong>: geen abonnement, geen vaste kosten.</p>
+        <a class="stap-volgende" href="#stap-2">Klaar? Naar stap 2 ↓</a>
+    </section>
+
+    <!-- Stap 2 -->
+    <section class="stap" id="stap-2">
+        <div class="stap-kop"><div class="stap-nr">2</div><h2>Vertel Mollie wat je doet</h2></div>
+        <p>Mollie vraagt hoe je Mollie gaat gebruiken.</p>
+        <ol>
+            <li>Vink <span class="knop-in-tekst">Verkopen via mijn website</span> aan. Rijders betalen je namelijk via de website van RaceCoachFinder.</li>
+            <li>Klik op <span class="knop-in-tekst">Bevestig</span>.</li>
+        </ol>
+        <figure>
+            <img src="images/handleiding/mollie-vragenlijst.jpg" alt="Mollie vraagt hoe je Mollie gaat gebruiken; kies Verkopen via mijn website" width="620" height="818" loading="lazy">
+            <figcaption>Kies "Verkopen via mijn website" en klik op "Bevestig". De andere vakjes maken niet uit.</figcaption>
+        </figure>
+        <a class="stap-volgende" href="#stap-3">Klaar? Naar stap 3 ↓</a>
+    </section>
+
+    <!-- Stap 3 -->
+    <section class="stap" id="stap-3">
+        <div class="stap-kop"><div class="stap-nr">3</div><h2>Vul je bedrijfsgegevens in</h2></div>
+        <p>Op de startpagina van Mollie staat <strong>"Voortgang onboarding"</strong>. Daaronder zie je wat Mollie nog van je nodig heeft. Klik op elke regel met <span class="knop-in-tekst">⚠ Vereiste actie</span> en vul hem in:</p>
+        <ul>
+            <li><strong>Bedrijfsgegevens:</strong> je KvK-nummer. Mollie vult je bedrijfsnaam en adres daarna meestal zelf in.</li>
+            <li><strong>Jouw gegevens:</strong> je naam, geboortedatum en een foto van je paspoort of ID-kaart.</li>
+            <li><strong>Bankrekening:</strong> het rekeningnummer (IBAN) waar Mollie je geld naartoe stuurt.</li>
+            <li><strong>Bedrijfsactiviteit:</strong> je website. Dat doe je in stap 4.</li>
+        </ul>
+        <figure>
+            <img src="images/handleiding/mollie-onboarding.jpg" alt="Voortgang onboarding bij Mollie met een regel Vereiste actie" width="620" height="745" loading="lazy">
+            <figcaption>Elke regel met "Vereiste actie" moet je nog invullen. Klik erop.</figcaption>
+        </figure>
+        <div class="voorbeeld"><strong>Voorbeeld</strong>Daan vult zijn KvK-nummer <em>12345678</em> in, maakt een foto van zijn ID-kaart en vult zijn rekeningnummer <em>NL91 ABNA 0417 1643 00</em> in.</div>
+        <a class="stap-volgende" href="#stap-4">Klaar? Naar stap 4 ↓</a>
+    </section>
+
+    <!-- Stap 4 -->
+    <section class="stap" id="stap-4">
+        <div class="stap-kop"><div class="stap-nr">4</div><h2>Voeg je website toe</h2></div>
+        <p>Mollie wil weten waar je je diensten aanbiedt. Heb je geen eigen website? Gebruik dan gewoon <strong>je profiel op RaceCoachFinder</strong>.</p>
+        <ol>
+            <li>Klik bij Mollie op <span class="knop-in-tekst">Bedrijfsactiviteit</span> (of ga naar Instellingen → Profielen).</li>
+            <li>Plak bij <strong>Website</strong> de link naar je profiel:</li>
+        </ol>
+        <div id="profiel-link-vak">
+            <div class="kopieer-vak">
+                <code id="profiel-link">https://www.racecoachfinder.nl/coach-detail.html?id=…</code>
+                <button type="button" id="kopieer-link" onclick="kopieer('profiel-link', this)">Kopieer</button>
+            </div>
+            <p id="profiel-link-uitleg" style="font-size:0.85rem;color:var(--kleur-subtekst)">Je vindt deze link op RaceCoachFinder via <strong>Mijn dashboard → Bekijk profiel</strong>: kopieer het adres uit de adresbalk van je browser. Ben je ingelogd, dan staat hier vanzelf jouw eigen link.</p>
+        </div>
+        <ol start="3">
+            <li>Vraagt Mollie om een <strong>omschrijving</strong>? Kopieer dan deze tekst:</li>
+        </ol>
+        <div class="kopieer-vak">
+            <code id="omschrijving">Ik geef als coach racetrainingen (karting en autosport). Rijders boeken en betalen mij via het platform RaceCoachFinder.</code>
+            <button type="button" onclick="kopieer('omschrijving', this)">Kopieer</button>
+        </div>
+        <ol start="4">
+            <li>Staat er een gele melding met <span class="knop-in-tekst">Website is klaar</span>? Klik daarop.</li>
+        </ol>
+        <figure>
+            <img src="images/handleiding/mollie-website-klaar.jpg" alt="Mollie Profielen met de knop Website is klaar" width="620" height="825" loading="lazy">
+            <figcaption>Klik op "Website is klaar". Bij jou staat hier je eigen bedrijfsnaam en link.</figcaption>
+        </figure>
+        <div class="voorbeeld"><strong>Voorbeeld</strong>Daan plakt <em>https://www.racecoachfinder.nl/coach-detail.html?id=12</em> bij Website en klikt op "Website is klaar".</div>
+        <a class="stap-volgende" href="#stap-5">Klaar? Naar stap 5 ↓</a>
+    </section>
+
+    <!-- Stap 5 -->
+    <section class="stap" id="stap-5">
+        <div class="stap-kop"><div class="stap-nr">5</div><h2>Zet iDEAL aan</h2></div>
+        <p>Nu kies je hoe rijders je mogen betalen.</p>
+        <ol>
+            <li>Klik op de startpagina van Mollie op <span class="knop-in-tekst">Betaalmethoden instellen</span>.</li>
+            <li>Zorg dat <strong>iDEAL</strong> aangevinkt is. <strong>Krediet- en debetkaarten</strong> mag ook.</li>
+            <li>Klik op <span class="knop-in-tekst">Ga verder</span>.</li>
+        </ol>
+        <figure>
+            <img src="images/handleiding/mollie-betaalmethoden.jpg" alt="Betaalmethoden bij Mollie: iDEAL aangevinkt en de knop Ga verder" width="620" height="923" loading="lazy">
+            <figcaption>iDEAL aanvinken en op "Ga verder" klikken. Klarna, Riverty en Pay by Bank heb je niet nodig.</figcaption>
+        </figure>
+        <p>Staat er een <strong>klokje</strong> bij iDEAL? Dan controleert Mollie het nog. Dat is goed: je kunt gewoon verder.</p>
+        <a class="stap-volgende" href="#stap-6">Klaar? Naar stap 6 ↓</a>
+    </section>
+
+    <div class="hl-deel">Deel 2 · Op RaceCoachFinder</div>
+
+    <!-- Stap 6 -->
+    <section class="stap" id="stap-6">
+        <div class="stap-kop"><div class="stap-nr">6</div><h2>Koppel Mollie aan RaceCoachFinder</h2></div>
+        <ol>
+            <li>Ga op RaceCoachFinder naar <strong>Instellingen</strong>: klik rechtsboven op je naam en kies <span class="knop-in-tekst">⚙ Instellingen</span>.</li>
+        </ol>
+        <figure>
+            <img src="images/handleiding/site-menu-instellingen.png" alt="Het menu rechtsboven op RaceCoachFinder met Instellingen" width="532" height="588" style="max-width:300px" loading="lazy">
+            <figcaption>Klik rechtsboven op je naam en daarna op "Instellingen".</figcaption>
+        </figure>
+        <ol start="2">
+            <li>Bovenaan staat het blok <strong>Betalingen ontvangen</strong>. Klik op <span class="knop-in-tekst">Koppel je Mollie-account</span>.</li>
+        </ol>
+        <figure>
+            <img src="images/handleiding/site-koppelen.png" alt="Instellingen, Betalingen ontvangen, met de knop Koppel je Mollie-account" width="684" height="736" loading="lazy">
+            <figcaption>Klik op de gele knop "Koppel je Mollie-account".</figcaption>
+        </figure>
+        <ol start="3">
+            <li>Je gaat naar Mollie. Log in met je Mollie-account (als dat nog niet zo is).</li>
+            <li>Mollie vraagt of RaceCoachFinder betalingen voor je mag aanmaken. Klik op <span class="knop-in-tekst">Toestaan</span>.</li>
+            <li>Je komt vanzelf terug op RaceCoachFinder. Bovenaan staat nu <strong>"Je Mollie-account is gekoppeld."</strong></li>
+        </ol>
+        <figure>
+            <img src="images/handleiding/site-gekoppeld.png" alt="Instellingen na het koppelen: Gekoppeld" width="844" height="654" loading="lazy">
+            <figcaption>Gelukt! Je ziet de naam van je bedrijf bij Mollie.</figcaption>
+        </figure>
+        <button type="button" class="actie-knop licht" onclick="naarInstellingen()">Open Instellingen op RaceCoachFinder</button>
+        <div class="voorbeeld"><strong>Voorbeeld</strong>Daan klikt op "Koppel je Mollie-account", logt in bij Mollie, klikt op "Toestaan" en ziet daarna "Gekoppeld · Jansen Racing".</div>
+        <a class="stap-volgende" href="#stap-7">Klaar? Naar stap 7 ↓</a>
+    </section>
+
+    <!-- Stap 7 -->
+    <section class="stap" id="stap-7">
+        <div class="stap-kop"><div class="stap-nr">7</div><h2>Wacht op de controle van Mollie</h2></div>
+        <p>Een nieuw Mollie-account wordt eerst gecontroleerd. Dat duurt meestal <strong>1 tot 3 werkdagen</strong>. Zolang staat er <strong>"Gekoppeld, maar nog niet actief"</strong>, met daaronder wat er nog moet gebeuren.</p>
+        <figure>
+            <img src="images/handleiding/site-niet-actief.png" alt="Gekoppeld, maar nog niet actief, met de knop Status vernieuwen" width="664" height="756" loading="lazy">
+            <figcaption>Mollie is nog bezig. Klik later op "Status vernieuwen" om te kijken of het klaar is.</figcaption>
+        </figure>
+        <ul>
+            <li>Krijg je een mail van Mollie dat ze nog iets nodig hebben? Vul dat in bij Mollie.</li>
+            <li>Klik af en toe op <span class="knop-in-tekst">Status vernieuwen</span>. Als Mollie klaar is, staat er <strong>"Gekoppeld"</strong>.</li>
+            <li>Wil je in de tussentijd al een factuur sturen? Vul dan bij <strong>Via overmaken</strong> je rekeningnummer in. Rijders maken het bedrag dan zelf over.</li>
+        </ul>
+    </section>
+
+    <!-- Klaar -->
+    <section class="stap klaar">
+        <div class="stap-nr">✓</div>
+        <h2>Klaar!</h2>
+        <p>Vanaf nu betalen rijders je facturen online. Het geld komt op je Mollie-account en Mollie maakt het naar je bankrekening over. Je krijgt ook het label <strong>✓ Zakelijk geverifieerd</strong> op je profiel.</p>
+        <figure>
+            <img src="images/handleiding/site-badge.png" alt="Het label Zakelijk geverifieerd op een coachprofiel" width="788" height="300" style="max-width:400px" loading="lazy">
+            <figcaption>Zo zien rijders het label op je profiel.</figcaption>
+        </figure>
+        <p style="font-size:0.9rem;color:var(--kleur-subtekst)">Wat kost het? Mollie rekent per betaling een klein bedrag, bijvoorbeeld €0,32 bij iDEAL. De rijder betaalt bovenop je factuur 2% servicekosten aan RaceCoachFinder; dat gaat niet van jouw bedrag af.</p>
+    </section>
+
+    <div class="hl-deel">Problemen?</div>
+
+    <details id="geen-kvk">
+        <summary>Ik heb geen KvK-nummer</summary>
+        <div>Mollie werkt alleen met bedrijven die bij de KvK staan ingeschreven. Zonder KvK kun je toch facturen sturen: ga naar <strong>Instellingen → Betalingen ontvangen → Via overmaken</strong> en vul je rekeningnummer in. Rijders maken het bedrag dan zelf over, en jij klikt in de chat op "Ontvangen" als het geld binnen is.</div>
+    </details>
+    <details>
+        <summary>Er staat "nog geen website", maar die heb ik wel toegevoegd</summary>
+        <div>Klik in Instellingen op <strong>Ontkoppelen</strong> en daarna opnieuw op <strong>Koppel je Mollie-account</strong>. Mollie geeft de website dan wel door.</div>
+    </details>
+    <details>
+        <summary>Bij het koppelen zie ik het verkeerde bedrijf</summary>
+        <div>Heb je meerdere bedrijven bij Mollie, kies dan op het scherm van Mollie het juiste bedrijf. Lukt dat niet, log dan bij Mollie uit, ga terug naar RaceCoachFinder en klik opnieuw op "Koppel je Mollie-account".</div>
+    </details>
+    <details>
+        <summary>Mollie vraagt om meer gegevens</summary>
+        <div>Mollie stuurt je dan een mail. Log in bij Mollie: op de startpagina zie je bij "Voortgang onboarding" wat er nog ontbreekt. Vul het in en klik daarna op RaceCoachFinder op "Status vernieuwen".</div>
+    </details>
+    <details>
+        <summary>Kan ik Mollie later weer loskoppelen?</summary>
+        <div>Ja. Ga naar Instellingen → Betalingen ontvangen en klik op <strong>Ontkoppelen</strong>. Rijders kunnen je facturen dan niet meer online betalen, tot je opnieuw koppelt.</div>
+    </details>
+
+    <p class="hl-voet">Kom je er niet uit? Mail ons op <a href="mailto:racecoachfinder@gmail.com">racecoachfinder@gmail.com</a>, dan helpen we je.<br>&copy; 2026 RaceCoachFinder &middot; KvK 99281465</p>
+</main>
+
+<script src="js/auth.js"></script>
+<script>
+// Geopend vanuit de site als apart venster? Dan een knop om het te sluiten
+if (window.opener) document.getElementById('sluit-knop').style.display = '';
+
+function kopieer(id, knop) {
+    const tekst = document.getElementById(id).textContent.trim();
+    const klaar = () => { const oud = knop.textContent; knop.textContent = 'Gekopieerd ✓'; setTimeout(() => knop.textContent = oud, 1800); };
+    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(tekst).then(klaar).catch(() => selecteer(id));
+    else selecteer(id);
+}
+function selecteer(id) {
+    const r = document.createRange(); r.selectNodeContents(document.getElementById(id));
+    const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+}
+
+// Instellingen openen in het hoofdvenster (als dat er is), anders in een nieuw tabblad
+function naarInstellingen() {
+    const url = 'instellingen.html#mollie';
+    try {
+        if (window.opener && !window.opener.closed) { window.opener.location.href = url; window.opener.focus(); return; }
+    } catch (e) { /* ander domein */ }
+    window.open(url, '_blank');
+}
+
+// Ingelogde coach: zijn eigen profiellink tonen
+(async function () {
+    try {
+        if (typeof isIngelogd !== 'function' || !isIngelogd() || !heeftRol('Coach')) return;
+        // Eigen aanvraag (geen authVerzoek): bij een verlopen sessie niet uitloggen vanuit de handleiding
+        const r = await fetch('https://racecoachfinder-production.up.railway.app/api/coach/mijn', { headers: authHeader() });
+        if (!r.ok) return;
+        const coach = await r.json();
+        if (!coach || !coach.id) return;
+        document.getElementById('profiel-link').textContent = 'https://www.racecoachfinder.nl/coach-detail.html?id=' + coach.id;
+        document.getElementById('profiel-link-uitleg').textContent = 'Dit is de link naar jouw eigen profiel.';
+    } catch (e) { /* niet ingelogd of geen profiel: de uitleg blijft staan */ }
+})();
+</script>
+</body>
+</html>

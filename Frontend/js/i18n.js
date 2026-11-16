@@ -707,10 +707,11 @@
         "Beschikbare coaches": "Available coaches",
         // Mollie Connect (betalingen rechtstreeks aan de coach)
         // Betalen via overmaken + badge
+        "📖 Handleiding": "📖 Guide",
         "Websiteprofielen bij Mollie:": "Website profiles at Mollie:",
         "De gegevens van je Mollie-account konden niet worden opgehaald. Probeer het later opnieuw met \"Status vernieuwen\".": "Your Mollie account details could not be retrieved. Try again later with \"Refresh status\".",
         "Melding van Mollie:": "Message from Mollie:",
-        "In je Mollie-account staat nog geen website. Voeg bij Mollie een website toe (Instellingen → Profielen); je kunt de link naar je profiel op RaceCoachFinder gebruiken.": "Your Mollie account has no website yet. Add a website in Mollie (Settings → Profiles); you can use the link to your RaceCoachFinder profile.",
+        "In je Mollie-account staat nog geen website. Voeg bij Mollie een website toe (Instellingen → Profielen); je kunt de link naar je profiel op RaceCoachFinder gebruiken. Heb je dat al gedaan? Klik dan op Ontkoppelen en koppel opnieuw.": "Your Mollie account has no website yet. Add a website in Mollie (Settings \u2192 Profiles); you can use the link to your RaceCoachFinder profile. Already done that? Click Disconnect and connect again.",
         "Mollie controleert je gegevens nog. Dat duurt meestal een paar werkdagen.": "Mollie is still checking your details. This usually takes a few working days.",
         "Je aanmelding bij Mollie is afgerond, maar Mollie staat nog geen betalingen toe. Neem zo nodig contact op met Mollie.": "Your Mollie sign-up is complete, but Mollie does not allow payments yet. Contact Mollie if needed.",
         "Mollie heeft nog gegevens van je nodig. Rond je aanmelding af in Mollie (bijvoorbeeld je bedrijfsgegevens en bankrekening).": "Mollie still needs some details from you. Complete your sign-up in Mollie (for example your business details and bank account).",

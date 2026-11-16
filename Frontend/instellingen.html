@@ -29,6 +29,7 @@
         .mollie-knoppen .btn { font-size: 0.85rem; }
         .mollie-knoppen .btn-licht { background: transparent; color: #555; border: 2px solid #ccc; }
         .mollie-knoppen a { font-size: 0.82rem; }
+        .mollie-knoppen a.btn-handleiding { font-size: 0.85rem; text-decoration: none; }
         .betaal-nu { background: #eef5ff; color: #1b4f8a; border-radius: 10px; padding: 0.7rem 0.9rem; font-size: 0.85rem; margin: 0.4rem 0 0.2rem; line-height: 1.5; }
         .betaal-optie { border: 1px solid #ececf0; border-radius: 12px; padding: 1rem 1.1rem; margin-top: 0.9rem; }
         .betaal-optie-kop { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
@@ -616,24 +617,26 @@ async function laadMollie(vernieuw) {
         const nieuw = '<button type="button" class="btn btn-licht" onclick="startMollie(true)">Nog geen Mollie? Maak een account aan</button>';
         const ververs = '<button type="button" class="btn btn-licht" onclick="laadMollie(true)">Status vernieuwen</button>';
         const los = '<a href="#" onclick="ontkoppelMollie();return false">Ontkoppelen</a>';
+        // Stap-voor-stap handleiding in een apart venster, zodat je kunt wisselen tussen Mollie en de uitleg
+        const uitleg = '<a class="btn btn-licht btn-handleiding" href="mollie-handleiding.html" target="mollie-handleiding" onclick="return openHandleiding(event)">📖 Handleiding</a>';
         if (!s.ingesteld) {
             vak.innerHTML = mollieStatusHtml('⏳', 'Nog niet beschikbaar', 'Online betalen wordt binnenkort aangezet. Dan kun je hier je Mollie-account koppelen.');
             knoppen.innerHTML = '';
         } else if (!s.gekoppeld) {
             vak.innerHTML = mollieStatusHtml('⚪', 'Niet gekoppeld', 'Heb je nog geen Mollie-account? Dan maak je er tijdens het koppelen gratis een aan.');
-            knoppen.innerHTML = koppel + nieuw;
+            knoppen.innerHTML = koppel + nieuw + uitleg;
         } else if (s.klaar) {
             vak.innerHTML = mollieStatusHtml('✅', 'Gekoppeld', 'Rijders betalen je facturen rechtstreeks op dit Mollie-account.', s.organisatie);
             knoppen.innerHTML = ververs + los;
         } else if (s.status === 'Ingetrokken') {
             vak.innerHTML = mollieStatusHtml('⚠️', 'Koppeling werkt niet meer', 'Mollie geeft geen toegang meer tot je account. Koppel je Mollie-account opnieuw.', s.organisatie);
-            knoppen.innerHTML = '<button type="button" class="btn btn-primair" onclick="startMollie(false)">Opnieuw koppelen</button>' + los;
+            knoppen.innerHTML = '<button type="button" class="btn btn-primair" onclick="startMollie(false)">Opnieuw koppelen</button>' + uitleg + los;
         } else {
             // Waarom nog niet actief? Zo concreet mogelijk, op basis van wat Mollie teruggeeft
             const reden = s.ophaalFout
                 ? 'De gegevens van je Mollie-account konden niet worden opgehaald. Probeer het later opnieuw met "Status vernieuwen".'
                 : !s.heeftProfiel
-                ? 'In je Mollie-account staat nog geen website. Voeg bij Mollie een website toe (Instellingen → Profielen); je kunt de link naar je profiel op RaceCoachFinder gebruiken.'
+                ? 'In je Mollie-account staat nog geen website. Voeg bij Mollie een website toe (Instellingen → Profielen); je kunt de link naar je profiel op RaceCoachFinder gebruiken. Heb je dat al gedaan? Klik dan op Ontkoppelen en koppel opnieuw.'
                 : s.onboardingStatus === 'in-review'
                     ? 'Mollie controleert je gegevens nog. Dat duurt meestal een paar werkdagen.'
                     : s.onboardingStatus === 'completed'
@@ -643,7 +646,7 @@ async function laadMollie(vernieuw) {
                 escHtml(vertaalTekst(reden)) + ' ' + escHtml(vertaalTekst('Tot die tijd kunnen rijders je via overmaken betalen.')) +
                 (s.ophaalFout ? '<br><small style="color:#999">' + escHtml(vertaalTekst('Melding van Mollie:')) + ' ' + escHtml(s.ophaalFout) + '</small>' : '') +
                 (!s.ophaalFout && !s.heeftProfiel && s.profielInfo ? '<br><small style="color:#999">' + escHtml(vertaalTekst('Websiteprofielen bij Mollie:')) + ' ' + escHtml(s.profielInfo) + '</small>' : ''), s.organisatie);
-            knoppen.innerHTML = '<a class="btn btn-primair" href="https://my.mollie.com/dashboard" target="_blank" rel="noopener">Naar Mollie</a>' + ververs + los;
+            knoppen.innerHTML = '<a class="btn btn-primair" href="https://my.mollie.com/dashboard" target="_blank" rel="noopener">Naar Mollie</a>' + ververs + uitleg + los;
         }
         if (s.testmodus) vak.insertAdjacentHTML('afterend', document.getElementById('mollie-testmelding') ? '' :
             '<div class="mollie-test" id="mollie-testmelding">Testmodus: betalingen zijn nog niet echt.</div>');
@@ -712,6 +715,18 @@ async function wisIban() {
 }
 
 function vertaalTekst(t) { return window.I18N ? I18N.t(t) : t; }
+
+// Op een groot scherm als smal venster naast de site; op een telefoon gewoon een nieuw tabblad
+function openHandleiding(e) {
+    if (window.innerWidth < 900) return true;
+    e.preventDefault();
+    const breedte = 560, hoogte = Math.min(screen.availHeight - 60, 1000);
+    const venster = window.open('mollie-handleiding.html', 'mollie-handleiding',
+        `width=${breedte},height=${hoogte},left=${Math.max(0, screen.availWidth - breedte - 20)},top=20,scrollbars=yes,resizable=yes`);
+    if (!venster) location.href = 'mollie-handleiding.html';
+    else venster.focus();
+    return false;
+}
 
 async function startMollie(nieuwAccount) {
     try {
